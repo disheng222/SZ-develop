@@ -119,6 +119,8 @@ int SZ_ReadConf() {
 		
 		conf_params->szMode = szMode = SZ_BEST_COMPRESSION;
 		
+		conf_params->szRandomAccess = szRandomAccess = SZ_YES_RANDOM_ACCESS;
+		
 		conf_params->gzipMode = gzipMode = 1;
 		conf_params->errorBoundMode = errorBoundMode = PSNR;
 		conf_params->psnr = psnr = 90;
@@ -241,6 +243,13 @@ int SZ_ReadConf() {
 			return SZ_NSCS;	
 		}
 		conf_params->szMode = szMode;
+		
+		modeBuf = iniparser_getstring(ini, "PARAMETER:randomAccess", "YES");
+		if(strcmp(modeBuf, "YES")==0 || strcmp(modeBuf, "yes")==0)
+			szRandomAccess = SZ_YES_RANDOM_ACCESS;
+		else
+			szRandomAccess = SZ_NO_RANDOM_ACCESS;
+		conf_params->szRandomAccess = szRandomAccess;
 		
 		modeBuf = iniparser_getstring(ini, "PARAMETER:gzipMode", NULL);
 		if(modeBuf==NULL)

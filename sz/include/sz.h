@@ -74,8 +74,8 @@ extern "C" {
 #define SZ_VERNUM 0x0140
 #define SZ_VER_MAJOR 1
 #define SZ_VER_MINOR 4
-#define SZ_VER_BUILD 12
-#define SZ_VER_REVISION 3
+#define SZ_VER_BUILD 13
+#define SZ_VER_REVISION 0
 
 #define HZ 102
 #define SZ 101
@@ -119,6 +119,9 @@ extern "C" {
 #define SZ_BEST_SPEED 0
 #define SZ_BEST_COMPRESSION 1
 #define SZ_DEFAULT_COMPRESSION 2
+
+#define SZ_NO_RANDOM_ACCESS  0 //compression without random access support
+#define SZ_YES_RANDOM_ACCESS 1 //support random access
 
 #define SZ_PWR_MIN_TYPE 0
 #define SZ_PWR_AVG_TYPE 1
@@ -185,6 +188,8 @@ extern char optQuantMode;
 
 extern int szMode; //0 (best speed) or 1 (better compression with Gzip)
 
+extern int szRandomAccess;
+
 //extern int spaceFillingCurveTransform; //default is 0, or 1 set by sz.config
 //extern int reOrgSize; //the granularity of the reganization of the original data
 
@@ -244,6 +249,7 @@ typedef struct sz_params
     float predThreshold;  // 2 bytes
     int offset;//x
     int szMode; //*
+    int szRandomAccess;
     int gzipMode; //*
     int  errorBoundMode; //4bits (0.5byte)
     double absErrBound;

@@ -2566,19 +2566,21 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwRelBoundRa
 	size_t dataLength = computeDataLength(r5,r4,r3,r2,r1);
 	float valueRangeSize = 0, medianValue = 0;
 	
-	float min = computeRangeSize_float(oriData, dataLength, &valueRangeSize, &medianValue);
-	float max = min+valueRangeSize;
-	double realPrecision = 0; 
-	
-	if(errorBoundMode==PSNR)
+	float min = 0, max = 0;
+	double realPrecision = absErrBound; 
+	if(szRandomAccess == SZ_NO_RANDOM_ACCESS || errBoundMode != ABS)
 	{
-		errorBoundMode = conf_params->errorBoundMode = ABS;
-		realPrecision = conf_params->absErrBound = computeABSErrBoundFromPSNR(psnr, (double)predThreshold, (double)valueRangeSize);
-		//printf("realPrecision=%lf\n", realPrecision);
-	}
-	else
-		realPrecision = getRealPrecision_float(valueRangeSize, errBoundMode, absErr_Bound, relBoundRatio, &status);
-		
+		min = computeRangeSize_float(oriData, dataLength, &valueRangeSize, &medianValue);
+		max = min+valueRangeSize;
+		if(errorBoundMode==PSNR)
+		{
+			errorBoundMode = conf_params->errorBoundMode = ABS;
+			realPrecision = conf_params->absErrBound = computeABSErrBoundFromPSNR(psnr, (double)predThreshold, (double)valueRangeSize);
+			//printf("realPrecision=%lf\n", realPrecision);
+		}
+		else
+			realPrecision = getRealPrecision_float(valueRangeSize, errBoundMode, absErr_Bound, relBoundRatio, &status);		
+	} //else szRandomAccess == YES and errBoundMode == ABS; in this case, realPrecision = absErrBound;
 		
 	if(valueRangeSize <= realPrecision)
 	{
@@ -2597,10 +2599,15 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwRelBoundRa
 				valueRangeSize, medianValue, &tmpOutSize);
 			}
 			else
-				SZ_compress_args_float_NoCkRngeNoGzip_1D(&tmpByteData, oriData, r1, realPrecision, &tmpOutSize, valueRangeSize, medianValue);
+			{
+				if(szRandomAccess == SZ_NO_RANDOM_ACCESS)
+					SZ_compress_args_float_NoCkRngeNoGzip_1D(&tmpByteData, oriData, r1, realPrecision, &tmpOutSize, valueRangeSize, medianValue);
+				else //if(szRandomAccess == SZ_YES_RANDOM_ACCESS)
+					tmpByteData = SZ_compress_float_1D_MDQ_RA(oriData, r1, realPrecision, &tmpOutSize); 
+			}
 		}
 		else
-		if (r3==0)
+		if (r3==0) //2d data
 		{
 			if(errorBoundMode>=PW_REL)
 				SZ_compress_args_float_NoCkRngeNoGzip_2D_pwr(&tmpByteData, oriData, realPrecision, r2, r1, &tmpOutSize, min, max);
@@ -2608,12 +2615,17 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwRelBoundRa
 				SZ_compress_args_float_NoCkRngeNoGzip_2D(&tmpByteData, oriData, r2, r1, realPrecision, &tmpOutSize, valueRangeSize, medianValue);
 		}
 		else
-		if (r4==0)
+		if (r4==0) //3d data
 		{
 			if(errorBoundMode>=PW_REL)
 				SZ_compress_args_float_NoCkRngeNoGzip_3D_pwr(&tmpByteData, oriData, realPrecision, r3, r2, r1, &tmpOutSize, min, max);
 			else
-				SZ_compress_args_float_NoCkRngeNoGzip_3D(&tmpByteData, oriData, r3, r2, r1, realPrecision, &tmpOutSize, valueRangeSize, medianValue);
+			{
+				if(szRandomAccess == SZ_NO_RANDOM_ACCESS)
+					SZ_compress_args_float_NoCkRngeNoGzip_3D(&tmpByteData, oriData, r3, r2, r1, realPrecision, &tmpOutSize, valueRangeSize, medianValue);
+				else 
+					tmpByteData = SZ_compress_float_3D_MDQ_RA(oriData, r1, r2, r3, realPrecision, &tmpOutSize);
+			}
 		}
 		else
 		if (r5==0)

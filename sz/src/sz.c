@@ -62,6 +62,8 @@ char optQuantMode = 0; //opt Quantization (0: fixed ; 1: optimized)
 
 int szMode = SZ_BEST_COMPRESSION;
 
+int szRandomAccess = SZ_YES_RANDOM_ACCESS;
+
 int SZ_SIZE_TYPE = 8;
 
 SZ_VarSet* sz_varset = NULL;
