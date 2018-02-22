@@ -580,7 +580,7 @@ int computeBlockEdgeSize_3D(int segmentSize)
 //convert random-access version based bytes to output bytes
 int initRandomAccessBytes(unsigned char* raBytes)
 {
-	int k = 0;
+	int k = 0, i = 0;
 	for (i = 0; i < 3; i++)//3
 		raBytes[k++] = versionNumber[i];
 	int sameByte = 0x80; //indicating this is random-access mode
@@ -590,7 +590,7 @@ int initRandomAccessBytes(unsigned char* raBytes)
 	
 	raBytes[k++] = sameByte;
 	
-	convertSZParamsToBytes(conf_params, &(raBytes[k])));
+	convertSZParamsToBytes(conf_params, &(raBytes[k]));
 	k = k + MetaDataByteLength;	
 	
 	return k;
