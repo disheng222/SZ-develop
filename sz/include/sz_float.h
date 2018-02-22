@@ -22,6 +22,9 @@ unsigned int optimize_intervals_float_2D(float *oriData, size_t r1, size_t r2, d
 unsigned int optimize_intervals_float_3D(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision);
 unsigned int optimize_intervals_float_4D(float *oriData, size_t r1, size_t r2, size_t r3, size_t r4, double realPrecision);
 
+unsigned int optimize_intervals_and_compute_dense_position_float_1D(float *oriData, size_t dataLength, double realPrecision, float * dense_pos);
+
+
 TightDataPointStorageF* SZ_compress_float_1D_MDQ(float *oriData, 
 size_t dataLength, double realPrecision, float valueRangeSize, float medianValue_f);
 
@@ -44,7 +47,7 @@ unsigned short SZ_compress_float_1D_MDQ_RA_block_1D_pred(float * block_ori_data,
 unsigned short SZ_compress_float_3D_MDQ_RA_block_3D_pred(float * block_ori_data, float * mean, float dense_pos, size_t dim_0, size_t dim_1, size_t dim_2, int block_dim_0, int block_dim_1, int block_dim_2, double realPrecision, float * P0, float * P1, int * type, float * unpredictable_data);
 //unsigned short SZ_compress_float_3D_MDQ_RA_block_1D_pred(float * block_ori_data, float * mean, float dense_pos, size_t dim_0, size_t dim_1, size_t dim_2, int block_dim_0, int block_dim_1, int block_dim_2, double realPrecision, int * type, float * unpredictable_data);
 
-unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, float realPrecision, size_t * comp_size);
+unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double realPrecision, size_t * comp_size);
 unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size);
 
 TightDataPointStorageF* SZ_compress_float_4D_MDQ(float *oriData, size_t r1, size_t r2, size_t r3, size_t r4, double realPrecision, float valueRangeSize, float medianValue_f);

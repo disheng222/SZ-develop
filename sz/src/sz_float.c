@@ -68,6 +68,94 @@ unsigned int optimize_intervals_float_1D(float *oriData, size_t dataLength, doub
 	return powerOf2;
 }
 
+unsigned int optimize_intervals_and_compute_dense_position_float_1D(float *oriData, size_t dataLength, double realPrecision, float * dense_pos){
+
+	// compute mean
+	float mean = 0.0;
+	size_t mean_distance = (int) sqrt(dataLength);
+	size_t mean_sample_size = (int) (dataLength / mean_distance);
+	float * data_pos = oriData;
+	for(size_t i=0; i<mean_sample_size; i++){
+		mean += *data_pos;
+		data_pos += mean_distance;
+	}
+	if(mean_sample_size > 0) mean /= mean_sample_size;
+	size_t range = 64;
+	size_t radius = 32;
+	size_t * freq_intervals = (size_t *) malloc(range*sizeof(size_t));
+	memset(freq_intervals, 0, range*sizeof(size_t));
+	// compute optimized intervals
+	size_t i = 0, radiusIndex;
+	float pred_value = 0, pred_err;
+	size_t *intervals = (size_t*)malloc(maxRangeRadius*sizeof(size_t));
+	memset(intervals, 0, maxRangeRadius*sizeof(size_t));
+	size_t totalSampleSize = (dataLength - 1)/sampleDistance;
+
+	float mean_diff;
+	data_pos = oriData + 1;
+	for(size_t i=0; i<totalSampleSize; i++){
+		// optimize interval
+		pred_value = data_pos[-1];
+		pred_err = fabs(pred_value - oriData[i]);
+		radiusIndex = (unsigned long)((pred_err/realPrecision+1)/2);
+		if(radiusIndex>=maxRangeRadius)
+			radiusIndex = maxRangeRadius - 1;			
+		intervals[radiusIndex]++;
+		// collect frequency
+		mean_diff = data_pos[0] - mean;
+		radiusIndex = (size_t)(mean_diff/realPrecision) + radius;
+		if(radiusIndex <= 0){
+			freq_intervals[0] ++;
+		}
+		else if(radiusIndex >= range){
+			freq_intervals[range - 1] ++;
+		}
+		else{
+			freq_intervals[radiusIndex] ++;
+		}
+		data_pos += sampleDistance;
+	}
+
+	//compute the appropriate number
+	size_t targetCount = totalSampleSize*predThreshold*1.009;
+	size_t sum = 0;
+	for(i=0;i<maxRangeRadius;i++)
+	{
+		sum += intervals[i];
+		if(sum>targetCount)
+			break;
+	}
+	if(i>=maxRangeRadius)
+		i = maxRangeRadius-1;
+		
+	unsigned int accIntervals = 2*(i+1);
+	unsigned int powerOf2 = roundUpToPowerOf2(accIntervals);
+	
+	if(powerOf2<32)
+		powerOf2 = 32;
+	
+	free(intervals);
+	//printf("accIntervals=%d, powerOf2=%d\n", accIntervals, powerOf2);
+
+	// compute estimated dense position
+	size_t max_sum = 0;
+	size_t max_index = 0;
+	size_t tmp_sum;
+	size_t * freq_pos = freq_intervals;
+	for(size_t i=1; i<range; i++){
+		tmp_sum = freq_pos[0] + freq_pos[1];
+		if(tmp_sum > max_sum){
+			max_sum = tmp_sum;
+			max_index = i;
+		}
+		freq_pos ++;
+	}
+	dense_pos[0] = mean + realPrecision * (max_index - 1 - radius);
+	free(freq_intervals);
+	return powerOf2;
+
+}
+
 unsigned int optimize_intervals_float_2D(float *oriData, size_t r1, size_t r2, double realPrecision)
 {	
 	size_t i,j, index;
@@ -905,20 +993,23 @@ unsigned short SZ_compress_float_1D_MDQ_RA_block_1D_pred(float * block_ori_data,
     	NUM_BLOCKS = COUNT / 512;		\
     }									\
 
-unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, float realPrecision, size_t * comp_size){
+unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double realPrecision, size_t * comp_size){
 
 	unsigned int quantization_intervals;
-	// if(optQuantMode==1)
-	// {
-	quantization_intervals = optimize_intervals_float_1D(oriData, r1, realPrecision);
-	// printf("number of bins: %d\n", quantization_intervals);
-	quantization_intervals = 256;
-	updateQuantizationInfo(quantization_intervals);
-	intvCapacity = quantization_intervals - 2;
-	// }	
-	// else
-	// 	quantization_intervals = intvCapacity;
-	float dense_pos = realPrecision;
+	float dense_pos;
+	if(optQuantMode==1)
+	{
+		// quantization_intervals = optimize_intervals_float_1D(oriData, r1, realPrecision);
+		quantization_intervals = optimize_intervals_and_compute_dense_position_float_1D(oriData, r1, realPrecision, &dense_pos);
+		printf("number of bins: %d\nerror bound %.4f dense position %.4f\n", quantization_intervals, realPrecision, dense_pos);
+		// quantization_intervals = 65536;
+		updateQuantizationInfo(quantization_intervals);
+		intvCapacity = quantization_intervals - 2;
+	}	
+	else{
+		quantization_intervals = intvCapacity;
+		intvCapacity = quantization_intervals - 2;
+	}
 	int num_x;
 	int early_blockcount_x, late_blockcount_x, split_index_x;
 
@@ -967,8 +1058,8 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, float rea
 		// printf("done, mean %.2f, unpredictable_count %d, 1st unpredictable_data: %.2f\n", mean, unpredictable_count, unpredictable_data[0]);
 		// fflush(stdout);
 	}
-	printf("Block wise compression end, unpredictable num %d, num_elements %ld, max unpred count %d\n", total_unpred, num_elements, max_unpred_count);
-	fflush(stdout);
+	// printf("Block wise compression end, unpredictable num %d, num_elements %ld, max unpred count %d\n", total_unpred, num_elements, max_unpred_count);
+	// fflush(stdout);
 
 	// huffman encode
 	size_t nodeCount = 0;
@@ -978,9 +1069,13 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, float rea
 	nodeCount = nodeCount*2-1;
 	unsigned char *treeBytes;
 	int treeByteSize = convert_HuffTree_to_bytes_anyStates(nodeCount, &treeBytes);
-	// total size 									real precision		intervals	nodeCount		huffman 	 	block index 						unpredicatable count						mean 					 	unpred size 				elements
-	unsigned char * result = (unsigned char *) malloc(sizeof(double) + sizeof(int) + sizeof(int) + treeByteSize + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(float) + total_unpred * sizeof(float) + num_elements * sizeof(int));
+
+	int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	// total size 										metadata		real precision		intervals	nodeCount		huffman 	 	block index 						unpredicatable count						mean 					 	unpred size 				elements
+	unsigned char * result = (unsigned char *) malloc(meta_data_offset + sizeof(double) + sizeof(int) + sizeof(int) + treeByteSize + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(float) + total_unpred * sizeof(float) + num_elements * sizeof(int));
 	unsigned char * result_pos = result;
+	initRandomAccessBytes(result_pos);
+	result_pos += meta_data_offset;
 	size_t enCodeSize = 0;
 
 	doubleToBytes(result_pos, realPrecision);
@@ -1007,8 +1102,8 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, float rea
 	result_pos += num_blocks * sizeof(unsigned short);	// skip unpredictable count
 	memcpy(result_pos, mean, num_blocks * sizeof(float));
 	result_pos += num_blocks * sizeof(float);			// skip mean
-	printf("Block wise encode start\n");
-	printf("compress offset to start: %ld\n", result_pos - result);
+	// printf("Block wise encode start\n");
+	// printf("compress offset to start: %ld\n", result_pos - result);
 	fflush(stdout);
 	float * unpredictable_data_pos = result_unpredictable_data->array;
 	for(int i=0; i<num_blocks; i++){
@@ -1048,8 +1143,6 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, float rea
 	free(unpredictable_count);
 	free(result_type);
 	SZ_ReleaseHuffman();
-	printf("try to free DFA\n");
-	fflush(stdout);
 	free_DFA(result_unpredictable_data);
 	*comp_size = totalEncodeSize;
 	return result;
@@ -1551,9 +1644,13 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	unsigned char *treeBytes;
 	unsigned int treeByteSize = convert_HuffTree_to_bytes_anyStates(nodeCount, &treeBytes);
 
-	// total size 										huffman 	nodeCount 	block index 			mean 			unpred count 	unpred size 						elements
-	unsigned char * result = (unsigned char *) malloc(sizeof(double) + sizeof(int) + sizeof(int) + treeByteSize + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(float) + total_unpred * sizeof(float) + num_elements * sizeof(int));
+	int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	// total size 										metadata		real precision		intervals	nodeCount		huffman 	 	block index 						unpredicatable count						mean 					 	unpred size 				elements
+	unsigned char * result = (unsigned char *) malloc(meta_data_offset + sizeof(double) + sizeof(int) + sizeof(int) + treeByteSize + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(float) + total_unpred * sizeof(float) + num_elements * sizeof(int));
 	unsigned char * result_pos = result;
+	initRandomAccessBytes(result_pos);
+	result_pos += meta_data_offset;
+
 	size_t enCodeSize = 0;
 
 	doubleToBytes(result_pos, realPrecision);
