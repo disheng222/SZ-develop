@@ -576,3 +576,19 @@ int computeBlockEdgeSize_3D(int segmentSize)
 	return i;	
 	//return (int)(pow(segmentSize, 1.0/3)+1);
 }
+
+//convert random-access version based bytes to output bytes
+int initRandomAccessBytes(unsigned char* raBytes)
+{
+	int k = 0;
+	for (i = 0; i < 3; i++)//3
+		raBytes[k++] = versionNumber[i];
+	int sameByte = 0x80; //indicating this is random-access mode
+	if(SZ_SIZE_TYPE==8)
+		sameByte = (unsigned char) (sameByte | 0x40); // 01000000, the 6th bit
+	sameByte = sameByte | (szMode << 1);
+	
+	raBytes[k++] = sameByte;
+	
+	return k;
+}

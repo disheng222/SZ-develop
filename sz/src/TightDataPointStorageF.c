@@ -517,7 +517,7 @@ void convertTDPStoBytes_float_reserve(TightDataPointStorageF* tdps, unsigned cha
 	}	
 }
 
-//convert TightDataPointStorageD to bytes...
+//convert TightDataPointStorageF to bytes...
 void convertTDPStoFlatBytes_float(TightDataPointStorageF *tdps, unsigned char** bytes, size_t *size)
 {
 	size_t i, k = 0; 

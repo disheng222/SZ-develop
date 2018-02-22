@@ -76,6 +76,8 @@ int getPredictionCoefficients(int layers, int dimension, int **coeff_array, int 
 int computeBlockEdgeSize_3D(int segmentSize);
 int computeBlockEdgeSize_2D(int segmentSize);
 
+int initRandomAccessBytes(unsigned char* raBytes);
+
 #ifdef __cplusplus
 }
 #endif
