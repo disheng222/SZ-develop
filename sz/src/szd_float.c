@@ -576,6 +576,8 @@ void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * c
 	*data = (float*)malloc(sizeof(float)*num_elements);
 
 	unsigned char * comp_data_pos = comp_data;
+	int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	comp_data_pos += meta_data_offset;
 
 	double realPrecision = bytesToDouble(comp_data);
 	comp_data_pos += 8;
@@ -917,6 +919,8 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 	*data = (float*)malloc(sizeof(float)*num_elements);
 	
 	unsigned char * comp_data_pos = comp_data;
+	int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	comp_data_pos += meta_data_offset;
 
 	double realPrecision = bytesToDouble(comp_data);
 	comp_data_pos += 8;
