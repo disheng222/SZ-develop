@@ -56,7 +56,7 @@ int intvCapacity = 0;
 int intvRadius = 0;
 
 int layers = 1;
-float predThreshold = 0.98;
+float predThreshold = 0.99;
 int sampleDistance = 10;
 char optQuantMode = 0; //opt Quantization (0: fixed ; 1: optimized)
 

@@ -126,6 +126,11 @@ int new_TightDataPointStorageF_fromFlatBytes(TightDataPointStorageF **this, unsi
 		return errorBoundMode;
 	}			
 
+	unsigned char dsLengthBytes[8];
+	for (i = 0; i < SZ_SIZE_TYPE; i++)
+		dsLengthBytes[i] = flatBytes[index++];
+	(*this)->dataSeriesLength = bytesToSize(dsLengthBytes);// 4 or 8		
+
 	int rtype_ = sameRByte & 0x08;		//=00001000
 	unsigned char byteBuf[8];
 
