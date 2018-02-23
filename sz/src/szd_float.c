@@ -620,12 +620,12 @@ void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * c
 
 	int tree_size = bytesToInt_bigEndian(comp_data_pos);
 	comp_data_pos += 4;
-	size_t nodeCount = bytesToInt_bigEndian(comp_data_pos);
-	int stateNum = nodeCount/2;
-	SZ_Reset((int)nodeCount, stateNum);
+	allNodes = bytesToInt_bigEndian(comp_data_pos);
+	stateNum = allNodes/2;
+	SZ_Reset(allNodes, stateNum);
 	// printf("Reconstruct huffman tree with node count %ld\n", nodeCount);
 	// fflush(stdout);
-	node root = reconstruct_HuffTree_from_bytes_anyStates(comp_data_pos+4, nodeCount);
+	node root = reconstruct_HuffTree_from_bytes_anyStates(comp_data_pos+4, allNodes);
 
 	comp_data_pos += 4 + tree_size;
 	unsigned short * block_pos = (unsigned short *) comp_data_pos;
@@ -691,7 +691,6 @@ void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * c
 	}
 	free(type);
 	free(unpredictable_data);
-
 }
 
 
@@ -964,12 +963,12 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 
 	int tree_size = bytesToInt_bigEndian(comp_data_pos);
 	comp_data_pos += 4;
-	size_t nodeCount = bytesToInt_bigEndian(comp_data_pos);
-	int stateNum = nodeCount/2;
-	SZ_Reset((int)nodeCount, stateNum);
+	allNodes = bytesToInt_bigEndian(comp_data_pos);
+	stateNum = allNodes/2;
+	SZ_Reset(allNodes, stateNum);
 	// printf("Reconstruct huffman tree with node count %ld\n", nodeCount);
 	// fflush(stdout);
-	node root = reconstruct_HuffTree_from_bytes_anyStates(comp_data_pos+4, nodeCount);
+	node root = reconstruct_HuffTree_from_bytes_anyStates(comp_data_pos+4, allNodes);
 
 	comp_data_pos += 4 + tree_size;
 	unsigned short * block_pos = (unsigned short *) comp_data_pos;
