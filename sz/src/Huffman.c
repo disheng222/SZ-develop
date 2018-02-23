@@ -510,14 +510,10 @@ node reconstruct_HuffTree_from_bytes_anyStates(unsigned char* bytes, int nodeCou
 	//printf("nodeCount=%d\n", nodeCount);
 	if(nodeCount<=256)
 	{
-		unsigned char* L = (unsigned char*)malloc(nodeCount*sizeof(unsigned char));
-		memset(L, 0, nodeCount*sizeof(unsigned char));
-		unsigned char* R = (unsigned char*)malloc(nodeCount*sizeof(unsigned char));
-		memset(R, 0, nodeCount*sizeof(unsigned char));
-		unsigned int* C = (unsigned int*)malloc(nodeCount*sizeof(unsigned int));
-		memset(C, 0, nodeCount*sizeof(unsigned int));
-		unsigned char* t = (unsigned char*)malloc(nodeCount*sizeof(unsigned char));
-		memset(t, 0, nodeCount*sizeof(unsigned char));
+		unsigned char* L = (unsigned char*)calloc(nodeCount, sizeof(unsigned char));
+		unsigned char* R = (unsigned char*)calloc(nodeCount, sizeof(unsigned char));
+		unsigned int* C = (unsigned int*)calloc(nodeCount, sizeof(unsigned int));
+		unsigned char* t = (unsigned char*)calloc(nodeCount, sizeof(unsigned char));
 		unsigned char cmpSysEndianType = bytes[0];
 		if(cmpSysEndianType!=(unsigned char)sysEndianType)
 		{
@@ -547,14 +543,10 @@ node reconstruct_HuffTree_from_bytes_anyStates(unsigned char* bytes, int nodeCou
 	}
 	else if(nodeCount<=65536)
 	{
-		unsigned short* L = (unsigned short*)malloc(nodeCount*sizeof(unsigned short));
-		memset(L, 0, nodeCount*sizeof(unsigned short));
-		unsigned short* R = (unsigned short*)malloc(nodeCount*sizeof(unsigned short));
-		memset(R, 0, nodeCount*sizeof(unsigned short));
-		unsigned int* C = (unsigned int*)malloc(nodeCount*sizeof(unsigned int));	
-		memset(C, 0, nodeCount*sizeof(unsigned int));		
-		unsigned char* t = (unsigned char*)malloc(nodeCount*sizeof(unsigned char));
-		memset(t, 0, nodeCount*sizeof(unsigned char));	
+		unsigned short* L = (unsigned short*)calloc(nodeCount, sizeof(unsigned short));
+		unsigned short* R = (unsigned short*)calloc(nodeCount, sizeof(unsigned short));
+		unsigned int* C = (unsigned int*)calloc(nodeCount, sizeof(unsigned int));	
+		unsigned char* t = (unsigned char*)calloc(nodeCount, sizeof(unsigned char));
 				
 		unsigned char cmpSysEndianType = bytes[0];	
 		if(cmpSysEndianType!=(unsigned char)sysEndianType)
@@ -588,14 +580,10 @@ node reconstruct_HuffTree_from_bytes_anyStates(unsigned char* bytes, int nodeCou
 	}
 	else //nodeCount>65536
 	{
-		unsigned int* L = (unsigned int*)malloc(nodeCount*sizeof(unsigned int));
-		memset(L, 0, nodeCount*sizeof(unsigned int));
-		unsigned int* R = (unsigned int*)malloc(nodeCount*sizeof(unsigned int));
-		memset(R, 0, nodeCount*sizeof(unsigned int));
-		unsigned int* C = (unsigned int*)malloc(nodeCount*sizeof(unsigned int));	
-		memset(C, 0, nodeCount*sizeof(unsigned int));
-		unsigned char* t = (unsigned char*)malloc(nodeCount*sizeof(unsigned char));
-		memset(t, 0, nodeCount*sizeof(unsigned char));
+		unsigned int* L = (unsigned int*)calloc(nodeCount, sizeof(unsigned int));
+		unsigned int* R = (unsigned int*)calloc(nodeCount, sizeof(unsigned int));
+		unsigned int* C = (unsigned int*)calloc(nodeCount, sizeof(unsigned int));	
+		unsigned char* t = (unsigned char*)calloc(nodeCount, sizeof(unsigned char));
 		unsigned char cmpSysEndianType = bytes[0];
 		if(cmpSysEndianType!=(unsigned char)sysEndianType)
 		{

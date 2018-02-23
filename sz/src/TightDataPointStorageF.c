@@ -46,6 +46,9 @@ void new_TightDataPointStorageF_Empty(TightDataPointStorageF **this)
 	(*this)->segment_size = 0;
 	(*this)->pwrErrBoundBytes = NULL;
 	(*this)->pwrErrBoundBytes_size = 0;	
+	
+	(*this)->raBytes = NULL;
+	(*this)->raBytes_size = 0;
 }
 
 int new_TightDataPointStorageF_fromFlatBytes(TightDataPointStorageF **this, unsigned char* flatBytes, size_t flatBytesLength)
@@ -70,6 +73,7 @@ int new_TightDataPointStorageF_fromFlatBytes(TightDataPointStorageF **this, unsi
 	(*this)->isLossless = (sameRByte & 0x10)>>4;
 	int isPW_REL = (sameRByte & 0x20)>>5;
 	SZ_SIZE_TYPE = ((sameRByte & 0x40)>>6)==1?8:4;
+	
 	int errorBoundMode = ABS;
 	if(isPW_REL)
 	{
@@ -83,19 +87,25 @@ int new_TightDataPointStorageF_fromFlatBytes(TightDataPointStorageF **this, unsi
 		free(conf_params);
 	conf_params = params;
 	index += MetaDataByteLength;
-	
-	unsigned char dsLengthBytes[8];
-	for (i = 0; i < SZ_SIZE_TYPE; i++)
-		dsLengthBytes[i] = flatBytes[index++];
-	(*this)->dataSeriesLength = bytesToSize(dsLengthBytes);// 4 or 8	
+
+	int isRandomAccess = (sameRByte >> 7) & 0x01;
 	
 	if((*this)->isLossless==1)
 	{
 		//(*this)->exactMidBytes = flatBytes+8;
+		unsigned char dsLengthBytes[8];
+		for (i = 0; i < SZ_SIZE_TYPE; i++)
+			dsLengthBytes[i] = flatBytes[index++];
+		(*this)->dataSeriesLength = bytesToSize(dsLengthBytes);// 4 or 8		
 		return errorBoundMode;
 	}
 	else if(same==1)
 	{
+		unsigned char dsLengthBytes[8];
+		for (i = 0; i < SZ_SIZE_TYPE; i++)
+			dsLengthBytes[i] = flatBytes[index++];
+		(*this)->dataSeriesLength = bytesToSize(dsLengthBytes);// 4 or 8		
+				
 		(*this)->allSameData = 1;
 		size_t exactMidBytesLength = sizeof(float); //flatBytesLength - 3 - 1 - MetaDataByteLength - SZ_SIZE_TYPE;
 		if(exactMidBytesLength>0)
@@ -108,6 +118,13 @@ int new_TightDataPointStorageF_fromFlatBytes(TightDataPointStorageF **this, unsi
 	}
 	else
 		(*this)->allSameData = 0;
+		
+	if(isRandomAccess == 1)
+	{
+		(*this)->raBytes_size = flatBytesLength - 3 - 1 - MetaDataByteLength;
+		(*this)->raBytes = &(flatBytes[index]);
+		return errorBoundMode;
+	}			
 
 	int rtype_ = sameRByte & 0x08;		//=00001000
 	unsigned char byteBuf[8];
@@ -713,5 +730,7 @@ void free_TightDataPointStorageF(TightDataPointStorageF *tdps)
 		free(tdps->residualMidBits);
 	if(tdps->pwrErrBoundBytes!=NULL)
 		free(tdps->pwrErrBoundBytes);
+	//if(tdps->raBytes!=NULL)
+	//	free(tdps->raBytes);
 	free(tdps);
 }

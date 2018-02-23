@@ -64,7 +64,10 @@ int SZ_decompress_args_float(float** newData, size_t r5, size_t r4, size_t r3, s
 	else
 		szTmpBytes = cmpBytes;
 	//TODO: convert szTmpBytes to data array.
-	TightDataPointStorageF* tdps;
+	TightDataPointStorageF* tdps = NULL;
+	//int isConstant = 0, isRandomAccess = 0; 
+	//isSameOrRandomAccessMode(szTmpBytes, &isConstant, &isRandomAccess);
+	
 	int errBoundMode = new_TightDataPointStorageF_fromFlatBytes(&tdps, szTmpBytes, tmpSize);
 	
 	//writeByteData(tdps->typeArray, tdps->typeArray_size, "decompress-typebytes.tbt");
@@ -84,22 +87,49 @@ int SZ_decompress_args_float(float** newData, size_t r5, size_t r4, size_t r3, s
 				(*newData)[i] = bytesToFloat(p);
 		}		
 	}
-	else if (dim == 1)
-		getSnapshotData_float_1D(newData,r1,tdps, errBoundMode);
-	else
-	if (dim == 2)
-		getSnapshotData_float_2D(newData,r2,r1,tdps, errBoundMode);
-	else
-	if (dim == 3)
-		getSnapshotData_float_3D(newData,r3,r2,r1,tdps, errBoundMode);
-	else
-	if (dim == 4)
-		getSnapshotData_float_4D(newData,r4,r3,r2,r1,tdps, errBoundMode);
+	else if (tdps->allSameData) {
+		float value = bytesToFloat(tdps->exactMidBytes);
+		*newData = (float*)malloc(sizeof(float)*dataLength);
+		for (i = 0; i < dataLength; i++)
+			(*newData)[i] = value;
+	}
 	else
 	{
-		printf("Error: currently support only at most 4 dimensions!\n");
-		status = SZ_DERR;
+		if(tdps->raBytes_size > 0) //random access mode
+		{
+			if (dim == 1)
+				decompressDataSeries_float_1D_RA(newData, r1, tdps->raBytes);
+			else if(dim == 2)
+				;
+			else if(dim == 3)
+				decompressDataSeries_float_3D_RA(newData, r1, r2, r3, tdps->raBytes);
+			else if(dim == 4)
+				;
+			else
+			{
+				printf("Error: currently support only at most 4 dimensions!\n");
+				status = SZ_DERR;
+			}	
+		}
+		else
+		{
+			if (dim == 1)
+				getSnapshotData_float_1D(newData,r1,tdps, errBoundMode);
+			else if (dim == 2)
+				getSnapshotData_float_2D(newData,r2,r1,tdps, errBoundMode);
+			else if (dim == 3)
+				getSnapshotData_float_3D(newData,r3,r2,r1,tdps, errBoundMode);
+			else if (dim == 4)
+				getSnapshotData_float_4D(newData,r4,r3,r2,r1,tdps, errBoundMode);
+			else
+			{
+				printf("Error: currently support only at most 4 dimensions!\n");
+				status = SZ_DERR;
+			}			
+		}
 	}
+	
+
 	free_TightDataPointStorageF(tdps);
 	if(szMode!=SZ_BEST_SPEED && cmpSize!=8+MetaDataByteLength+SZ_SIZE_TYPE)
 		free(szTmpBytes);
@@ -576,8 +606,8 @@ void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * c
 	*data = (float*)malloc(sizeof(float)*num_elements);
 
 	unsigned char * comp_data_pos = comp_data;
-	int meta_data_offset = 3 + 1 + MetaDataByteLength;
-	comp_data_pos += meta_data_offset;
+	//int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	//comp_data_pos += meta_data_offset;
 
 	double realPrecision = bytesToDouble(comp_data_pos);
 	comp_data_pos += 8;
@@ -591,6 +621,8 @@ void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * c
 	int tree_size = bytesToInt_bigEndian(comp_data_pos);
 	comp_data_pos += 4;
 	size_t nodeCount = bytesToInt_bigEndian(comp_data_pos);
+	int stateNum = nodeCount/2;
+	SZ_Reset((int)nodeCount, stateNum);
 	// printf("Reconstruct huffman tree with node count %ld\n", nodeCount);
 	// fflush(stdout);
 	node root = reconstruct_HuffTree_from_bytes_anyStates(comp_data_pos+4, nodeCount);
@@ -893,7 +925,6 @@ unsigned short decompressDataSeries_float_3D_RA_block_3D_pred(float * data, floa
     }									\
 
 void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data){
-
 	// calculate block dims
 	int num_x, num_y, num_z;
 	COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x);
@@ -919,8 +950,8 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 	*data = (float*)malloc(sizeof(float)*num_elements);
 	
 	unsigned char * comp_data_pos = comp_data;
-	int meta_data_offset = 3 + 1 + MetaDataByteLength;
-	comp_data_pos += meta_data_offset;
+	//int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	//comp_data_pos += meta_data_offset;
 
 	double realPrecision = bytesToDouble(comp_data_pos);
 	comp_data_pos += 8;
@@ -934,6 +965,8 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 	int tree_size = bytesToInt_bigEndian(comp_data_pos);
 	comp_data_pos += 4;
 	size_t nodeCount = bytesToInt_bigEndian(comp_data_pos);
+	int stateNum = nodeCount/2;
+	SZ_Reset((int)nodeCount, stateNum);
 	// printf("Reconstruct huffman tree with node count %ld\n", nodeCount);
 	// fflush(stdout);
 	node root = reconstruct_HuffTree_from_bytes_anyStates(comp_data_pos+4, nodeCount);
@@ -2111,208 +2144,181 @@ void decompressDataSeries_float_4D(float** data, size_t r1, size_t r2, size_t r3
 
 void getSnapshotData_float_1D(float** data, size_t dataSeriesLength, TightDataPointStorageF* tdps, int errBoundMode)
 {	
-	SZ_Reset();
+	SZ_Reset(allNodes, stateNum);
 	size_t i;
 
-	if (tdps->allSameData) {
-		float value = bytesToFloat(tdps->exactMidBytes);
-		*data = (float*)malloc(sizeof(float)*dataSeriesLength);
-		for (i = 0; i < dataSeriesLength; i++)
-			(*data)[i] = value;
-	} else {
-		if (tdps->rtypeArray == NULL) {
-			if(errBoundMode < PW_REL)
-				decompressDataSeries_float_1D(data, dataSeriesLength, tdps);
-			else 
-			{
-				//decompressDataSeries_float_1D_pwr(data, dataSeriesLength, tdps);
-				decompressDataSeries_float_1D_pwrgroup(data, dataSeriesLength, tdps);
-			}
-			return;
-		} else {
-			*data = (float*)malloc(sizeof(float)*dataSeriesLength);
-			// insert the reserved values
-			//int[] rtypes = TypeManager.convertByteArray2IntArray_fast_1b(
-			//		dataSeriesLength, rtypeArray);
-			int* rtypes;
-			int validLength = computeBitNumRequired(dataSeriesLength);
-			decompressBitArraybySimpleLZ77(&rtypes, tdps->rtypeArray, tdps->rtypeArray_size, dataSeriesLength, validLength);
-			size_t count = 0;
-			for (i = 0; i < dataSeriesLength; i++) {
-				if (rtypes[i] == 1)
-					(*data)[i] = tdps->reservedValue;
-				else
-					count++;
-			}
-			// get the decompressed data
-			float* decmpData;
-			if(errBoundMode < PW_REL)
-				decompressDataSeries_float_1D(&decmpData, dataSeriesLength, tdps);
-			else 
-				decompressDataSeries_float_1D_pwr(&decmpData, dataSeriesLength, tdps);
-			// insert the decompressed data
-			size_t k = 0;
-			for (i = 0; i < dataSeriesLength; i++) {
-				if (rtypes[i] == 0) {
-					(*data)[i] = decmpData[k++];
-				}
-			}
-			free(decmpData);
-			free(rtypes);
+	if (tdps->rtypeArray == NULL) {
+		if(errBoundMode < PW_REL)
+			decompressDataSeries_float_1D(data, dataSeriesLength, tdps);
+		else 
+		{
+			//decompressDataSeries_float_1D_pwr(data, dataSeriesLength, tdps);
+			decompressDataSeries_float_1D_pwrgroup(data, dataSeriesLength, tdps);
 		}
+		return;
+	} else {
+		*data = (float*)malloc(sizeof(float)*dataSeriesLength);
+		// insert the reserved values
+		//int[] rtypes = TypeManager.convertByteArray2IntArray_fast_1b(
+		//		dataSeriesLength, rtypeArray);
+		int* rtypes;
+		int validLength = computeBitNumRequired(dataSeriesLength);
+		decompressBitArraybySimpleLZ77(&rtypes, tdps->rtypeArray, tdps->rtypeArray_size, dataSeriesLength, validLength);
+		size_t count = 0;
+		for (i = 0; i < dataSeriesLength; i++) {
+			if (rtypes[i] == 1)
+				(*data)[i] = tdps->reservedValue;
+			else
+				count++;
+		}
+		// get the decompressed data
+		float* decmpData;
+		if(errBoundMode < PW_REL)
+			decompressDataSeries_float_1D(&decmpData, dataSeriesLength, tdps);
+		else 
+			decompressDataSeries_float_1D_pwr(&decmpData, dataSeriesLength, tdps);
+		// insert the decompressed data
+		size_t k = 0;
+		for (i = 0; i < dataSeriesLength; i++) {
+			if (rtypes[i] == 0) {
+				(*data)[i] = decmpData[k++];
+			}
+		}
+		free(decmpData);
+		free(rtypes);
 	}
 }
 
 void getSnapshotData_float_2D(float** data, size_t r1, size_t r2, TightDataPointStorageF* tdps, int errBoundMode) 
 {
-	SZ_Reset();
+	SZ_Reset(allNodes, stateNum);
 	size_t i;
 	size_t dataSeriesLength = r1*r2;
-	if (tdps->allSameData) {
-		float value = bytesToFloat(tdps->exactMidBytes);
-		*data = (float*)malloc(sizeof(float)*dataSeriesLength);
-		for (i = 0; i < dataSeriesLength; i++)
-			(*data)[i] = value;
+	if (tdps->rtypeArray == NULL) {
+		if(errBoundMode < PW_REL)
+			decompressDataSeries_float_2D(data, r1, r2, tdps);
+		else 
+			decompressDataSeries_float_2D_pwr(data, r1, r2, tdps);
+		return;
 	} else {
-		if (tdps->rtypeArray == NULL) {
-			if(errBoundMode < PW_REL)
-				decompressDataSeries_float_2D(data, r1, r2, tdps);
-			else 
-				decompressDataSeries_float_2D_pwr(data, r1, r2, tdps);
-			return;
-		} else {
-			*data = (float*)malloc(sizeof(float)*dataSeriesLength);
-			// insert the reserved values
-			//int[] rtypes = TypeManager.convertByteArray2IntArray_fast_1b(
-			//		dataSeriesLength, rtypeArray);
-			int* rtypes;
-			int validLength = computeBitNumRequired(dataSeriesLength);
-			decompressBitArraybySimpleLZ77(&rtypes, tdps->rtypeArray, tdps->rtypeArray_size, dataSeriesLength, validLength);
-			size_t count = 0;
-			for (i = 0; i < dataSeriesLength; i++) {
-				if (rtypes[i] == 1)
-					(*data)[i] = tdps->reservedValue;
-				else
-					count++;
-			}
-			// get the decompressed data
-			float* decmpData;
-			if(errBoundMode < PW_REL)
-				decompressDataSeries_float_2D(&decmpData, r1, r2, tdps);
-			else 
-				decompressDataSeries_float_2D_pwr(&decmpData, r1, r2, tdps);
-			// insert the decompressed data
-			size_t k = 0;
-			for (i = 0; i < dataSeriesLength; i++) {
-				if (rtypes[i] == 0) {
-					(*data)[i] = decmpData[k++];
-				}
-			}
-			free(decmpData);
-			free(rtypes);
+		*data = (float*)malloc(sizeof(float)*dataSeriesLength);
+		// insert the reserved values
+		//int[] rtypes = TypeManager.convertByteArray2IntArray_fast_1b(
+		//		dataSeriesLength, rtypeArray);
+		int* rtypes;
+		int validLength = computeBitNumRequired(dataSeriesLength);
+		decompressBitArraybySimpleLZ77(&rtypes, tdps->rtypeArray, tdps->rtypeArray_size, dataSeriesLength, validLength);
+		size_t count = 0;
+		for (i = 0; i < dataSeriesLength; i++) {
+			if (rtypes[i] == 1)
+				(*data)[i] = tdps->reservedValue;
+			else
+				count++;
 		}
+		// get the decompressed data
+		float* decmpData;
+		if(errBoundMode < PW_REL)
+			decompressDataSeries_float_2D(&decmpData, r1, r2, tdps);
+		else 
+			decompressDataSeries_float_2D_pwr(&decmpData, r1, r2, tdps);
+		// insert the decompressed data
+		size_t k = 0;
+		for (i = 0; i < dataSeriesLength; i++) {
+			if (rtypes[i] == 0) {
+				(*data)[i] = decmpData[k++];
+			}
+		}
+		free(decmpData);
+		free(rtypes);
 	}
 }
 
 void getSnapshotData_float_3D(float** data, size_t r1, size_t r2, size_t r3, TightDataPointStorageF* tdps, int errBoundMode)
 {
-	SZ_Reset();
+	SZ_Reset(allNodes, stateNum);
 	size_t i;
 	size_t dataSeriesLength = r1*r2*r3;
-	if (tdps->allSameData) {
-		float value = bytesToFloat(tdps->exactMidBytes);
-		*data = (float*)malloc(sizeof(float)*dataSeriesLength);
-		for (i = 0; i < dataSeriesLength; i++)
-			(*data)[i] = value;
+	if (tdps->rtypeArray == NULL) {
+		if(errBoundMode < PW_REL)
+			decompressDataSeries_float_3D(data, r1, r2, r3, tdps);
+		else 
+			decompressDataSeries_float_3D_pwr(data, r1, r2, r3, tdps);
+		return;
 	} else {
-		if (tdps->rtypeArray == NULL) {
-			if(errBoundMode < PW_REL)
-				decompressDataSeries_float_3D(data, r1, r2, r3, tdps);
-			else 
-				decompressDataSeries_float_3D_pwr(data, r1, r2, r3, tdps);
-			return;
-		} else {
-			*data = (float*)malloc(sizeof(float)*dataSeriesLength);
-			// insert the reserved values
-			//int[] rtypes = TypeManager.convertByteArray2IntArray_fast_1b(
-			//		dataSeriesLength, rtypeArray);
-			int* rtypes;
-			int validLength = computeBitNumRequired(dataSeriesLength);
-			decompressBitArraybySimpleLZ77(&rtypes, tdps->rtypeArray, tdps->rtypeArray_size, dataSeriesLength, validLength);
-			size_t count = 0;
-			for (i = 0; i < dataSeriesLength; i++) {
-				if (rtypes[i] == 1)
-					(*data)[i] = tdps->reservedValue;
-				else
-					count++;
-			}
-			// get the decompressed data
-			float* decmpData;
-			if(errBoundMode < PW_REL)
-				decompressDataSeries_float_3D(&decmpData, r1, r2, r3, tdps);
-			else 
-				decompressDataSeries_float_3D_pwr(&decmpData, r1, r2, r3, tdps);
-			// insert the decompressed data
-			size_t k = 0;
-			for (i = 0; i < dataSeriesLength; i++) {
-				if (rtypes[i] == 0) {
-					(*data)[i] = decmpData[k++];
-				}
-			}
-			free(decmpData);
-			free(rtypes);
+		*data = (float*)malloc(sizeof(float)*dataSeriesLength);
+		// insert the reserved values
+		//int[] rtypes = TypeManager.convertByteArray2IntArray_fast_1b(
+		//		dataSeriesLength, rtypeArray);
+		int* rtypes;
+		int validLength = computeBitNumRequired(dataSeriesLength);
+		decompressBitArraybySimpleLZ77(&rtypes, tdps->rtypeArray, tdps->rtypeArray_size, dataSeriesLength, validLength);
+		size_t count = 0;
+		for (i = 0; i < dataSeriesLength; i++) {
+			if (rtypes[i] == 1)
+				(*data)[i] = tdps->reservedValue;
+			else
+				count++;
 		}
+		// get the decompressed data
+		float* decmpData;
+		if(errBoundMode < PW_REL)
+			decompressDataSeries_float_3D(&decmpData, r1, r2, r3, tdps);
+		else 
+			decompressDataSeries_float_3D_pwr(&decmpData, r1, r2, r3, tdps);
+		// insert the decompressed data
+		size_t k = 0;
+		for (i = 0; i < dataSeriesLength; i++) {
+			if (rtypes[i] == 0) {
+				(*data)[i] = decmpData[k++];
+			}
+		}
+		free(decmpData);
+		free(rtypes);
 	}
 }
 
 void getSnapshotData_float_4D(float** data, size_t r1, size_t r2, size_t r3, size_t r4, TightDataPointStorageF* tdps, int errBoundMode)
 {
-	SZ_Reset();
+	SZ_Reset(allNodes, stateNum);
 	size_t i;
 	size_t dataSeriesLength = r1*r2*r3*r4;
-	if (tdps->allSameData) {
-		float value = bytesToFloat(tdps->exactMidBytes);
-		*data = (float*)malloc(sizeof(float)*dataSeriesLength);
-		for (i = 0; i < dataSeriesLength; i++)
-			(*data)[i] = value;
+
+	if (tdps->rtypeArray == NULL) {
+		if(errBoundMode < PW_REL)
+			decompressDataSeries_float_4D(data, r1, r2, r3, r4, tdps);
+		else
+			decompressDataSeries_float_3D_pwr(data, r1*r2, r3, r4, tdps);
+			//ToDO
+			//decompressDataSeries_float_4D_pwr(data, r1, r2, r3, r4, tdps);
+		return;
 	} else {
-		if (tdps->rtypeArray == NULL) {
-			if(errBoundMode < PW_REL)
-				decompressDataSeries_float_4D(data, r1, r2, r3, r4, tdps);
+		*data = (float*)malloc(sizeof(float)*dataSeriesLength);
+		int* rtypes;
+		int validLength = computeBitNumRequired(dataSeriesLength);
+		decompressBitArraybySimpleLZ77(&rtypes, tdps->rtypeArray, tdps->rtypeArray_size, dataSeriesLength, validLength);
+		size_t count = 0;
+		for (i = 0; i < dataSeriesLength; i++) {
+			if (rtypes[i] == 1)
+				(*data)[i] = tdps->reservedValue;
 			else
-				decompressDataSeries_float_3D_pwr(data, r1*r2, r3, r4, tdps);
-				//ToDO
-				//decompressDataSeries_float_4D_pwr(data, r1, r2, r3, r4, tdps);
-			return;
-		} else {
-			*data = (float*)malloc(sizeof(float)*dataSeriesLength);
-			int* rtypes;
-			int validLength = computeBitNumRequired(dataSeriesLength);
-			decompressBitArraybySimpleLZ77(&rtypes, tdps->rtypeArray, tdps->rtypeArray_size, dataSeriesLength, validLength);
-			size_t count = 0;
-			for (i = 0; i < dataSeriesLength; i++) {
-				if (rtypes[i] == 1)
-					(*data)[i] = tdps->reservedValue;
-				else
-					count++;
-			}
-			// get the decompressed data
-			float* decmpData;
-			if(errBoundMode < PW_REL)
-				decompressDataSeries_float_4D(&decmpData, r1, r2, r3, r4, tdps);
-			else
-				decompressDataSeries_float_3D_pwr(&decmpData, r1*r2, r3, r4, tdps);
-				//ToDO
-				//decompressDataSeries_float_4D_pwr(&decompData, r1, r2, r3, r4, tdps);
-			// insert the decompressed data
-			size_t k = 0;
-			for (i = 0; i < dataSeriesLength; i++) {
-				if (rtypes[i] == 0) {
-					(*data)[i] = decmpData[k++];
-				}
-			}
-			free(decmpData);
-			free(rtypes);
+				count++;
 		}
+		// get the decompressed data
+		float* decmpData;
+		if(errBoundMode < PW_REL)
+			decompressDataSeries_float_4D(&decmpData, r1, r2, r3, r4, tdps);
+		else
+			decompressDataSeries_float_3D_pwr(&decmpData, r1*r2, r3, r4, tdps);
+			//ToDO
+			//decompressDataSeries_float_4D_pwr(&decompData, r1, r2, r3, r4, tdps);
+		// insert the decompressed data
+		size_t k = 0;
+		for (i = 0; i < dataSeriesLength; i++) {
+			if (rtypes[i] == 0) {
+				(*data)[i] = decmpData[k++];
+			}
+		}
+		free(decmpData);
+		free(rtypes);
 	}
 }

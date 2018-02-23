@@ -509,7 +509,7 @@ unsigned int optimize_intervals_double_3D_pwr(double *oriData, size_t r1, size_t
 void SZ_compress_args_double_NoCkRngeNoGzip_1D_pwr(unsigned char** newByteData, double *oriData, double globalPrecision, 
 size_t dataLength, size_t *outSize, double min, double max)
 {
-	SZ_Reset();	
+	SZ_Reset(allNodes, stateNum);
 	size_t pwrLength = dataLength%segment_size==0?dataLength/segment_size:dataLength/segment_size+1;
 	double* pwrErrBound = (double*)malloc(sizeof(double)*pwrLength);
 	size_t pwrErrBoundBytes_size = sizeof(unsigned char)*pwrLength*2;
@@ -666,7 +666,7 @@ size_t dataLength, size_t *outSize, double min, double max)
 */
 //	writeUShortData(type, dataLength, "compressStateBytes.sb");
 //	unsigned short type_[dataLength];
-//	SZ_Reset();
+//	SZ_Reset(allNodes, stateNum);
 //	decode_withTree(tdps->typeArray, tdps->typeArray_size, type_);	
 //	printf("tdps->typeArray_size=%d\n", tdps->typeArray_size);
 		
@@ -731,7 +731,7 @@ size_t dataLength, size_t *outSize, double min, double max)
 void SZ_compress_args_double_NoCkRngeNoGzip_2D_pwr(unsigned char** newByteData, double *oriData, double globalPrecision, size_t r1, size_t r2,
 size_t *outSize, double min, double max)
 {
-	SZ_Reset();	
+	SZ_Reset(allNodes, stateNum);	
 	size_t dataLength=r1*r2;
 	int blockEdgeSize = computeBlockEdgeSize_2D(segment_size);
 	size_t R1 = 1+(r1-1)/blockEdgeSize;
@@ -1000,7 +1000,7 @@ size_t *outSize, double min, double max)
 void SZ_compress_args_double_NoCkRngeNoGzip_3D_pwr(unsigned char** newByteData, double *oriData, double globalPrecision, 
 size_t r1, size_t r2, size_t r3, size_t *outSize, double min, double max)
 {
-	SZ_Reset();	
+	SZ_Reset(allNodes, stateNum);
 	size_t dataLength=r1*r2*r3;
 	
 	int blockEdgeSize = computeBlockEdgeSize_3D(segment_size);
@@ -1471,7 +1471,7 @@ void createRangeGroups_double(double** posGroups, double** negGroups, int** posF
 
 void compressGroupIDArray_double(char* groupID, TightDataPointStorageD* tdps)
 {
-	SZ_Reset(); //reset the huffman tree
+	SZ_Reset(allNodes, stateNum); //reset the huffman tree
 	size_t dataLength = tdps->dataSeriesLength;
 	int* standGroupID = (int*)malloc(dataLength*sizeof(int));
 
@@ -1754,7 +1754,7 @@ double absErrBound, double relBoundRatio, double pwrErrRatio, double valueRangeS
 void SZ_compress_args_double_NoCkRngeNoGzip_1D_pwrgroup(unsigned char** newByteData, double *oriData,
 size_t dataLength, double absErrBound, double relBoundRatio, double pwrErrRatio, double valueRangeSize, double medianValue_f, size_t *outSize)
 {
-        SZ_Reset();
+        SZ_Reset(allNodes, stateNum);
         TightDataPointStorageD* tdps = SZ_compress_double_1D_MDQ_pwrGroup(oriData, dataLength, errorBoundMode, 
         absErrBound, relBoundRatio, pwrErrRatio, 
         valueRangeSize, medianValue_f);

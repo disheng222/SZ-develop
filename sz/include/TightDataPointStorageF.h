@@ -51,6 +51,10 @@ typedef struct TightDataPointStorageF
 	
 	unsigned char* pwrErrBoundBytes;
 	int pwrErrBoundBytes_size;
+	
+	unsigned char* raBytes;
+	size_t raBytes_size;
+	
 } TightDataPointStorageF;
 
 void new_TightDataPointStorageF_Empty(TightDataPointStorageF **self);

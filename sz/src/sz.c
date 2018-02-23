@@ -82,7 +82,7 @@ int SZ_Init(char *configFilePath)
 	return SZ_SCES;
 }
 
-void SZ_Reset()
+void SZ_Reset(int allNodes, int stateNum)
 {
     if(pool==NULL)
     {
@@ -207,7 +207,7 @@ int SZ_Init_Params(sz_params *params)
 	}
 
     //initialization for Huffman encoding
-	SZ_Reset();
+	SZ_Reset(allNodes, stateNum);
 	
     return SZ_SCES;
 }

@@ -130,7 +130,7 @@ int SZ_ReadConf() {
 		
 		conf_params->pwr_type = pwr_type = SZ_PWR_AVG_TYPE;
 		
-		SZ_Reset();
+		SZ_Reset(allNodes, stateNum);
 		return SZ_SCES;
 	}
     
@@ -348,7 +348,7 @@ int SZ_ReadConf() {
 //	versionNumber[2] = SZ_VER_BUILD; //15
     //initialization for Huffman encoding
     
-    SZ_Reset();
+    SZ_Reset(allNodes, stateNum);
     
 	//printf("dataEndianType=%d\n", dataEndianType);    
     iniparser_freedict(ini);

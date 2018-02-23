@@ -273,7 +273,7 @@ typedef struct sz_metadata
 extern sz_params *conf_params;
 
 //sz.h
-void SZ_Reset();
+void SZ_Reset(int allNodes, int stateNum);
 
 int SZ_Init(char *configFilePath);
 

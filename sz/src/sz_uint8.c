@@ -365,7 +365,7 @@ unsigned char** newByteData, size_t *outSize)
 void SZ_compress_args_uint8_NoCkRngeNoGzip_1D(unsigned char** newByteData, uint8_t *oriData, 
 size_t dataLength, double realPrecision, size_t *outSize, int64_t valueRangeSize, uint8_t minValue)
 {
-	SZ_Reset();	
+	SZ_Reset(allNodes, stateNum);	
 	
 	TightDataPointStorageI* tdps = SZ_compress_uint8_1D_MDQ(oriData, dataLength, realPrecision, valueRangeSize, minValue);
 	//TODO: return bytes....
@@ -564,7 +564,7 @@ TightDataPointStorageI* SZ_compress_uint8_2D_MDQ(uint8_t *oriData, size_t r1, si
 void SZ_compress_args_uint8_NoCkRngeNoGzip_2D(unsigned char** newByteData, uint8_t *oriData, size_t r1, size_t r2, double realPrecision, size_t *outSize, 
 int64_t valueRangeSize, uint8_t minValue)
 {
-	SZ_Reset();	
+	SZ_Reset(allNodes, stateNum);
 
 	TightDataPointStorageI* tdps = SZ_compress_uint8_2D_MDQ(oriData, r1, r2, realPrecision, valueRangeSize, minValue);
 
@@ -891,7 +891,7 @@ TightDataPointStorageI* SZ_compress_uint8_3D_MDQ(uint8_t *oriData, size_t r1, si
 void SZ_compress_args_uint8_NoCkRngeNoGzip_3D(unsigned char** newByteData, uint8_t *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t *outSize, 
 int64_t valueRangeSize, int64_t minValue)
 {
-	SZ_Reset();	
+	SZ_Reset(allNodes, stateNum);	
 	
 	TightDataPointStorageI* tdps = SZ_compress_uint8_3D_MDQ(oriData, r1, r2, r3, realPrecision, valueRangeSize, minValue);
 
@@ -1248,7 +1248,7 @@ TightDataPointStorageI* SZ_compress_uint8_4D_MDQ(uint8_t *oriData, size_t r1, si
 void SZ_compress_args_uint8_NoCkRngeNoGzip_4D(unsigned char** newByteData, uint8_t *oriData, size_t r1, size_t r2, size_t r3, size_t r4, double realPrecision, 
 size_t *outSize, int64_t valueRangeSize, int64_t minValue)
 {
-	SZ_Reset();
+	SZ_Reset(allNodes, stateNum);
 
 	TightDataPointStorageI* tdps = SZ_compress_uint8_4D_MDQ(oriData, r1, r2, r3, r4, realPrecision, valueRangeSize, minValue);
 

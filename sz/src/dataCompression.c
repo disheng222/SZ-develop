@@ -595,3 +595,10 @@ int initRandomAccessBytes(unsigned char* raBytes)
 	
 	return k;
 }
+
+void isSameOrRandomAccessMode(unsigned char* cmprBytes, int* constantData, int* randomAccess)
+{
+	unsigned char stateByte = cmprBytes[3];
+	*constantData = (stateByte & 0x01);
+	*randomAccess = (stateByte >> 7);
+}

@@ -74,13 +74,11 @@ unsigned int optimize_intervals_and_compute_dense_position_float_1D(float *oriDa
 	float mean = 0.0;
 	size_t mean_distance = (int) (sqrt(dataLength));
 	size_t mean_sample_size = (int) (dataLength / mean_distance - 1);
-	// printf("mean_distance %ld, mean_sample_size %ld\n", mean_distance, mean_sample_size);
 	float * data_pos = oriData;
 	for(size_t i=0; i<mean_sample_size; i++){
 		mean += *data_pos;
 		data_pos += mean_distance;
 	}
-	// printf("mean: %.4f mean_sample_size: %.4f result: %.4f\n", mean, (float)mean_sample_size, mean/(float)mean_sample_size);
 	if(mean_sample_size > 0) mean /= mean_sample_size;
 	size_t range = 256;
 	size_t radius = 128;
@@ -736,7 +734,7 @@ unsigned char** newByteData, size_t *outSize)
 void SZ_compress_args_float_NoCkRngeNoGzip_1D(unsigned char** newByteData, float *oriData, 
 size_t dataLength, double realPrecision, size_t *outSize, float valueRangeSize, float medianValue_f)
 {
-	SZ_Reset();	
+	SZ_Reset(allNodes, stateNum);	
 	TightDataPointStorageF* tdps = SZ_compress_float_1D_MDQ(oriData, dataLength, realPrecision, valueRangeSize, medianValue_f);
 			
 	//TODO: return bytes....
@@ -1028,7 +1026,7 @@ TightDataPointStorageF* SZ_compress_float_2D_MDQ(float *oriData, size_t r1, size
  * */
 void SZ_compress_args_float_NoCkRngeNoGzip_2D(unsigned char** newByteData, float *oriData, size_t r1, size_t r2, double realPrecision, size_t *outSize, float valueRangeSize, float medianValue_f)
 {
-	SZ_Reset();	
+	SZ_Reset(allNodes, stateNum);	
 		
 	TightDataPointStorageF* tdps = SZ_compress_float_2D_MDQ(oriData, r1, r2, realPrecision, valueRangeSize, medianValue_f);
 
@@ -1116,7 +1114,7 @@ unsigned short SZ_compress_float_1D_MDQ_RA_block_1D_pred(float * block_ori_data,
     }									\
 
 unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double realPrecision, size_t * comp_size){
-
+	SZ_Reset(allNodes, stateNum);	
 	unsigned int quantization_intervals;
 	float dense_pos;
 	if(optQuantMode==1)
@@ -1180,10 +1178,11 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double re
 		// printf("done, mean %.2f, unpredictable_count %d, 1st unpredictable_data: %.2f\n", mean, unpredictable_count, unpredictable_data[0]);
 		// fflush(stdout);
 	}
-	printf("Block wise compression end, unpredictable num %d, num_elements %ld, max unpred count %d\n", total_unpred, num_elements, max_unpred_count);
-	fflush(stdout);
+	// printf("Block wise compression end, unpredictable num %d, num_elements %ld, max unpred count %d\n", total_unpred, num_elements, max_unpred_count);
+	// fflush(stdout);
 
 	// huffman encode
+	SZ_Reset(allNodes, stateNum);
 	size_t nodeCount = 0;
 	init(result_type, num_elements);
 	for (size_t i = 0; i < stateNum; i++)
@@ -1772,6 +1771,7 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	// printf("typeArray_size: %ld\n", typeArray_size);
 
 	// huffman encode
+	SZ_Reset(allNodes, stateNum);
 	size_t nodeCount = 0;
 	init(result_type, num_elements);
 	for (size_t i = 0; i < stateNum; i++)
@@ -2321,7 +2321,7 @@ TightDataPointStorageF* SZ_compress_float_3D_MDQ(float *oriData, size_t r1, size
 
 void SZ_compress_args_float_NoCkRngeNoGzip_3D(unsigned char** newByteData, float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t *outSize, float valueRangeSize, float medianValue_f)
 {
-	SZ_Reset();	
+	SZ_Reset(allNodes, stateNum);
 
 	TightDataPointStorageF* tdps = SZ_compress_float_3D_MDQ(oriData, r1, r2, r3, realPrecision, valueRangeSize, medianValue_f);
 
@@ -2685,7 +2685,7 @@ TightDataPointStorageF* SZ_compress_float_4D_MDQ(float *oriData, size_t r1, size
 
 void SZ_compress_args_float_NoCkRngeNoGzip_4D(unsigned char** newByteData, float *oriData, size_t r1, size_t r2, size_t r3, size_t r4, double realPrecision, size_t *outSize, float valueRangeSize, float medianValue_f)
 {
-	SZ_Reset();
+	SZ_Reset(allNodes, stateNum);
 
 	TightDataPointStorageF* tdps = SZ_compress_float_4D_MDQ(oriData, r1, r2, r3, r4, realPrecision, valueRangeSize, medianValue_f);
 
@@ -2799,21 +2799,17 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwRelBoundRa
 	size_t dataLength = computeDataLength(r5,r4,r3,r2,r1);
 	float valueRangeSize = 0, medianValue = 0;
 	
-	float min = 0, max = 0;
 	double realPrecision = absErrBound; 
-	if(szRandomAccess == SZ_NO_RANDOM_ACCESS || errBoundMode != ABS)
+	float min = computeRangeSize_float(oriData, dataLength, &valueRangeSize, &medianValue);
+	float max = min+valueRangeSize;
+	if(errorBoundMode==PSNR)
 	{
-		min = computeRangeSize_float(oriData, dataLength, &valueRangeSize, &medianValue);
-		max = min+valueRangeSize;
-		if(errorBoundMode==PSNR)
-		{
-			errorBoundMode = conf_params->errorBoundMode = ABS;
-			realPrecision = conf_params->absErrBound = computeABSErrBoundFromPSNR(psnr, (double)predThreshold, (double)valueRangeSize);
-			//printf("realPrecision=%lf\n", realPrecision);
-		}
-		else
-			realPrecision = getRealPrecision_float(valueRangeSize, errBoundMode, absErr_Bound, relBoundRatio, &status);		
-	} //else szRandomAccess == YES and errBoundMode == ABS; in this case, realPrecision = absErrBound;
+		errorBoundMode = conf_params->errorBoundMode = ABS;
+		realPrecision = conf_params->absErrBound = computeABSErrBoundFromPSNR(psnr, (double)predThreshold, (double)valueRangeSize);
+		//printf("realPrecision=%lf\n", realPrecision);
+	}
+	else
+		realPrecision = getRealPrecision_float(valueRangeSize, errBoundMode, absErr_Bound, relBoundRatio, &status);		
 		
 	if(valueRangeSize <= realPrecision)
 	{
@@ -2994,7 +2990,7 @@ size_t *outSize, int errBoundMode, double absErr_Bound, double relBoundRatio)
 void SZ_compress_args_float_NoCkRnge_1D_subblock(unsigned char* compressedBytes, float *oriData, double realPrecision, size_t *outSize, float valueRangeSize, float medianValue_f,
 size_t r1, size_t s1, size_t e1)
 {
-	SZ_Reset();
+	SZ_Reset(allNodes, stateNum);
 	TightDataPointStorageF* tdps = SZ_compress_float_1D_MDQ_subblock(oriData, realPrecision, valueRangeSize, medianValue_f, r1, s1, e1);
 
 	if (szMode==SZ_BEST_SPEED)
@@ -3022,7 +3018,7 @@ size_t r1, size_t s1, size_t e1)
 void SZ_compress_args_float_NoCkRnge_2D_subblock(unsigned char* compressedBytes, float *oriData, double realPrecision, size_t *outSize, float valueRangeSize, float medianValue_f,
 size_t r2, size_t r1, size_t s2, size_t s1, size_t e2, size_t e1)
 {
-	SZ_Reset();
+	SZ_Reset(allNodes, stateNum);
 	TightDataPointStorageF* tdps = SZ_compress_float_2D_MDQ_subblock(oriData, realPrecision, valueRangeSize, medianValue_f, r2, r1, s2, s1, e2, e1);
 
 	if (szMode==SZ_BEST_SPEED)
@@ -3050,7 +3046,7 @@ size_t r2, size_t r1, size_t s2, size_t s1, size_t e2, size_t e1)
 void SZ_compress_args_float_NoCkRnge_3D_subblock(unsigned char* compressedBytes, float *oriData, double realPrecision, size_t *outSize, float valueRangeSize, float medianValue_f,
 size_t r3, size_t r2, size_t r1, size_t s3, size_t s2, size_t s1, size_t e3, size_t e2, size_t e1)
 {
-	SZ_Reset();
+	SZ_Reset(allNodes, stateNum);
 	TightDataPointStorageF* tdps = SZ_compress_float_3D_MDQ_subblock(oriData, realPrecision, valueRangeSize, medianValue_f, r3, r2, r1, s3, s2, s1, e3, e2, e1);
 
 	if (szMode==SZ_BEST_SPEED)
@@ -3078,7 +3074,7 @@ size_t r3, size_t r2, size_t r1, size_t s3, size_t s2, size_t s1, size_t e3, siz
 void SZ_compress_args_float_NoCkRnge_4D_subblock(unsigned char* compressedBytes, float *oriData, double realPrecision, size_t *outSize, float valueRangeSize, float medianValue_f,
 size_t r4, size_t r3, size_t r2, size_t r1, size_t s4, size_t s3, size_t s2, size_t s1, size_t e4, size_t e3, size_t e2, size_t e1)
 {
-	SZ_Reset();
+	SZ_Reset(allNodes, stateNum);
 	TightDataPointStorageF* tdps = SZ_compress_float_4D_MDQ_subblock(oriData, realPrecision, valueRangeSize, medianValue_f, r4, r3, r2, r1, s4, s3, s2, s1, e4, e3, e2, e1);
 
 	if (szMode==SZ_BEST_SPEED)

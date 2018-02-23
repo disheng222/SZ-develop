@@ -77,6 +77,7 @@ int computeBlockEdgeSize_3D(int segmentSize);
 int computeBlockEdgeSize_2D(int segmentSize);
 
 int initRandomAccessBytes(unsigned char* raBytes);
+void isSameOrRandomAccessMode(unsigned char* cmprBytes, int* constantData, int* randomAccess);
 
 #ifdef __cplusplus
 }

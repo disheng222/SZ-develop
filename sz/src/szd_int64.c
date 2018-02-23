@@ -729,7 +729,7 @@ void decompressDataSeries_int64_4D(int64_t** data, size_t r1, size_t r2, size_t 
 
 void getSnapshotData_int64_1D(int64_t** data, size_t dataSeriesLength, TightDataPointStorageI* tdps, int errBoundMode)
 {	
-	SZ_Reset();
+	SZ_Reset(allNodes, stateNum);
 	size_t i;
 
 	if (tdps->allSameData) {
@@ -744,7 +744,7 @@ void getSnapshotData_int64_1D(int64_t** data, size_t dataSeriesLength, TightData
 
 void getSnapshotData_int64_2D(int64_t** data, size_t r1, size_t r2, TightDataPointStorageI* tdps, int errBoundMode) 
 {
-	SZ_Reset();
+	SZ_Reset(allNodes, stateNum);
 	size_t i;
 	size_t dataSeriesLength = r1*r2;
 	if (tdps->allSameData) {
@@ -759,7 +759,7 @@ void getSnapshotData_int64_2D(int64_t** data, size_t r1, size_t r2, TightDataPoi
 
 void getSnapshotData_int64_3D(int64_t** data, size_t r1, size_t r2, size_t r3, TightDataPointStorageI* tdps, int errBoundMode)
 {
-	SZ_Reset();
+	SZ_Reset(allNodes, stateNum);
 	size_t i;
 	size_t dataSeriesLength = r1*r2*r3;
 	if (tdps->allSameData) {
@@ -774,7 +774,7 @@ void getSnapshotData_int64_3D(int64_t** data, size_t r1, size_t r2, size_t r3, T
 
 void getSnapshotData_int64_4D(int64_t** data, size_t r1, size_t r2, size_t r3, size_t r4, TightDataPointStorageI* tdps, int errBoundMode)
 {
-	SZ_Reset();
+	SZ_Reset(allNodes, stateNum);
 	size_t i;
 	size_t dataSeriesLength = r1*r2*r3*r4;
 	if (tdps->allSameData) {
