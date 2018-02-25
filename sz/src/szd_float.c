@@ -575,22 +575,6 @@ unsigned short decompressDataSeries_float_1D_RA_block_1D_pred(float * data, floa
 	return unpredictable_count;
 }
 
-#define COLL_BASE_COMPUTE_BLOCKCOUNT( COUNT, NUM_BLOCKS, SPLIT_INDEX,       \
-                                       EARLY_BLOCK_COUNT, LATE_BLOCK_COUNT ) \
-    EARLY_BLOCK_COUNT = LATE_BLOCK_COUNT = COUNT / NUM_BLOCKS;               \
-    SPLIT_INDEX = COUNT % NUM_BLOCKS;                                        \
-    if (0 != SPLIT_INDEX) {                                                  \
-        EARLY_BLOCK_COUNT = EARLY_BLOCK_COUNT + 1;                           \
-    }                                                                        \
-
-#define COMPUTE_1D_NUMBER_OF_BLOCKS( COUNT, NUM_BLOCKS ) \
-    if (COUNT <= 512){					\
-    	NUM_BLOCKS = 1;				\
-    }									\
-    else{								\
-    	NUM_BLOCKS = COUNT / 512;		\
-    }									\
-
 void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * comp_data){
 
 	size_t num_x;
@@ -717,7 +701,7 @@ unsigned short decompressDataSeries_float_3D_RA_block_3D_pred(float * data, floa
 	double diff;
 	size_t i, j, k;
 	size_t r23 = r2*r3;
-	unsigned int type_;
+	int type_;
 	// Process Row-0 data 0
 	pred1D = mean;
 	type_ = type[0];
@@ -907,22 +891,6 @@ unsigned short decompressDataSeries_float_3D_RA_block_3D_pred(float * data, floa
 
 	return unpredictable_count;
 }
-
-#define COMPUTE_3D_NUMBER_OF_BLOCKS( COUNT, NUM_BLOCKS ) \
-    if (COUNT <= 16){					\
-    	NUM_BLOCKS = 1;				\
-    }									\
-    else{								\
-    	NUM_BLOCKS = COUNT / 16;			\
-    }									\
-
-#define COMPUTE_1D_NUMBER_OF_BLOCKS( COUNT, NUM_BLOCKS ) \
-    if (COUNT <= 512){					\
-    	NUM_BLOCKS = 1;				\
-    }									\
-    else{								\
-    	NUM_BLOCKS = COUNT / 512;		\
-    }									\
 
 void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data){
 	// calculate block dims

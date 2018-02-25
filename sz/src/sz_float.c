@@ -396,8 +396,7 @@ unsigned int optimize_intervals_and_compute_dense_position_float_3D(float *oriDa
 		pred_value = data_pos[-1] + data_pos[-r3] + data_pos[-r23] - data_pos[-1-r23] - data_pos[-r3-1] - data_pos[-r3-r23] + data_pos[-r3-r23-1];
 		pred_err = fabs(pred_value - oriData[index]);
 		radiusIndex = (pred_err/realPrecision+1)/2;
-		if(radiusIndex>=maxRangeRadius)
-		{
+		if(radiusIndex>=maxRangeRadius){
 			radiusIndex = maxRangeRadius - 1;
 		}
 		intervals[radiusIndex]++;		
@@ -420,11 +419,11 @@ unsigned int optimize_intervals_and_compute_dense_position_float_3D(float *oriDa
 		offset_count_2 += sampleDistance;
 		if(offset_count >= r3){
 			offset_count = 0;
-			data_pos += 1;
+			data_pos -= 1;
 		}
 		if(offset_count_2 >= r2 * r3){
 			offset_count_2 = 0;
-			data_pos += 1;
+			data_pos -= 1;
 		}
 		totalSampleSize ++;
 	}
@@ -1098,22 +1097,6 @@ unsigned short SZ_compress_float_1D_MDQ_RA_block_1D_pred(float * block_ori_data,
 
 }
 
-#define COLL_BASE_COMPUTE_BLOCKCOUNT( COUNT, NUM_BLOCKS, SPLIT_INDEX,       \
-                                       EARLY_BLOCK_COUNT, LATE_BLOCK_COUNT ) \
-    EARLY_BLOCK_COUNT = LATE_BLOCK_COUNT = COUNT / NUM_BLOCKS;               \
-    SPLIT_INDEX = COUNT % NUM_BLOCKS;                                        \
-    if (0 != SPLIT_INDEX) {                                                  \
-        EARLY_BLOCK_COUNT = EARLY_BLOCK_COUNT + 1;                           \
-    }                                                                        \
-
-#define COMPUTE_1D_NUMBER_OF_BLOCKS( COUNT, NUM_BLOCKS ) \
-    if (COUNT <= 512){					\
-    	NUM_BLOCKS = 1;				\
-    }									\
-    else{								\
-    	NUM_BLOCKS = COUNT / 512;		\
-    }									\
-
 unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double realPrecision, size_t * comp_size){
 	SZ_Reset(allNodes, stateNum);	
 	unsigned int quantization_intervals;
@@ -1633,14 +1616,6 @@ unsigned short SZ_compress_float_3D_MDQ_RA_block_3D_pred(float * block_ori_data,
 	return unpredictable_count;
 }
 
-#define COMPUTE_3D_NUMBER_OF_BLOCKS( COUNT, NUM_BLOCKS ) \
-    if (COUNT <= 16){					\
-    	NUM_BLOCKS = 1;				\
-    }									\
-    else{								\
-    	NUM_BLOCKS = COUNT / 16;		\
-    }									\
-
 unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
 	// printf("SZ_compress_float_3D_MDQ_RA start: r1 %d r2 %d r3 %d\n", r1, r2, r3);
 	// fflush(stdout);
@@ -1663,8 +1638,9 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	{
 		
 		quantization_intervals = optimize_intervals_and_compute_dense_position_float_3D(oriData, r1, r2, r3, realPrecision, &dense_pos);
-		quantization_intervals = optimize_intervals_float_1D(oriData, r1, realPrecision);
 		printf("number of bins: %d\nerror bound %.20f dense position %.20f\n", quantization_intervals, realPrecision, dense_pos);
+		quantization_intervals = optimize_intervals_float_1D(oriData, r1, realPrecision);
+		printf("new number of bins: %d\n", quantization_intervals);
 		//dense_pos = realPrecision;
 		//dense_pos = 2.5867;
 		//quantization_intervals = 512;
