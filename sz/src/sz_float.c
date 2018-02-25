@@ -1132,7 +1132,8 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double re
 		intvCapacity = quantization_intervals - 2;
 	}
 	size_t num_x;
-	unsigned int early_blockcount_x, late_blockcount_x, split_index_x;
+	unsigned int early_blockcount_x, late_blockcount_x;
+	size_t split_index_x;
 
 	COMPUTE_1D_NUMBER_OF_BLOCKS(r1, num_x);
 	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
@@ -1676,14 +1677,14 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	}
 
 	// calculate block dims
-	int num_x, num_y, num_z;
+	size_t num_x, num_y, num_z;
 	COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x);
 	COMPUTE_3D_NUMBER_OF_BLOCKS(r2, num_y);
 	COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z);
 
-	int split_index_x, split_index_y, split_index_z;
-	int early_blockcount_x, early_blockcount_y, early_blockcount_z;
-	int late_blockcount_x, late_blockcount_y, late_blockcount_z;
+	size_t split_index_x, split_index_y, split_index_z;
+	unsigned int early_blockcount_x, early_blockcount_y, early_blockcount_z;
+	unsigned int late_blockcount_x, late_blockcount_y, late_blockcount_z;
 	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
 	COLL_BASE_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
 	COLL_BASE_COMPUTE_BLOCKCOUNT(r3, num_z, split_index_z, early_blockcount_z, late_blockcount_z);
@@ -1693,8 +1694,8 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	// printf("early counts: %d %d %d\n", early_blockcount_x, early_blockcount_y, early_blockcount_z);
 	// printf("late counts: %d %d %d\n", late_blockcount_x, late_blockcount_y, late_blockcount_z);
 	// exit(0);
-	int max_num_block_elements = early_blockcount_x * early_blockcount_y * early_blockcount_z;
-	int num_blocks = num_x * num_y * num_z;
+	unsigned int max_num_block_elements = early_blockcount_x * early_blockcount_y * early_blockcount_z;
+	size_t num_blocks = num_x * num_y * num_z;
 	size_t num_elements = r1 * r2 * r3;
 	// printf("max_num_block_elements %d num_blocks %d\n", max_num_block_elements, num_blocks);
 
@@ -1702,7 +1703,7 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	size_t dim1_offset = r3;
 	
 	// printf("malloc blockinfo array start\n");
-	fflush(stdout);
+	// fflush(stdout);
 
 	float *P0, *P1; // buffer
 	size_t buffer_size = r2 * r3 * sizeof(float);
@@ -1710,26 +1711,26 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	P1 = (float *) malloc(buffer_size);
 	int * result_type = (int *) malloc(num_elements * sizeof(int));
 	// int unpred_data_max_size = ((int)(num_block_elements * 0.2) + 1) ;
-	int unpred_data_max_size = max_num_block_elements;
+	unsigned int unpred_data_max_size = max_num_block_elements;
 	float * result_unpredictable_data = (float *) malloc(unpred_data_max_size * sizeof(float) * num_blocks);
 
 	// int unpredictable_count = 0;
 	unsigned short * unpredictable_count = (unsigned short *) malloc(num_blocks * sizeof(int));
 	float * mean = malloc(num_blocks * sizeof(float));
-	int total_unpred = 0;
-	int index = 0;
-	int max_unpred_count = 0;
+	size_t total_unpred = 0;
+	size_t index = 0;
+	unsigned int max_unpred_count = 0;
 	float * data_pos = oriData;
 	int * type = result_type;
 	float * unpredictable_data = result_unpredictable_data;
 	size_t offset_x, offset_y, offset_z;
-	int current_blockcount_x, current_blockcount_y, current_blockcount_z;
+	unsigned int current_blockcount_x, current_blockcount_y, current_blockcount_z;
 	size_t type_offset = 0;
 	// printf("Block wise compression start: %d %d %d\n", early_blockcount_x, early_blockcount_y, early_blockcount_z);
-	fflush(stdout);
-	for(int i=0; i<num_x; i++){
-		for(int j=0; j<num_y; j++){
-			for(int k=0; k<num_z; k++){
+	// fflush(stdout);
+	for(size_t i=0; i<num_x; i++){
+		for(size_t j=0; j<num_y; j++){
+			for(size_t k=0; k<num_z; k++){
 				offset_x = (i < split_index_x) ? i * early_blockcount_x : i * late_blockcount_x + split_index_x;
 				offset_y = (j < split_index_y) ? j * early_blockcount_y : j * late_blockcount_y + split_index_y;
 				offset_z = (k < split_index_z) ? k * early_blockcount_z : k * late_blockcount_z + split_index_z;
@@ -1789,7 +1790,7 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	unsigned char *treeBytes;
 	unsigned int treeByteSize = convert_HuffTree_to_bytes_anyStates(nodeCount, &treeBytes);
 
-	int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	unsigned int meta_data_offset = 3 + 1 + MetaDataByteLength;
 	// total size 										metadata		real precision		intervals	nodeCount		huffman 	 	block index 						unpredicatable count						mean 					 	unpred size 				elements
 	unsigned char * result = (unsigned char *) malloc(meta_data_offset + sizeof(double) + sizeof(int) + sizeof(int) + treeByteSize + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(float) + total_unpred * sizeof(float) + num_elements * sizeof(int));
 	unsigned char * result_pos = result;
@@ -1810,7 +1811,6 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	result_pos += treeByteSize;
 	free(treeBytes);
 
-	int blockEncodeSize;
 	size_t unpredictableEncodeSize;
 	size_t totalEncodeSize = 0;
 	unsigned short * block_pos = (unsigned short *) result_pos;
@@ -1824,8 +1824,8 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	size_t typeArray_size = 0;
 	
 	//debug
-	int flushed_count = 0;
-	for(int i = 0;i<num_elements;i++){
+	size_t flushed_count = 0;
+	for(size_t i = 0;i<num_elements;i++){
 		if(result_type[i] == 1){
 			flushed_count ++;
 		}
@@ -1863,10 +1863,8 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 				encode(type, current_block_elements, result_pos, &enCodeSize);
 				typeArray_size += enCodeSize;
 				result_pos += enCodeSize;
-				blockEncodeSize = result_pos - block_start_pos;
-				block_pos[0] = blockEncodeSize;
+				*block_pos = result_pos - block_start_pos;
 				block_pos ++;
-				index ++;
 			}
 		}
 	}

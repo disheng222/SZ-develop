@@ -593,15 +593,16 @@ unsigned short decompressDataSeries_float_1D_RA_block_1D_pred(float * data, floa
 
 void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * comp_data){
 
-	int num_x;
-	int early_blockcount_x, late_blockcount_x, split_index_x;
+	size_t num_x;
+	unsigned int early_blockcount_x, late_blockcount_x;
+	size_t split_index_x;
 
 	COMPUTE_1D_NUMBER_OF_BLOCKS(r1, num_x);
 	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
 
 	size_t num_elements = r1;
-	int max_num_block_elements = early_blockcount_x;
-	int num_blocks = num_x;
+	unsigned int max_num_block_elements = early_blockcount_x;
+	size_t num_blocks = num_x;
 
 	*data = (float*)malloc(sizeof(float)*num_elements);
 
@@ -611,14 +612,14 @@ void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * c
 
 	double realPrecision = bytesToDouble(comp_data_pos);
 	comp_data_pos += 8;
-	int intervals = bytesToInt_bigEndian(comp_data_pos);
+	unsigned int intervals = bytesToInt_bigEndian(comp_data_pos);
 	comp_data_pos += 4;
 
 	updateQuantizationInfo(intervals);
 	intvCapacity = intervals - 2;
 	// intvRadius = (int)((tdps->intervals - 1)/ 2);
 
-	int tree_size = bytesToInt_bigEndian(comp_data_pos);
+	unsigned int tree_size = bytesToInt_bigEndian(comp_data_pos);
 	comp_data_pos += 4;
 	allNodes = bytesToInt_bigEndian(comp_data_pos);
 	stateNum = allNodes/2;
@@ -636,14 +637,14 @@ void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * c
 	float * mean_pos = (float *) comp_data_pos;
 	comp_data_pos += num_blocks * sizeof(float);
 
-	int unpredictable_count;
+	unsigned int unpredictable_count;
 	int * type = (int *) malloc(max_num_block_elements * sizeof(int));
 	// int unpred_data_max_size = ((int)(num_block_elements * 0.2) + 1);
 	int unpred_data_max_size = max_num_block_elements;
 	float * unpredictable_data = (float *) malloc(unpred_data_max_size * sizeof(float));
 	float mean;
 	unsigned char * tmp;
-	int unpredictableEncodeSize;
+	unsigned int unpredictableEncodeSize;
 	size_t index = 0;
 	float * data_pos = *data;
 	// printf("decompress offset to start: %ld\n", comp_data_pos - tdps->data);
@@ -652,8 +653,8 @@ void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * c
 
 	size_t offset_x = 0;
 	size_t type_offset = 0;
-	int current_blockcount_x;
-	for(int i=0; i<num_blocks; i++){
+	unsigned int current_blockcount_x;
+	for(size_t i=0; i<num_blocks; i++){
 		offset_x = (i < split_index_x) ? i * early_blockcount_x : i * late_blockcount_x + split_index_x;
 		data_pos = *data + offset_x;
 		current_blockcount_x = (i < split_index_x) ? early_blockcount_x : late_blockcount_x;
@@ -716,7 +717,7 @@ unsigned short decompressDataSeries_float_3D_RA_block_3D_pred(float * data, floa
 	double diff;
 	size_t i, j, k;
 	size_t r23 = r2*r3;
-	int type_;
+	unsigned int type_;
 	// Process Row-0 data 0
 	pred1D = mean;
 	type_ = type[0];
@@ -925,20 +926,20 @@ unsigned short decompressDataSeries_float_3D_RA_block_3D_pred(float * data, floa
 
 void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data){
 	// calculate block dims
-	int num_x, num_y, num_z;
+	size_t num_x, num_y, num_z;
 	COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x);
 	COMPUTE_3D_NUMBER_OF_BLOCKS(r2, num_y);
 	COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z);
 
-	int split_index_x, split_index_y, split_index_z;
-	int early_blockcount_x, early_blockcount_y, early_blockcount_z;
-	int late_blockcount_x, late_blockcount_y, late_blockcount_z;
+	size_t split_index_x, split_index_y, split_index_z;
+	unsigned int early_blockcount_x, early_blockcount_y, early_blockcount_z;
+	unsigned int late_blockcount_x, late_blockcount_y, late_blockcount_z;
 	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
 	COLL_BASE_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
 	COLL_BASE_COMPUTE_BLOCKCOUNT(r3, num_z, split_index_z, early_blockcount_z, late_blockcount_z);
 
-	int max_num_block_elements = early_blockcount_x * early_blockcount_y * early_blockcount_z;
-	int num_blocks = num_x * num_y * num_z;
+	unsigned int max_num_block_elements = early_blockcount_x * early_blockcount_y * early_blockcount_z;
+	size_t num_blocks = num_x * num_y * num_z;
 	size_t num_elements = r1 * r2 * r3;
 	// printf("num_block_elements %d num_blocks %d\n", max_num_block_elements, num_blocks);
 	// fflush(stdout);
@@ -954,14 +955,14 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 
 	double realPrecision = bytesToDouble(comp_data_pos);
 	comp_data_pos += 8;
-	int intervals = bytesToInt_bigEndian(comp_data_pos);
+	unsigned int intervals = bytesToInt_bigEndian(comp_data_pos);
 	comp_data_pos += 4;
 
 	updateQuantizationInfo(intervals);
 	intvCapacity = intervals - 2;
 	// intvRadius = (int)((tdps->intervals - 1)/ 2);
 
-	int tree_size = bytesToInt_bigEndian(comp_data_pos);
+	unsigned int tree_size = bytesToInt_bigEndian(comp_data_pos);
 	comp_data_pos += 4;
 	allNodes = bytesToInt_bigEndian(comp_data_pos);
 	stateNum = allNodes/2;
@@ -980,7 +981,7 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 	float * mean_pos = (float *) comp_data_pos;
 	comp_data_pos += num_blocks * sizeof(float);
 
-	int unpredictable_count;
+	unsigned int unpredictable_count;
 
 	// printf("Block wise decompression start: %d %d %d\n", early_blockcount_x, early_blockcount_y, early_blockcount_z);
 	// fflush(stdout);
@@ -989,16 +990,16 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 	float * unpredictable_data = (float *) malloc(unpred_data_max_size * sizeof(float));
 	float mean;
 	unsigned char * tmp;
-	int unpredictableEncodeSize;
+	unsigned int unpredictableEncodeSize;
 	size_t index = 0;
 	float * data_pos = *data;
 	size_t offset_x, offset_y, offset_z;
-	int current_blockcount_x, current_blockcount_y, current_blockcount_z;
+	unsigned int current_blockcount_x, current_blockcount_y, current_blockcount_z;
 	// printf("decompress offset to start: %ld\n", comp_data_pos - tdps->data);
 	// fflush(stdout);
-	for(int i=0; i<num_x; i++){
-		for(int j=0; j<num_y; j++){
-			for(int k=0; k<num_z; k++){
+	for(size_t i=0; i<num_x; i++){
+		for(size_t j=0; j<num_y; j++){
+			for(size_t k=0; k<num_z; k++){
 				offset_x = (i < split_index_x) ? i * early_blockcount_x : i * late_blockcount_x + split_index_x;
 				offset_y = (j < split_index_y) ? j * early_blockcount_y : j * late_blockcount_y + split_index_y;
 				offset_z = (k < split_index_z) ? k * early_blockcount_z : k * late_blockcount_z + split_index_z;
