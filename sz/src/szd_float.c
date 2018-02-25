@@ -102,7 +102,7 @@ int SZ_decompress_args_float(float** newData, size_t r5, size_t r4, size_t r3, s
 			else if(dim == 2)
 				;
 			else if(dim == 3)
-				decompressDataSeries_float_3D_RA(newData, r1, r2, r3, tdps->raBytes);
+				decompressDataSeries_float_3D_RA(newData, r3, r2, r1, tdps->raBytes);
 			else if(dim == 4)
 				;
 			else
@@ -908,11 +908,11 @@ unsigned short decompressDataSeries_float_3D_RA_block_3D_pred(float * data, floa
 }
 
 #define COMPUTE_3D_NUMBER_OF_BLOCKS( COUNT, NUM_BLOCKS ) \
-    if (COUNT <= 8){					\
+    if (COUNT <= 16){					\
     	NUM_BLOCKS = 1;				\
     }									\
     else{								\
-    	NUM_BLOCKS = COUNT / 8;			\
+    	NUM_BLOCKS = COUNT / 16;			\
     }									\
 
 #define COMPUTE_1D_NUMBER_OF_BLOCKS( COUNT, NUM_BLOCKS ) \
@@ -975,6 +975,7 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 	// skip block index here
 	comp_data_pos += num_blocks * sizeof(unsigned short);
 	unsigned short * unpred_count = (unsigned short *) comp_data_pos;
+	unsigned short * tmp2 = unpred_count;
 	comp_data_pos += num_blocks * sizeof(unsigned short);
 	float * mean_pos = (float *) comp_data_pos;
 	comp_data_pos += num_blocks * sizeof(float);

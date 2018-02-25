@@ -374,8 +374,8 @@ unsigned int optimize_intervals_and_compute_dense_position_float_3D(float *oriDa
 		}
 	}
 	if(mean_count > 0) mean /= mean_count;
-	size_t range = 256;
-	size_t radius = 128;
+	size_t range = 65536;
+	size_t radius = 32768;
 	size_t * freq_intervals = (size_t *) malloc(range*sizeof(size_t));
 	memset(freq_intervals, 0, range*sizeof(size_t));
 
@@ -461,6 +461,7 @@ unsigned int optimize_intervals_and_compute_dense_position_float_3D(float *oriDa
 		}
 		freq_pos ++;
 	}
+	printf("Max frequency: %.6f\n", max_sum * 1.0 / totalSampleSize);
 	*dense_pos = mean + realPrecision * (ptrdiff_t)(max_index - 1 - radius);
 	// printf("real precision: %.4f dense_pos: %.4f\n", realPrecision, dense_pos[0]);
 	free(freq_intervals);
@@ -1292,7 +1293,8 @@ unsigned short SZ_compress_float_3D_MDQ_RA_block_3D_pred(float * block_ori_data,
 		data_pos += dim0_offset - block_dim_1 * dim1_offset;
 	}
 	int num_elements = block_dim_0 * block_dim_1 * block_dim_2;
-	mean[0] = sum / mean_count;
+	if(mean_count > 0) mean[0] = sum / mean_count;
+	else mean[0] = 0;
 
 	unsigned short unpredictable_count = 0;
 	int r1, r2, r3;
@@ -1322,7 +1324,7 @@ unsigned short SZ_compress_float_3D_MDQ_RA_block_3D_pred(float * block_ori_data,
 			type[0] = (int) (itvNum/2) + intvRadius;
 			P1[0] = pred1D + 2 * (type[0] - intvRadius) * realPrecision;
 			//ganrantee comporession error against the case of machine-epsilon
-			if(fabs(curData-P1[1])>realPrecision){	
+			if(fabs(curData-P1[0])>realPrecision){	
 				type[0] = 0;
 				P1[0] = curData;
 				unpredictable_data[unpredictable_count ++] = curData;
@@ -1634,11 +1636,11 @@ unsigned short SZ_compress_float_3D_MDQ_RA_block_3D_pred(float * block_ori_data,
 }
 
 #define COMPUTE_3D_NUMBER_OF_BLOCKS( COUNT, NUM_BLOCKS ) \
-    if (COUNT <= 8){					\
+    if (COUNT <= 16){					\
     	NUM_BLOCKS = 1;				\
     }									\
     else{								\
-    	NUM_BLOCKS = COUNT / 8;		\
+    	NUM_BLOCKS = COUNT / 16;		\
     }									\
 
 unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
@@ -1661,10 +1663,13 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	float dense_pos;
 	if(optQuantMode==1)
 	{
-		// quantization_intervals = optimize_intervals_float_1D(oriData, r1, realPrecision);
+		
 		quantization_intervals = optimize_intervals_and_compute_dense_position_float_3D(oriData, r1, r2, r3, realPrecision, &dense_pos);
-		printf("number of bins: %d\nerror bound %.4f dense position %.4f\n", quantization_intervals, realPrecision, dense_pos);
-		// quantization_intervals = 65536;
+		quantization_intervals = optimize_intervals_float_1D(oriData, r1, realPrecision);
+		printf("number of bins: %d\nerror bound %.20f dense position %.20f\n", quantization_intervals, realPrecision, dense_pos);
+		//dense_pos = realPrecision;
+		//dense_pos = 2.5867;
+		//quantization_intervals = 512;
 		updateQuantizationInfo(quantization_intervals);
 		intvCapacity = quantization_intervals - 2;
 	}	
@@ -1747,7 +1752,13 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 				index = i * num_y * num_z + j * num_z + k;
 				unpredictable_data = result_unpredictable_data + index * unpred_data_max_size;
 				// unpredictable_count[index] = SZ_compress_float_3D_MDQ_RA_block(data_pos, mean + index, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, P0, P1, type, unpredictable_data);
+//				if(index == 2034)
+//					printf("%d\n", index);
 				unpredictable_count[index] = SZ_compress_float_3D_MDQ_RA_block_3D_pred(data_pos, mean + index, dense_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, P0, P1, type, unpredictable_data);
+//				if(unpredictable_count[index]>0){
+//					printf("index = %d:  %d\n", index, unpredictable_count[index]);
+					//getchar();
+//				}
 				//unpredictable_count[index] = SZ_compress_float_3D_MDQ_RA_block_1D_pred(data_pos, mean + index, dense_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, type, unpredictable_data);
 				if(unpredictable_count[index] > max_unpred_count){
 					max_unpred_count = unpredictable_count[index];
@@ -1760,7 +1771,8 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 			}
 		}
 	}
-	// printf("Block wise compression end, unpredictable num %d, num_elements %ld, max unpred count %d\n", total_unpred, num_elements, max_unpred_count);
+	
+	printf("Block wise compression end, unpredictable num %d, num_elements %ld, max unpred count %d\n", total_unpred, num_elements, max_unpred_count);
 	// fflush(stdout);
 	free(P0);
 	free(P1);
@@ -1811,6 +1823,18 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	result_pos += num_blocks * sizeof(unsigned short);
 	memcpy(result_pos, mean, num_blocks * sizeof(float));
 	result_pos += num_blocks * sizeof(float);
+	
+	size_t typeArray_size = 0;
+	
+	//debug
+	int flushed_count = 0;
+	for(int i = 0;i<num_elements;i++){
+		if(result_type[i] == 1){
+			flushed_count ++;
+		}
+	}
+	printf("flushed count: %d\n", flushed_count);
+		
 
 	for(int i=0; i<num_x; i++){
 		for(int j=0; j<num_y; j++){
@@ -1840,7 +1864,7 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 				int current_block_elements = current_blockcount_x * current_blockcount_y * current_blockcount_z;
 				enCodeSize = 0;
 				encode(type, current_block_elements, result_pos, &enCodeSize);
-
+				typeArray_size += enCodeSize;
 				result_pos += enCodeSize;
 				blockEncodeSize = result_pos - block_start_pos;
 				block_pos[0] = blockEncodeSize;
@@ -1849,6 +1873,7 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 			}
 		}
 	}
+	printf("type array size: %ld\n", typeArray_size);
 	totalEncodeSize = result_pos - result;
 	// printf("Total size %ld\n", totalEncodeSize);
 	free(mean);
@@ -2297,11 +2322,11 @@ TightDataPointStorageF* SZ_compress_float_3D_MDQ(float *oriData, size_t r1, size
 			realPrecision, medianValue, (char)reqLength, quantization_intervals, NULL, 0, 0);
 
 //sdi:Debug
-/*	int sum =0;
+	int sum =0;
 	for(i=0;i<dataLength;i++)
 		if(type[i]==0) sum++;
-	printf("opt_quantizations=%d, exactDataNum=%d, sum=%d\n",quantization_intervals, exactDataNum, sum);
-*/
+	printf("opt_quantizations=%d, exactDataNum=%d, sum=%d, compressedtypeLength=%d\n",quantization_intervals, exactDataNum, sum, tdps->typeArray_size);
+
 
 //	printf("exactDataNum=%d, expSegmentsInBytes_size=%d, exactMidByteArray->size=%d,resiBitLengthArray->size=%d\n",
 //			exactDataNum, expSegmentsInBytes_size, exactMidByteArray->size, resiBitLengthArray->size);
@@ -2853,7 +2878,7 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwRelBoundRa
 				if(szRandomAccess == SZ_NO_RANDOM_ACCESS)
 					SZ_compress_args_float_NoCkRngeNoGzip_3D(&tmpByteData, oriData, r3, r2, r1, realPrecision, &tmpOutSize, valueRangeSize, medianValue);
 				else 
-					tmpByteData = SZ_compress_float_3D_MDQ_RA(oriData, r1, r2, r3, realPrecision, &tmpOutSize);
+					tmpByteData = SZ_compress_float_3D_MDQ_RA(oriData, r3, r2, r1, realPrecision, &tmpOutSize);
 			}
 		}
 		else
