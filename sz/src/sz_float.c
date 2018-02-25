@@ -1040,7 +1040,7 @@ void SZ_compress_args_float_NoCkRngeNoGzip_2D(unsigned char** newByteData, float
 	free_TightDataPointStorageF(tdps);	
 }
 
-unsigned short SZ_compress_float_1D_MDQ_RA_block_1D_pred(float * block_ori_data, float * mean, float dense_pos, size_t dim_0, size_t block_dim_0, double realPrecision, int * type, DynamicFloatArray * unpredictable_data){
+unsigned short SZ_compress_float_1D_MDQ_RA_block_1D_pred(float * block_ori_data, float * mean, float dense_pos, size_t dim_0, int block_dim_0, double realPrecision, int * type, DynamicFloatArray * unpredictable_data){
 
 
 	float sum = 0.0;
@@ -1067,7 +1067,7 @@ unsigned short SZ_compress_float_1D_MDQ_RA_block_1D_pred(float * block_ori_data,
 	double diff;
 	float last_over_thres = mean[0];
 	float pred1D;
-	int type_index = 0;
+	unsigned int type_index = 0;
 	data_pos = block_ori_data;
 	for(int i=0; i<block_dim_0; i++){
 		curData = *data_pos;
@@ -1131,16 +1131,16 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double re
 		quantization_intervals = intvCapacity;
 		intvCapacity = quantization_intervals - 2;
 	}
-	int num_x;
-	int early_blockcount_x, late_blockcount_x, split_index_x;
+	size_t num_x;
+	unsigned int early_blockcount_x, late_blockcount_x, split_index_x;
 
 	COMPUTE_1D_NUMBER_OF_BLOCKS(r1, num_x);
 	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
 
 
 	size_t num_elements = r1;
-	int max_num_block_elements = early_blockcount_x;
-	int num_blocks = num_x;
+	unsigned int max_num_block_elements = early_blockcount_x;
+	size_t num_blocks = num_x;
 
 	int * result_type = (int *) malloc(max_num_block_elements * num_blocks * sizeof(int));
 	int unpred_data_max_size = max_num_block_elements;
@@ -1153,15 +1153,15 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double re
 	float * mean = malloc(num_blocks * sizeof(float));
 	int * type;
 	float * unpredictable_data;
-	int total_unpred = 0;
-	int index = 0;
-	int max_unpred_count = 0;
+	size_t total_unpred = 0;
+	size_t index = 0;
+	unsigned int max_unpred_count = 0;
 	// printf("Block wise compression start: num_blocks %d num_block_elements %d\n", num_blocks, early_blockcount_x);
 	fflush(stdout);
 	size_t offset_x = 0;
 	size_t type_offset = 0;
 	int current_blockcount_x;
-	for(int i=0; i<num_blocks; i++){
+	for(size_t i=0; i<num_blocks; i++){
 
 		offset_x = (i < split_index_x) ? i * early_blockcount_x : i * late_blockcount_x + split_index_x;
 		data_pos = oriData + offset_x;
@@ -1190,9 +1190,9 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double re
 		if (code[i]) nodeCount++;
 	nodeCount = nodeCount*2-1;
 	unsigned char *treeBytes;
-	int treeByteSize = convert_HuffTree_to_bytes_anyStates(nodeCount, &treeBytes);
+	unsigned int treeByteSize = convert_HuffTree_to_bytes_anyStates(nodeCount, &treeBytes);
 
-	int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	unsigned int meta_data_offset = 3 + 1 + MetaDataByteLength;
 	// total size 										metadata		real precision		intervals	nodeCount		huffman 	 	block index 						unpredicatable count						mean 					 	unpred size 				elements
 	unsigned char * result = (unsigned char *) malloc(meta_data_offset + sizeof(double) + sizeof(int) + sizeof(int) + treeByteSize + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(float) + total_unpred * sizeof(float) + num_elements * sizeof(int));
 	unsigned char * result_pos = result;
@@ -1214,7 +1214,6 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double re
 	free(treeBytes);
 
 	index = 0;
-	int blockEncodeSize;
 	size_t unpredictableEncodeSize;
 	size_t totalEncodeSize = 0;
 	unsigned short * block_pos = (unsigned short *) result_pos;
@@ -1253,10 +1252,8 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double re
 		encode(type, current_blockcount_x, result_pos, &enCodeSize);
 
 		result_pos += enCodeSize;
-		blockEncodeSize = result_pos - block_start_pos;
-		block_pos[0] = blockEncodeSize;
+		*block_pos = result_pos - block_start_pos;
 		block_pos ++;
-		index ++;
 	}
 	totalEncodeSize = result_pos - result;
 	printf("Total size %ld\n", totalEncodeSize);
