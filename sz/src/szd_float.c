@@ -545,7 +545,7 @@ void decompressDataSeries_float_2D(float** data, size_t r1, size_t r2, TightData
 	return;
 }
 
-unsigned short decompressDataSeries_float_1D_RA_block_1D_pred(float * data, float mean, size_t dim_0, int block_dim_0, double realPrecision, int * type, float * unpredictable_data){
+unsigned short decompressDataSeries_float_1D_RA_block_1D_pred(float * data, float mean, size_t dim_0, size_t block_dim_0, double realPrecision, int * type, float * unpredictable_data){
 	
 
 	unsigned short unpredictable_count = 0;
@@ -578,14 +578,14 @@ unsigned short decompressDataSeries_float_1D_RA_block_1D_pred(float * data, floa
 void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * comp_data){
 
 	size_t num_x;
-	unsigned int early_blockcount_x, late_blockcount_x;
+	size_t early_blockcount_x, late_blockcount_x;
 	size_t split_index_x;
 
 	COMPUTE_1D_NUMBER_OF_BLOCKS(r1, num_x);
 	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
 
 	size_t num_elements = r1;
-	unsigned int max_num_block_elements = early_blockcount_x;
+	size_t max_num_block_elements = early_blockcount_x;
 	size_t num_blocks = num_x;
 
 	*data = (float*)malloc(sizeof(float)*num_elements);
@@ -624,7 +624,7 @@ void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * c
 	unsigned int unpredictable_count;
 	int * type = (int *) malloc(max_num_block_elements * sizeof(int));
 	// int unpred_data_max_size = ((int)(num_block_elements * 0.2) + 1);
-	int unpred_data_max_size = max_num_block_elements;
+	size_t unpred_data_max_size = max_num_block_elements;
 	float * unpredictable_data = (float *) malloc(unpred_data_max_size * sizeof(float));
 	float mean;
 	unsigned char * tmp;
@@ -637,7 +637,7 @@ void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * c
 
 	size_t offset_x = 0;
 	size_t type_offset = 0;
-	unsigned int current_blockcount_x;
+	size_t current_blockcount_x;
 	for(size_t i=0; i<num_blocks; i++){
 		offset_x = (i < split_index_x) ? i * early_blockcount_x : i * late_blockcount_x + split_index_x;
 		data_pos = *data + offset_x;
@@ -679,7 +679,7 @@ void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * c
 }
 
 
-unsigned short decompressDataSeries_float_3D_RA_block_3D_pred(float * data, float mean, size_t dim_0, size_t dim_1, size_t dim_2, int block_dim_0, int block_dim_1, int block_dim_2, double realPrecision, int * type, float * unpredictable_data){
+unsigned short decompressDataSeries_float_3D_RA_block_3D_pred(float * data, float mean, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, int * type, float * unpredictable_data){
 
 	float sum = 0.0;
 	float * data_pos;
@@ -689,7 +689,7 @@ unsigned short decompressDataSeries_float_3D_RA_block_3D_pred(float * data, floa
 	// fflush(stdout);
 
 	unsigned short unpredictable_count = 0;
-	int r1, r2, r3;
+	size_t r1, r2, r3;
 	r1 = block_dim_0;
 	r2 = block_dim_1;
 	r3 = block_dim_2;
@@ -949,20 +949,20 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 	float * mean_pos = (float *) comp_data_pos;
 	comp_data_pos += num_blocks * sizeof(float);
 
-	unsigned int unpredictable_count;
+	size_t unpredictable_count;
 
 	// printf("Block wise decompression start: %d %d %d\n", early_blockcount_x, early_blockcount_y, early_blockcount_z);
 	// fflush(stdout);
 	int * type = (int *) malloc(max_num_block_elements * sizeof(int));
-	int unpred_data_max_size = max_num_block_elements;
+	size_t unpred_data_max_size = max_num_block_elements;
 	float * unpredictable_data = (float *) malloc(unpred_data_max_size * sizeof(float));
 	float mean;
 	unsigned char * tmp;
-	unsigned int unpredictableEncodeSize;
+	size_t unpredictableEncodeSize;
 	size_t index = 0;
 	float * data_pos = *data;
 	size_t offset_x, offset_y, offset_z;
-	unsigned int current_blockcount_x, current_blockcount_y, current_blockcount_z;
+	size_t current_blockcount_x, current_blockcount_y, current_blockcount_z;
 	// printf("decompress offset to start: %ld\n", comp_data_pos - tdps->data);
 	// fflush(stdout);
 	for(size_t i=0; i<num_x; i++){
@@ -988,11 +988,11 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 					memcpy(unpredictable_data, tmp, unpredictableEncodeSize);
 					tmp += unpredictableEncodeSize;
 				}
-				int current_block_elements = current_blockcount_x * current_blockcount_y * current_blockcount_z;
+				size_t current_block_elements = current_blockcount_x * current_blockcount_y * current_blockcount_z;
 				decode(tmp, (size_t)current_block_elements, root, type);
 
 				// int cur_unpred_count = decompressDataSeries_float_3D_RA_block(data_pos, mean, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, type, unpredictable_data);
-				int cur_unpred_count = decompressDataSeries_float_3D_RA_block_3D_pred(data_pos, mean, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, type, unpredictable_data);
+				size_t cur_unpred_count = decompressDataSeries_float_3D_RA_block_3D_pred(data_pos, mean, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, type, unpredictable_data);
 				//int cur_unpred_count = decompressDataSeries_float_3D_RA_block_1D_pred(data_pos, mean, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, type, unpredictable_data);
 
 				if(cur_unpred_count != unpredictable_count){

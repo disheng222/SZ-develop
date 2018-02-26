@@ -149,6 +149,38 @@ extern "C" {
 //#define intvCapacity 131072
 //#define intvRadius 65536
 
+#define COLL_BASE_COMPUTE_BLOCKCOUNT( COUNT, NUM_BLOCKS, SPLIT_INDEX,       \
+                                       EARLY_BLOCK_COUNT, LATE_BLOCK_COUNT ) \
+    EARLY_BLOCK_COUNT = LATE_BLOCK_COUNT = COUNT / NUM_BLOCKS;               \
+    SPLIT_INDEX = COUNT % NUM_BLOCKS;                                        \
+    if (0 != SPLIT_INDEX) {                                                  \
+        EARLY_BLOCK_COUNT = EARLY_BLOCK_COUNT + 1;                           \
+    }                                                                        \
+
+#define COMPUTE_1D_NUMBER_OF_BLOCKS( COUNT, NUM_BLOCKS ) \
+    if (COUNT <= 512){                  \
+        NUM_BLOCKS = 1;             \
+    }                                   \
+    else{                               \
+        NUM_BLOCKS = COUNT / 512;       \
+    }                                   \
+
+#define COMPUTE_3D_NUMBER_OF_BLOCKS( COUNT, NUM_BLOCKS ) \
+    if (COUNT <= 8){                   \
+        NUM_BLOCKS = 1;             \
+    }                                   \
+    else{                               \
+        NUM_BLOCKS = COUNT / 8;        \
+    }                                   \
+
+#define COLL_BASE_COMPUTE_BLOCKCOUNT( COUNT, NUM_BLOCKS, SPLIT_INDEX,       \
+                                       EARLY_BLOCK_COUNT, LATE_BLOCK_COUNT ) \
+    EARLY_BLOCK_COUNT = LATE_BLOCK_COUNT = COUNT / NUM_BLOCKS;               \
+    SPLIT_INDEX = COUNT % NUM_BLOCKS;                                        \
+    if (0 != SPLIT_INDEX) {                                                  \
+        EARLY_BLOCK_COUNT = EARLY_BLOCK_COUNT + 1;                           \
+    }                                                                        \
+
 extern unsigned int maxRangeRadius;
 
 extern int intvCapacity;

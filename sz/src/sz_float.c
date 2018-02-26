@@ -1039,14 +1039,14 @@ void SZ_compress_args_float_NoCkRngeNoGzip_2D(unsigned char** newByteData, float
 	free_TightDataPointStorageF(tdps);	
 }
 
-unsigned short SZ_compress_float_1D_MDQ_RA_block_1D_pred(float * block_ori_data, float * mean, float dense_pos, size_t dim_0, int block_dim_0, double realPrecision, int * type, DynamicFloatArray * unpredictable_data){
+unsigned short SZ_compress_float_1D_MDQ_RA_block_1D_pred(float * block_ori_data, float * mean, float dense_pos, size_t dim_0, size_t block_dim_0, double realPrecision, int * type, DynamicFloatArray * unpredictable_data){
 
 
 	float sum = 0.0;
 	float * data_pos;
-	int mean_count = 0;
+	size_t mean_count = 0;
 	data_pos = block_ori_data;
-	for(int i=0; i<block_dim_0; i++){
+	for(size_t i=0; i<block_dim_0; i++){
 		if(fabs(*data_pos - dense_pos) <= realPrecision){
 			sum += *data_pos;
 			mean_count ++;
@@ -1066,9 +1066,9 @@ unsigned short SZ_compress_float_1D_MDQ_RA_block_1D_pred(float * block_ori_data,
 	double diff;
 	float last_over_thres = mean[0];
 	float pred1D;
-	unsigned int type_index = 0;
+	size_t type_index = 0;
 	data_pos = block_ori_data;
-	for(int i=0; i<block_dim_0; i++){
+	for(size_t i=0; i<block_dim_0; i++){
 		curData = *data_pos;
 		if(fabs(curData - mean[0]) <= realPrecision){
 			type[type_index] = 1;
@@ -1115,7 +1115,7 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double re
 		intvCapacity = quantization_intervals - 2;
 	}
 	size_t num_x;
-	unsigned int early_blockcount_x, late_blockcount_x;
+	size_t early_blockcount_x, late_blockcount_x;
 	size_t split_index_x;
 
 	COMPUTE_1D_NUMBER_OF_BLOCKS(r1, num_x);
@@ -1123,11 +1123,11 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double re
 
 
 	size_t num_elements = r1;
-	unsigned int max_num_block_elements = early_blockcount_x;
+	size_t max_num_block_elements = early_blockcount_x;
 	size_t num_blocks = num_x;
 
 	int * result_type = (int *) malloc(max_num_block_elements * num_blocks * sizeof(int));
-	int unpred_data_max_size = max_num_block_elements;
+	size_t unpred_data_max_size = max_num_block_elements;
 	// float * result_unpredictable_data = (float *) malloc(unpred_data_max_size * sizeof(float) * num_blocks);
 	DynamicFloatArray * result_unpredictable_data;
 	new_DFA(&result_unpredictable_data, num_elements * 0.01);
@@ -1139,12 +1139,12 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double re
 	float * unpredictable_data;
 	size_t total_unpred = 0;
 	size_t index = 0;
-	unsigned int max_unpred_count = 0;
+	size_t max_unpred_count = 0;
 	// printf("Block wise compression start: num_blocks %d num_block_elements %d\n", num_blocks, early_blockcount_x);
 	fflush(stdout);
 	size_t offset_x = 0;
 	size_t type_offset = 0;
-	int current_blockcount_x;
+	size_t current_blockcount_x;
 	for(size_t i=0; i<num_blocks; i++){
 
 		offset_x = (i < split_index_x) ? i * early_blockcount_x : i * late_blockcount_x + split_index_x;
@@ -1209,7 +1209,7 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double re
 	result_pos += num_blocks * sizeof(float);			// skip mean
 	// printf("Block wise encode start\n");
 	// printf("compress offset to start: %ld\n", result_pos - result);
-	fflush(stdout);
+	// fflush(stdout);
 	float * unpredictable_data_pos = result_unpredictable_data->array;
 	for(int i=0; i<num_blocks; i++){
 		// printf("i j k: %d %d %d\n", i, j, k);
@@ -1251,7 +1251,7 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double re
 	return result;
 }
 
-unsigned short SZ_compress_float_3D_MDQ_RA_block_3D_pred(float * block_ori_data, float * mean, float dense_pos, size_t dim_0, size_t dim_1, size_t dim_2, int block_dim_0, int block_dim_1, int block_dim_2, double realPrecision, float * P0, float * P1, int * type, float * unpredictable_data){
+unsigned short SZ_compress_float_3D_MDQ_RA_block_3D_pred(float * block_ori_data, float * mean, float dense_pos, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, float * P0, float * P1, int * type, float * unpredictable_data){
 
 	float sum = 0.0;
 	float * data_pos;
@@ -1259,10 +1259,10 @@ unsigned short SZ_compress_float_3D_MDQ_RA_block_3D_pred(float * block_ori_data,
 	size_t dim1_offset = dim_2;
 
 	data_pos = block_ori_data;
-	int mean_count = 0;
-	for(int i=0; i<block_dim_0; i++){
-		for(int j=0; j<block_dim_1; j++){
-			for(int k=0; k<block_dim_2; k++){
+	size_t mean_count = 0;
+	for(size_t i=0; i<block_dim_0; i++){
+		for(size_t j=0; j<block_dim_1; j++){
+			for(size_t k=0; k<block_dim_2; k++){
 				if(fabs(*data_pos - dense_pos) <= realPrecision){
 					sum += *data_pos;
 					mean_count ++;
@@ -1273,12 +1273,12 @@ unsigned short SZ_compress_float_3D_MDQ_RA_block_3D_pred(float * block_ori_data,
 		}
 		data_pos += dim0_offset - block_dim_1 * dim1_offset;
 	}
-	int num_elements = block_dim_0 * block_dim_1 * block_dim_2;
+	size_t num_elements = block_dim_0 * block_dim_1 * block_dim_2;
 	if(mean_count > 0) mean[0] = sum / mean_count;
 	else mean[0] = 0;
 
 	unsigned short unpredictable_count = 0;
-	int r1, r2, r3;
+	size_t r1, r2, r3;
 	r1 = block_dim_0;
 	r2 = block_dim_1;
 	r3 = block_dim_2;
@@ -1659,8 +1659,8 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z);
 
 	size_t split_index_x, split_index_y, split_index_z;
-	unsigned int early_blockcount_x, early_blockcount_y, early_blockcount_z;
-	unsigned int late_blockcount_x, late_blockcount_y, late_blockcount_z;
+	size_t early_blockcount_x, early_blockcount_y, early_blockcount_z;
+	size_t late_blockcount_x, late_blockcount_y, late_blockcount_z;
 	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
 	COLL_BASE_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
 	COLL_BASE_COMPUTE_BLOCKCOUNT(r3, num_z, split_index_z, early_blockcount_z, late_blockcount_z);
@@ -1670,7 +1670,7 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	// printf("early counts: %d %d %d\n", early_blockcount_x, early_blockcount_y, early_blockcount_z);
 	// printf("late counts: %d %d %d\n", late_blockcount_x, late_blockcount_y, late_blockcount_z);
 	// exit(0);
-	unsigned int max_num_block_elements = early_blockcount_x * early_blockcount_y * early_blockcount_z;
+	size_t max_num_block_elements = early_blockcount_x * early_blockcount_y * early_blockcount_z;
 	size_t num_blocks = num_x * num_y * num_z;
 	size_t num_elements = r1 * r2 * r3;
 	// printf("max_num_block_elements %d num_blocks %d\n", max_num_block_elements, num_blocks);
@@ -1687,7 +1687,7 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	P1 = (float *) malloc(buffer_size);
 	int * result_type = (int *) malloc(num_elements * sizeof(int));
 	// int unpred_data_max_size = ((int)(num_block_elements * 0.2) + 1) ;
-	unsigned int unpred_data_max_size = max_num_block_elements;
+	size_t unpred_data_max_size = max_num_block_elements;
 	float * result_unpredictable_data = (float *) malloc(unpred_data_max_size * sizeof(float) * num_blocks);
 
 	// int unpredictable_count = 0;
@@ -1695,12 +1695,12 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	float * mean = malloc(num_blocks * sizeof(float));
 	size_t total_unpred = 0;
 	size_t index = 0;
-	unsigned int max_unpred_count = 0;
+	size_t max_unpred_count = 0;
 	float * data_pos = oriData;
 	int * type = result_type;
 	float * unpredictable_data = result_unpredictable_data;
 	size_t offset_x, offset_y, offset_z;
-	unsigned int current_blockcount_x, current_blockcount_y, current_blockcount_z;
+	size_t current_blockcount_x, current_blockcount_y, current_blockcount_z;
 	size_t type_offset = 0;
 	// printf("Block wise compression start: %d %d %d\n", early_blockcount_x, early_blockcount_y, early_blockcount_z);
 	// fflush(stdout);
@@ -1809,9 +1809,9 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	printf("flushed count: %d\n", flushed_count);
 		
 
-	for(int i=0; i<num_x; i++){
-		for(int j=0; j<num_y; j++){
-			for(int k=0; k<num_z; k++){
+	for(size_t i=0; i<num_x; i++){
+		for(size_t j=0; j<num_y; j++){
+			for(size_t k=0; k<num_z; k++){
 				// printf("i j k: %d %d %d\n", i, j, k);
 				index = i * num_y * num_z + j * num_z + k;
 				block_start_pos = result_pos;
@@ -1834,7 +1834,7 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 				type_offset = offset_x * dim0_offset +  offset_y * current_blockcount_x * dim1_offset + offset_z * current_blockcount_x * current_blockcount_y;
 
 				type = result_type + type_offset;
-				int current_block_elements = current_blockcount_x * current_blockcount_y * current_blockcount_z;
+				size_t current_block_elements = current_blockcount_x * current_blockcount_y * current_blockcount_z;
 				enCodeSize = 0;
 				encode(type, current_block_elements, result_pos, &enCodeSize);
 				typeArray_size += enCodeSize;
