@@ -33,10 +33,10 @@ int main(){
 	// unsigned char *comp_data = SZ_compress_args(SZ_FLOAT, data, &comped_size, ABS, 4780.302, 1, 1, 0, 0, 0, 512, 512, 512);
 	// unsigned char *comp_data = SZ_compress_args(SZ_FLOAT, data, &comped_size, ABS, 0.01056972, 1, 1, 0, 0, 0, 100, 500, 500);
 	// printf("quantization bins: %d\n", intvCapacity);
-	unsigned char * comp_data = SZ_compress_float_1D_MDQ_RA(data, 25000000, 1e-2, &comped_size);
+	// unsigned char * comp_data = SZ_compress_float_1D_MDQ_RA(data, 25000000, 1e-2, &comped_size);
 	// unsigned char * comp_data = SZ_compress_float_3D_MDQ_RA(data, 100, 500, 500, 0.001056972, &comped_size);
 	// unsigned char * comp_data = SZ_compress_float_3D_MDQ_RA(data, 512, 512, 512, 0.55, &comped_size);
-	// unsigned char * comp_data = SZ_compress_float_3D_MDQ_nonblocked(data, 100, 500, 500, 0.001056972, &comped_size);
+	unsigned char * comp_data = SZ_compress_float_3D_MDQ_nonblocked(data, 100, 500, 500, 0.001056972, &comped_size);
 	// unsigned char * comp_data = SZ_compress_float_3D_MDQ_nonblocked(data, 512, 512, 512, 0.48, &comped_size);
 
 	// printf("comped size: %ld\n", comped_size);
@@ -54,10 +54,10 @@ int main(){
 	// result = SZ_decompress(SZ_FLOAT, comp_data, comped_size, 0, 0, 0, 0, 134217728);
 	// result = SZ_decompress(SZ_FLOAT, comp_data, comped_size, 0, 0, 512, 512, 512);
 	// result = SZ_decompress(SZ_FLOAT, comp_data, comped_size, 0, 0, 100, 500, 500);
-	decompressDataSeries_float_1D_RA(&result, 25000000, comp_data + 24);
+	// decompressDataSeries_float_1D_RA(&result, 25000000, comp_data + 24);
 	// decompressDataSeries_float_3D_RA(&result, 100, 500, 500, comp_data + 24);
 	// decompressDataSeries_float_3D_RA(&result, 512, 512, 512, comp_data + 24);
-	// decompressDataSeries_float_3D_nonblocked(&result, 100, 500, 500, comp_data + 24);
+	decompressDataSeries_float_3D_nonblocked(&result, 100, 500, 500, comp_data + 24);
 	// decompressDataSeries_float_3D_nonblocked(&result, 512, 512, 512, comp_data + 24);
 
 	printf("decompression done, nbEle: %ld\n", nbEle);

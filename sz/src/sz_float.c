@@ -1616,6 +1616,128 @@ unsigned short SZ_compress_float_3D_MDQ_RA_block_3D_pred(float * block_ori_data,
 	return unpredictable_count;
 }
 
+unsigned char * SZ_compress_float_3D_MDQ_nonblocked(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
+	unsigned int quantization_intervals;
+	float dense_pos;
+	if(optQuantMode==1)
+	{
+		
+		quantization_intervals = optimize_intervals_and_compute_dense_position_float_3D(oriData, r1, r2, r3, realPrecision, &dense_pos);
+		printf("number of bins: %d\nerror bound %.20f dense position %.20f\n", quantization_intervals, realPrecision, dense_pos);
+		quantization_intervals = optimize_intervals_float_3D(oriData, r1, r2, r3, realPrecision);
+		printf("new number of bins: %d\n", quantization_intervals);
+		//dense_pos = realPrecision;
+		//dense_pos = 2.5867;
+		//quantization_intervals = 512;
+		if(quantization_intervals < 128) quantization_intervals = 128;
+		updateQuantizationInfo(quantization_intervals);
+		intvCapacity = quantization_intervals - 2;
+	}	
+	else{
+		quantization_intervals = intvCapacity;
+		intvCapacity = quantization_intervals - 2;
+	}
+
+	// calculate block dims
+	size_t num_blocks = 1;
+	size_t num_elements = r1 * r2 * r3;
+
+	size_t dim0_offset = r2 * r3;
+	size_t dim1_offset = r3;
+	
+	float *P0, *P1; // buffer
+	size_t buffer_size = r2 * r3 * sizeof(float);
+	P0 = (float *) malloc(buffer_size);
+	P1 = (float *) malloc(buffer_size);
+	int * result_type = (int *) malloc(num_elements * sizeof(int));
+	// int unpred_data_max_size = ((int)(num_block_elements * 0.2) + 1) ;
+	unsigned int unpred_data_max_size = num_elements;
+	float * result_unpredictable_data = (float *) malloc(unpred_data_max_size * sizeof(float) * num_blocks);
+
+	// int unpredictable_count = 0;
+	size_t total_unpred = 0;
+	size_t index = 0;
+	// NOTE: Currently max unpred count cannot exceed unsigned int limit
+	unsigned int max_unpred_count = 0;
+	float * data_pos = oriData;
+	int * type = result_type;
+	float * unpredictable_data = result_unpredictable_data;
+	// printf("Block wise compression start: %d %d %d\n", early_blockcount_x, early_blockcount_y, early_blockcount_z);
+	// fflush(stdout);
+	float mean;
+	unsigned int unpredictable_count = SZ_compress_float_3D_MDQ_RA_block_3D_pred(data_pos, &mean, dense_pos, r1, r2, r3, r1, r2, r3, realPrecision, P0, P1, type, unpredictable_data);
+	if(unpredictable_count > max_unpred_count){
+		max_unpred_count = unpredictable_count;
+	}
+	total_unpred += unpredictable_count;
+	
+	//debug
+	size_t flushed_count = 0;
+	for(size_t i = 0;i<num_elements;i++){
+		if(result_type[i] == 1){
+			flushed_count ++;
+		}
+	}
+	printf("flushed count: %d\n", flushed_count);
+	printf("Block wise compression end, unpredictable num %d, num_elements %ld, max unpred count %d\n", total_unpred, num_elements, max_unpred_count);
+	// fflush(stdout);
+	free(P0);
+	free(P1);
+
+	// huffman encode
+	SZ_Reset(allNodes, stateNum);
+	size_t nodeCount = 0;
+	init(result_type, num_elements);
+	for (size_t i = 0; i < stateNum; i++)
+		if (code[i]) nodeCount++;
+	nodeCount = nodeCount*2-1;
+	unsigned char *treeBytes;
+	unsigned int treeByteSize = convert_HuffTree_to_bytes_anyStates(nodeCount, &treeBytes);
+
+	unsigned int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	// total size 										metadata		real precision		intervals	nodeCount		huffman 	 	block index 						unpredicatable count						mean 					 	unpred size 				elements
+	unsigned char * result = (unsigned char *) malloc(meta_data_offset + sizeof(double) + sizeof(int) + sizeof(int) + treeByteSize + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(float) + total_unpred * sizeof(float) + num_elements * sizeof(int));
+	unsigned char * result_pos = result;
+	initRandomAccessBytes(result_pos);
+	result_pos += meta_data_offset;
+
+	size_t enCodeSize = 0;
+
+	doubleToBytes(result_pos, realPrecision);
+	result_pos += 8;
+	intToBytes_bigEndian(result_pos, quantization_intervals);
+	result_pos += 4;
+	intToBytes_bigEndian(result_pos, treeByteSize);
+	result_pos += 4;
+	intToBytes_bigEndian(result_pos, nodeCount);
+	result_pos += 4;
+	memcpy(result_pos, treeBytes, treeByteSize);
+	result_pos += treeByteSize;
+	free(treeBytes);
+
+	size_t totalEncodeSize = 0;
+	memcpy(result_pos, &unpredictable_count, sizeof(unsigned int));
+	result_pos += num_blocks * sizeof(unsigned int);
+	size_t unpredictableEncodeSize = unpredictable_count * sizeof(float);
+	memcpy(result_pos, unpredictable_data, unpredictableEncodeSize);
+	result_pos += unpredictableEncodeSize;
+	memcpy(result_pos, &mean, sizeof(float));
+	result_pos += num_blocks * sizeof(float);
+	
+	encode(type, num_elements, result_pos, &enCodeSize);
+	result_pos += enCodeSize;
+
+	printf("type array size: %ld\n", enCodeSize);
+	totalEncodeSize = result_pos - result;
+	printf("Total size %ld\n", totalEncodeSize);
+	free(result_unpredictable_data);
+	free(result_type);
+	SZ_ReleaseHuffman();
+
+	*comp_size = totalEncodeSize;
+	return result;
+}
+
 unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
 	// printf("SZ_compress_float_3D_MDQ_RA start: r1 %d r2 %d r3 %d\n", r1, r2, r3);
 	// fflush(stdout);
