@@ -545,10 +545,10 @@ void decompressDataSeries_float_2D(float** data, size_t r1, size_t r2, TightData
 	return;
 }
 
-unsigned short decompressDataSeries_float_1D_RA_block_1D_pred(float * data, float mean, size_t dim_0, size_t block_dim_0, double realPrecision, int * type, float * unpredictable_data){
+size_t decompressDataSeries_float_1D_RA_block_1D_pred(float * data, float mean, size_t dim_0, size_t block_dim_0, double realPrecision, int * type, float * unpredictable_data){
 	
 
-	unsigned short unpredictable_count = 0;
+	size_t unpredictable_count = 0;
 	
 	float * cur_data_pos = data;
 	size_t type_index = 0;
@@ -638,6 +638,7 @@ void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * c
 	size_t offset_x = 0;
 	size_t type_offset = 0;
 	size_t current_blockcount_x;
+	size_t cur_unpred_count;
 	for(size_t i=0; i<num_blocks; i++){
 		offset_x = (i < split_index_x) ? i * early_blockcount_x : i * late_blockcount_x + split_index_x;
 		data_pos = *data + offset_x;
@@ -654,7 +655,7 @@ void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * c
 		// caculate real block elements
 		decode(tmp, current_blockcount_x, root, type);
 
-		size_t cur_unpred_count = decompressDataSeries_float_1D_RA_block_1D_pred(data_pos, mean, num_elements, current_blockcount_x, realPrecision, type, unpredictable_data);
+		cur_unpred_count = decompressDataSeries_float_1D_RA_block_1D_pred(data_pos, mean, num_elements, current_blockcount_x, realPrecision, type, unpredictable_data);
 		if(cur_unpred_count != unpredictable_count){
 			printf("Check bugs, unpredictable_count is not the same: %d %d\n", unpredictable_count, cur_unpred_count);
 			printf("Current index: %d\n\n", i);
@@ -678,7 +679,7 @@ void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * c
 	free(unpredictable_data);
 }
 
-unsigned short decompressDataSeries_float_3D_RA_block_3D_pred(float * data, float mean, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, int * type, float * unpredictable_data){
+size_t decompressDataSeries_float_3D_RA_block_3D_pred(float * data, float mean, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, int * type, float * unpredictable_data){
 
 	float sum = 0.0;
 	float * data_pos;
@@ -687,7 +688,7 @@ unsigned short decompressDataSeries_float_3D_RA_block_3D_pred(float * data, floa
 	// printf("SZ_compress_float_3D_MDQ_RA_block real dim: %d %d %d\n", real_block_dims[0], real_block_dims[1], real_block_dims[2]);
 	// fflush(stdout);
 
-	unsigned short unpredictable_count = 0;
+	size_t unpredictable_count = 0;
 	size_t r1, r2, r3;
 	r1 = block_dim_0;
 	r2 = block_dim_1;
@@ -1024,6 +1025,7 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 	float * data_pos = *data;
 	size_t offset_x, offset_y, offset_z;
 	size_t current_blockcount_x, current_blockcount_y, current_blockcount_z;
+	size_t cur_unpred_count;
 	// printf("decompress offset to start: %ld\n", comp_data_pos - tdps->data);
 	// fflush(stdout);
 	for(size_t i=0; i<num_x; i++){
@@ -1053,7 +1055,7 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 				decode(tmp, (size_t)current_block_elements, root, type);
 
 				// int cur_unpred_count = decompressDataSeries_float_3D_RA_block(data_pos, mean, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, type, unpredictable_data);
-				size_t cur_unpred_count = decompressDataSeries_float_3D_RA_block_3D_pred(data_pos, mean, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, type, unpredictable_data);
+				cur_unpred_count = decompressDataSeries_float_3D_RA_block_3D_pred(data_pos, mean, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, type, unpredictable_data);
 				//int cur_unpred_count = decompressDataSeries_float_3D_RA_block_1D_pred(data_pos, mean, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, type, unpredictable_data);
 
 				if(cur_unpred_count != unpredictable_count){
