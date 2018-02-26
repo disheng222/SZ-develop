@@ -551,10 +551,10 @@ unsigned short decompressDataSeries_float_1D_RA_block_1D_pred(float * data, floa
 	unsigned short unpredictable_count = 0;
 	
 	float * cur_data_pos = data;
-	int type_index = 0;
+	size_t type_index = 0;
 	int type_;
 	float last_over_thres = mean;
-	for(int i=0; i<block_dim_0; i++){
+	for(size_t i=0; i<block_dim_0; i++){
 		type_ = type[type_index];
 		if(type_ == 0){
 			cur_data_pos[0] = unpredictable_data[unpredictable_count ++];
@@ -654,11 +654,11 @@ void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * c
 		// caculate real block elements
 		decode(tmp, current_blockcount_x, root, type);
 
-		int cur_unpred_count = decompressDataSeries_float_1D_RA_block_1D_pred(data_pos, mean, num_elements, current_blockcount_x, realPrecision, type, unpredictable_data);
+		size_t cur_unpred_count = decompressDataSeries_float_1D_RA_block_1D_pred(data_pos, mean, num_elements, current_blockcount_x, realPrecision, type, unpredictable_data);
 		if(cur_unpred_count != unpredictable_count){
 			printf("Check bugs, unpredictable_count is not the same: %d %d\n", unpredictable_count, cur_unpred_count);
 			printf("Current index: %d\n\n", i);
-			for(int i=0; i<current_blockcount_x; i++){
+			for(size_t i=0; i<current_blockcount_x; i++){
 				printf("%d ", type[i]);
 			}
 			printf("\n");
