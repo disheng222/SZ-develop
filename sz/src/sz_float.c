@@ -527,7 +527,7 @@ unsigned int optimize_intervals_and_compute_dense_position_float_3D(float *oriDa
 		printf("%.6f ", cost_est[j]);
 	}
 	cost_inf /= totalSampleSize;
-	cost_inf += unpred_sum * 1.0 / totalSampleSize;
+	cost_inf += 32 * unpred_sum * 1.0 / totalSampleSize;
 	printf("%.6f\n", cost_inf);
 	exit(0);
 
