@@ -157,20 +157,28 @@ extern "C" {
         EARLY_BLOCK_COUNT = EARLY_BLOCK_COUNT + 1;                           \
     }                                                                        \
 
-#define COMPUTE_1D_NUMBER_OF_BLOCKS( COUNT, NUM_BLOCKS ) \
-    if (COUNT <= 512){                  \
+#define COMPUTE_1D_NUMBER_OF_BLOCKS( COUNT, NUM_BLOCKS, BLOCK_SIZE ) \
+    if (COUNT <= BLOCK_SIZE){                  \
         NUM_BLOCKS = 1;             \
     }                                   \
     else{                               \
-        NUM_BLOCKS = COUNT / 512;       \
+        NUM_BLOCKS = COUNT / BLOCK_SIZE;       \
     }                                   \
 
-#define COMPUTE_3D_NUMBER_OF_BLOCKS( COUNT, NUM_BLOCKS ) \
-    if (COUNT <= 8){                   \
+#define COMPUTE_2D_NUMBER_OF_BLOCKS( COUNT, NUM_BLOCKS, BLOCK_SIZE ) \
+    if (COUNT <= BLOCK_SIZE){                   \
         NUM_BLOCKS = 1;             \
     }                                   \
     else{                               \
-        NUM_BLOCKS = COUNT / 8;        \
+        NUM_BLOCKS = COUNT / BLOCK_SIZE;        \
+    }                                   \
+
+#define COMPUTE_3D_NUMBER_OF_BLOCKS( COUNT, NUM_BLOCKS, BLOCK_SIZE ) \
+    if (COUNT <= BLOCK_SIZE){                   \
+        NUM_BLOCKS = 1;             \
+    }                                   \
+    else{                               \
+        NUM_BLOCKS = COUNT / BLOCK_SIZE;        \
     }                                   \
 
 #define COLL_BASE_COMPUTE_BLOCKCOUNT( COUNT, NUM_BLOCKS, SPLIT_INDEX,       \
