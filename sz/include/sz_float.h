@@ -51,6 +51,7 @@ size_t SZ_compress_float_3D_MDQ_RA_block_3D_pred_flush_after_compare(float * blo
 
 unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double realPrecision, size_t * comp_size);
 unsigned char * SZ_compress_float_2D_MDQ_RA(float *oriData, size_t r1, size_t r2, float realPrecision, size_t * comp_size);
+unsigned char * SZ_compress_float_2D_MDQ_nonblocked(float *oriData, size_t r1, size_t r2, float realPrecision, size_t * comp_size);
 unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size);
 unsigned char * SZ_compress_float_3D_MDQ_nonblocked(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size);
 unsigned char * SZ_compress_float_3D_MDQ_RA_multi_means(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size);

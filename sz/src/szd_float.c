@@ -2352,6 +2352,68 @@ size_t decompressDataSeries_float_2D_RA_block_2D_pred(float * data, float mean, 
 	return unpredictable_count;
 }
 
+void decompressDataSeries_float_2D_nonblocked(float** data, size_t r1, size_t r2, unsigned char* comp_data){
+	// calculate block dims
+	// printf("num_block_elements %d num_blocks %d\n", max_num_block_elements, num_blocks);
+	// fflush(stdout);
+
+	size_t num_elements = r1 * r2;
+	size_t dim0_offset = r2;
+
+	*data = (float*)malloc(sizeof(float)*num_elements);
+	
+	unsigned char * comp_data_pos = comp_data;
+	//int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	//comp_data_pos += meta_data_offset;
+
+	double realPrecision = bytesToDouble(comp_data_pos);
+	comp_data_pos += 8;
+	unsigned int intervals = bytesToInt_bigEndian(comp_data_pos);
+	comp_data_pos += 4;
+
+	updateQuantizationInfo(intervals);
+	intvCapacity = intervals - 2;
+	// intvRadius = (int)((tdps->intervals - 1)/ 2);
+
+	unsigned int tree_size = bytesToInt_bigEndian(comp_data_pos);
+	comp_data_pos += 4;
+	allNodes = bytesToInt_bigEndian(comp_data_pos);
+	stateNum = allNodes/2;
+	SZ_Reset(allNodes, stateNum);
+	// printf("Reconstruct huffman tree with node count %ld\n", nodeCount);
+	// fflush(stdout);
+	node root = reconstruct_HuffTree_from_bytes_anyStates(comp_data_pos+4, allNodes);
+
+	comp_data_pos += 4 + tree_size;
+
+	unsigned int unpred_count = *((unsigned int *)comp_data_pos);
+	comp_data_pos += 4;
+	float * unpredictable_data = (float *) comp_data_pos;
+	comp_data_pos += unpred_count * sizeof(float);
+	
+	float mean = *((float *) comp_data_pos);
+	comp_data_pos += 4;
+
+	// printf("Block wise decompression start: %d %d %d\n", early_blockcount_x, early_blockcount_y, early_blockcount_z);
+	// fflush(stdout);
+	int * type = (int *) malloc(num_elements * sizeof(int));
+	float * data_pos = *data;
+	decode(comp_data_pos, num_elements, root, type);
+	size_t cur_unpred_count = decompressDataSeries_float_2D_RA_block_2D_pred(data_pos, mean, r1, r2, r1, r2, realPrecision, type, unpredictable_data);
+
+	if(cur_unpred_count != unpred_count){
+		printf("Check bugs, unpredictable_count is not the same: %d %d\n", unpred_count, cur_unpred_count);
+		for(size_t i=0; i<512; i++){
+			printf("%d ", type[i]);
+		}
+		printf("\n");
+		exit(0);
+	}
+	free(type);
+
+}
+
+
 void decompressDataSeries_float_2D_RA(float** data, size_t r1, size_t r2, unsigned char* comp_data){
 	// printf("num_block_elements %d num_blocks %d\n", max_num_block_elements, num_blocks);
 	// fflush(stdout);
@@ -2423,8 +2485,9 @@ void decompressDataSeries_float_2D_RA(float** data, size_t r1, size_t r2, unsign
 	size_t offset_x, offset_y;
 	size_t current_blockcount_x, current_blockcount_y;
 	size_t cur_unpred_count;
-	// printf("decompress offset to start: %ld\n", comp_data_pos - tdps->data);
+	// printf("decompress offset to start: %ld\n", comp_data_pos - comp_data);
 	// fflush(stdout);
+	size_t  current_block_elements;
 	for(size_t i=0; i<num_x; i++){
 		for(size_t j=0; j<num_y; j++){
 			offset_x = (i < split_index_x) ? i * early_blockcount_x : i * late_blockcount_x + split_index_x;
@@ -2445,17 +2508,23 @@ void decompressDataSeries_float_2D_RA(float** data, size_t r1, size_t r2, unsign
 				memcpy(unpredictable_data, tmp, unpredictableEncodeSize);
 				tmp += unpredictableEncodeSize;
 			}
-			size_t current_block_elements = current_blockcount_x * current_blockcount_y;
+			current_block_elements = current_blockcount_x * current_blockcount_y;
 			decode(tmp, current_block_elements, root, type);
 
 			cur_unpred_count = decompressDataSeries_float_2D_RA_block_2D_pred(data_pos, mean, r1, r2, current_blockcount_x, current_blockcount_y, realPrecision, type, unpredictable_data);
 
 			if(cur_unpred_count != unpredictable_count){
-				printf("Check bugs, unpredictable_count is not the same: %d %d\n", unpredictable_count, cur_unpred_count);
+				printf("Check bugs, unpredictable_count is not the same: compress %d current %d\n", unpredictable_count, cur_unpred_count);
 				printf("Current index: %d %d\n\n", i, j);
+				size_t count = 0;
 				for(int i=0; i<current_block_elements; i++){
-					printf("%d ", type[i]);
+					// printf("%d ", type[i]);
+					if(type[i] == 0){
+						count ++;
+					}
 				}
+				printf("type count: %ld\n", count);
+				printf("dist to decomp start: %ld\n", tmp - comp_data);
 				printf("\n");
 				exit(0);
 			}
