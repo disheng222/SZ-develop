@@ -2498,7 +2498,8 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwRelBoundRa
 				if(szRandomAccess == SZ_NO_RANDOM_ACCESS)
 					SZ_compress_args_float_NoCkRngeNoGzip_3D(&tmpByteData, oriData, r3, r2, r1, realPrecision, &tmpOutSize, valueRangeSize, medianValue);
 				else 
-					tmpByteData = SZ_compress_float_3D_MDQ_RA(oriData, r3, r2, r1, realPrecision, &tmpOutSize);
+					//tmpByteData = SZ_compress_float_3D_MDQ_RA(oriData, r3, r2, r1, realPrecision, &tmpOutSize);
+					tmpByteData = SZ_compress_float_3D_MDQ_nonblocked(oriData, r3, r2, r1, realPrecision, &tmpOutSize);
 			}
 		}
 		else
