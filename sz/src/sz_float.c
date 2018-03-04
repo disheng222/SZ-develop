@@ -447,6 +447,325 @@ unsigned int optimize_intervals_and_compute_dense_position_float_3D(float *oriDa
 		freq_pos ++;
 	}
 	*dense_pos = mean + realPrecision * (ptrdiff_t)(max_index + 1 - radius);
+	printf("Max frequency: %.6f index: %ld dense_pos: %.6f\n", max_sum * 1.0 / totalSampleSize, max_index, *dense_pos);
+
+	// compute intervals
+	float dense_point = *dense_pos;
+	size_t unflushed_count = 0;
+
+	// debug
+	int * typeArray = (int *) malloc(totalSampleSize*sizeof(int));
+	size_t typeArray_count = 0;
+	int * typeArray_flag = (int *) malloc(totalSampleSize*sizeof(int));
+	memset(typeArray, 0, maxRangeRadius*sizeof(int));
+
+	for(i=1;i<r1;i++)
+	{
+		for(j=1;j<r2;j++)
+		{
+			for(k=1;k<r3;k++)
+			{			
+				if((i+j+k)%sampleDistance==0)
+				{
+					// 3D prediction
+					index = i*r23+j*r3+k;
+					if(fabs(oriData[index] - dense_point) <= realPrecision){
+						typeArray[typeArray_count ++] = 513;
+						continue;
+					}
+					pred_value = oriData[index-1] + oriData[index-r3] + oriData[index-r23] 
+					- oriData[index-1-r23] - oriData[index-r3-1] - oriData[index-r3-r23] + oriData[index-r3-r23-1];
+					pred_err = fabs(pred_value - oriData[index]);
+					radiusIndex = (pred_err/realPrecision+1)/2;
+					if(radiusIndex>=maxRangeRadius){
+						radiusIndex = maxRangeRadius - 1;
+						typeArray[typeArray_count ++] = 514;
+					}
+					else{
+						if(typeArray_flag[radiusIndex] > 0){
+							typeArray[typeArray_count ++] = 2 * radiusIndex;
+							typeArray_flag[radiusIndex] = 0;
+						}
+						else{
+							typeArray[typeArray_count ++] = 2 * radiusIndex + 1;
+							typeArray_flag[radiusIndex] = 1;
+						}
+					}
+					intervals[radiusIndex]++;
+
+					// 2D prediction
+					pred_value = oriData[index-1] + oriData[index-r3] - oriData[index-1-r3];
+					pred_err = fabs(pred_value - oriData[index]);
+					radiusIndex = (pred_err/realPrecision+1)/2;
+					if(radiusIndex>=maxRangeRadius){
+						radiusIndex = maxRangeRadius - 1;
+					}
+					intervals_2D[radiusIndex]++;
+
+					// 2D another direction
+					pred_value = oriData[index-1] + oriData[index-r23] - oriData[index-r23-1];
+					pred_err = fabs(pred_value - oriData[index]);
+					radiusIndex = (pred_err/realPrecision+1)/2;
+					if(radiusIndex>=maxRangeRadius){
+						radiusIndex = maxRangeRadius - 1;
+					}
+					intervals_2D[radiusIndex]++;
+
+					// 2D 3rd direction
+					pred_value = oriData[index-r3] + oriData[index-r23] - oriData[index-r23-r3];
+					pred_err = fabs(pred_value - oriData[index]);
+					radiusIndex = (pred_err/realPrecision+1)/2;
+					if(radiusIndex>=maxRangeRadius){
+						radiusIndex = maxRangeRadius - 1;
+					}
+					intervals_2D[radiusIndex]++;
+
+					unflushed_count ++;
+				}
+			}
+		}
+	}
+	printf("unflushed_count: %ld with respect to total sample count %ld\n", unflushed_count, totalSampleSize);
+	//compute the appropriate number
+	size_t targetCount = unflushed_count*predThreshold;
+	size_t sum = 0;
+	for(i=0;i<maxRangeRadius;i++)
+	{
+		sum += intervals[i];
+		if(sum>targetCount)
+			break;
+	}
+	if(i>=maxRangeRadius)
+		i = maxRangeRadius-1;
+	unsigned int accIntervals = 2*(i+1);
+	unsigned int powerOf2 = roundUpToPowerOf2(accIntervals);
+
+	if(powerOf2<32)
+		powerOf2 = 32;
+
+	printf("Estimated powerOf2: %ld, sum %ld percent %.4f\n", powerOf2, sum, sum * 1.0 / unflushed_count);
+	// use block or not
+	// qsort(intervals, maxRangeRadius, sizeof(size_t), cmp);
+	// qsort(intervals_2D, maxRangeRadius, sizeof(size_t), cmp);
+
+	unsigned int block_opt[5] = {4, 8, 12, 16, 20};
+	float block_3D_est_prob[5];
+	for(i=0; i<5; i++){
+		float tmp = 1 - 1.0 / block_opt[i]; 
+		block_3D_est_prob[i] = tmp * tmp * tmp;
+	}
+	float block_br[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+	float inf_br = 0.0;
+	float p2D_br = 0.0;
+	double block_prob;
+	double block_accum[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+	double probs_3D, probs_2D;
+	size_t accum_2D = 0;
+	size_t accum_3D = 0;
+	for(i=0; i<powerOf2/2; i++){
+		probs_3D = intervals[i] * 1.0 / 2 / totalSampleSize;
+		// printf("%d: %.6f\n", i, probs_3D);
+		accum_3D += intervals[i];
+		// INTERVALS_2D already contains number of 3 directions
+		probs_2D = intervals_2D[i] * 1.0 / 2 / (3 * totalSampleSize);
+		accum_2D += intervals_2D[i];
+		for(int j=0; j<5; j++){
+			block_prob = (block_3D_est_prob[j] * probs_3D + (1 - block_3D_est_prob[j]) * probs_2D);
+			if(block_prob > 0){
+				block_br[j] += - block_prob * log2(block_prob);
+				block_accum[j] += block_prob;
+			}
+		}
+		if(probs_3D > 0){
+			inf_br += - probs_3D * log2(probs_3D);
+			accum_3D += probs_3D;
+		}
+		if(probs_2D > 0){
+			p2D_br += - probs_2D * log2(probs_2D);
+			accum_2D += probs_2D;
+		}
+	}
+	printf("accum count: %ld %ld\n", accum_3D, accum_2D);
+	{
+		//huffman encoding result
+		SZ_Reset(allNodes, stateNum);
+		unsigned char * tmp = (unsigned char *)malloc(totalSampleSize*sizeof(int));
+		size_t enCodeSize = 0;
+		encode_withTree(typeArray, totalSampleSize, &tmp, &enCodeSize);
+		printf("Huffman bitrate: %.4f\n", enCodeSize * 32.0 / (totalSampleSize * sizeof(int)));
+		free(tmp);
+		// int status;
+		// writeIntData_inBytes(typeArray, totalSampleSize, "/Users/LiangXin/Documents/research/anl/lossy_comp/data/NYX/type_array.dat", &status);
+		// writeIntData_inBytes(intervals, maxRangeRadius, "/Users/LiangXin/Documents/research/anl/lossy_comp/data/NYX/intervals.dat", &status);
+		free(typeArray);
+	}
+
+	double flushed_prob = 1 - unflushed_count * 1.0 / totalSampleSize; 
+	float flushed_br = - flushed_prob * log2(flushed_prob);
+	printf("Flushed prob: %.4f\n", flushed_prob);
+	double unpred_prob;
+	float unpred_br;
+	double unpred_3D = (unflushed_count - accum_3D) * 1.0 / totalSampleSize;
+	double unpred_2D = (unflushed_count * 3 - accum_2D) * 1.0 / (3 * totalSampleSize);
+	printf("Unpredicted prob: ");
+	for(int j=0; j<5; j++){
+		unpred_prob = (block_3D_est_prob[j] * unpred_3D + (1 - block_3D_est_prob[j]) * unpred_2D);
+		if(unpred_prob > 0) unpred_br = unpred_prob * log2(unpred_prob);
+		else{
+			unpred_prob = 0;
+			unpred_br = 0;
+		}
+		printf("%.6f ", unpred_prob);		
+		//				2 p log p  ---------------		unpred 									block overhead							
+		block_br[j] = 2 * block_br[j] + flushed_br + unpred_br;// + unpred_prob * 32;// + 40.0 / (block_opt[j] * block_opt[j] * block_opt[j]);
+	}
+	printf("%.6f %.6f\n", unpred_3D, unpred_2D);
+	unpred_prob = unpred_3D;
+	unpred_br = unpred_prob * log2(unpred_prob);
+	if(unpred_prob > 0) unpred_br = unpred_prob * log2(unpred_prob);
+	else{
+		unpred_prob = 0;
+		unpred_br = 0;
+	}
+	inf_br = 2 * inf_br + flushed_br + unpred_br;// + unpred_prob * 32;
+	unpred_prob = unpred_2D;
+	unpred_br = unpred_prob * log2(unpred_prob);
+	if(unpred_prob > 0) unpred_br = unpred_prob * log2(unpred_prob);
+	else{
+		unpred_prob = 0;
+		unpred_br = 0;
+	}
+	p2D_br = 2 * p2D_br + flushed_br + unpred_br;// + unpred_prob * 32;
+
+	printf("Blocked bit cost: ");
+	for(int j=0; j<5; j++){
+		printf("%.6f ", block_br[j]);
+	}
+	printf("\nNonblocked bit cost: 3D %.6f\n2D %.6f\n", inf_br, p2D_br);
+
+	printf("Overhead over 3D:\n");
+	for(int j=0; j<5; j++){
+		printf("%.4f%% ", (block_br[j] / inf_br - 1)*100);
+	}
+	printf("\n");
+	// TODO: estimate mse and PSNR???
+	// exit(0);
+
+	// float block_cost[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+	// for(int j=0; j<5; j++){
+	// 	block_cost[j] = block_br[j] + 0;
+	// }
+	// printf("Overall cost: ");
+	// for(int j=0; j<5; j++){
+	// 	printf("%.6f ", block_cost[j]);
+	// }
+	// printf("%.6f %.6f\n", inf_br, p2D_br);
+
+
+	size_t less_than_mean_freq_count = 0;
+	for(i=0; i<accIntervals/2; i++){
+		if(max_sum * 2 > intervals[i]){
+			less_than_mean_freq_count += 2;
+		}
+	}
+	// printf("Mean freq greater than %.2f of the quantization_intervals\n", less_than_mean_freq_count * 1.0 / accIntervals);
+	free(sum_intervals);
+	free(freq_intervals);
+	free(intervals_2D);
+	free(intervals);
+
+	return powerOf2;
+}
+
+unsigned int optimize_intervals_and_compute_mean_intervals_float_3D(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, float * dense_pos, unsigned int * out_mean_count, float ** means){	
+	// compute mean
+	float mean = 0.0;
+	size_t len = r1 * r2 * r3;
+	size_t mean_distance = (int) (sqrt(len));
+	// printf("mean_distance %ld, mean_sample_size %ld\n", mean_distance, mean_sample_size);
+	float * data_pos = oriData;
+	size_t offset_count = 0;
+	size_t offset_count_2 = 0;
+	size_t mean_count = 0;
+	while(data_pos - oriData < len){
+		mean += *data_pos;
+		mean_count ++;
+		data_pos += mean_distance;
+		offset_count += mean_distance;
+		offset_count_2 += mean_distance;
+		if(offset_count >= r3){
+			offset_count = 0;
+			data_pos -= 1;
+		}
+		if(offset_count_2 >= r2 * r3){
+			offset_count_2 = 0;
+			data_pos -= 1;
+		}
+	}
+	if(mean_count > 0) mean /= mean_count;
+	size_t range = 8192;
+	size_t radius = 4096;
+	size_t * freq_intervals = (size_t *) malloc(range*sizeof(size_t));
+	memset(freq_intervals, 0, range*sizeof(size_t));
+	float * sum_intervals = (float *) malloc(range*sizeof(float));
+	memset(sum_intervals, 0, range*sizeof(float));
+	float value_sum = 0;
+
+	size_t i,j,k, index;
+	size_t radiusIndex;
+	size_t r23=r2*r3;
+	float pred_value = 0, pred_err;
+	size_t *intervals = (size_t*)malloc(maxRangeRadius*sizeof(size_t));
+	memset(intervals, 0, maxRangeRadius*sizeof(size_t));
+	size_t *intervals_2D = (size_t*)malloc(maxRangeRadius*sizeof(size_t));
+	memset(intervals_2D, 0, maxRangeRadius*sizeof(size_t));
+
+	float mean_diff;
+	ptrdiff_t freq_index;
+	size_t totalSampleSize = 0;
+	for(i=1;i<r1;i++)
+	{
+		for(j=1;j<r2;j++)
+		{
+			for(k=1;k<r3;k++)
+			{			
+				if((i+j+k)%sampleDistance==0)
+				{
+					index = i*r23+j*r3+k;
+					mean_diff = oriData[index] - mean;
+					if(mean_diff > 0) freq_index = (ptrdiff_t)(mean_diff/realPrecision) + radius;
+					else freq_index = (ptrdiff_t)(mean_diff/realPrecision) - 1 + radius;
+					if(freq_index <= 0){
+						freq_intervals[0] ++;
+					}
+					else if(freq_index >= range){
+						freq_intervals[range - 1] ++;
+					}
+					else{
+						freq_intervals[freq_index] ++;
+						sum_intervals[freq_index] += oriData[index];
+						value_sum += oriData[index];
+					}
+					totalSampleSize ++;
+				}
+			}
+		}
+	}
+
+	// collect frequency
+	size_t max_sum = 0;
+	size_t max_index = 0;
+	size_t tmp_sum;
+	size_t * freq_pos = freq_intervals + 1;
+	for(size_t i=1; i<range-2; i++){
+		tmp_sum = freq_pos[0] + freq_pos[1];
+		if(tmp_sum > max_sum){
+			max_sum = tmp_sum;
+			max_index = i;
+		}
+		freq_pos ++;
+	}
+	*dense_pos = mean + realPrecision * (ptrdiff_t)(max_index + 1 - radius);
 	printf("Max frequency: %.6f dense_pos: %.6f\n", max_sum * 1.0 / totalSampleSize, *dense_pos);
 
 	// compute intervals
@@ -641,7 +960,7 @@ unsigned int optimize_intervals_and_compute_dense_position_float_3D(float *oriDa
 	for(int j=0; j<5; j++){
 		printf("%.6f ", block_br[j]);
 	}
-	printf("\nNonblocked bit cost: 3D %.6f 2D %.6f\n", inf_br, p2D_br);
+	printf("\nNonblocked bit cost: 3D %.6f\n2D %.6f\n", inf_br, p2D_br);
 
 	printf("Overhead over 3D:\n");
 	for(int j=0; j<5; j++){
@@ -661,232 +980,19 @@ unsigned int optimize_intervals_and_compute_dense_position_float_3D(float *oriDa
 	// }
 	// printf("%.6f %.6f\n", inf_br, p2D_br);
 
-
-	size_t less_than_mean_freq_count = 0;
-	for(i=0; i<accIntervals/2; i++){
-		if(max_sum * 2 > intervals[i]){
-			less_than_mean_freq_count += 2;
-		}
-	}
-	// printf("Mean freq greater than %.2f of the quantization_intervals\n", less_than_mean_freq_count * 1.0 / accIntervals);
-	free(sum_intervals);
-	free(freq_intervals);
-	free(intervals_2D);
-	free(intervals);
-
-	return powerOf2;
-}
-
-unsigned int optimize_intervals_and_compute_mean_intervals_float_3D(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, float * dense_pos, unsigned int * out_mean_count, float ** means){	
-	// compute mean
-	float mean = 0.0;
-	size_t len = r1 * r2 * r3;
-	size_t mean_distance = (int) (sqrt(len));
-	// printf("mean_distance %ld, mean_sample_size %ld\n", mean_distance, mean_sample_size);
-	float * data_pos = oriData;
-	size_t offset_count = 0;
-	size_t offset_count_2 = 0;
-	size_t mean_count = 0;
-	while(data_pos - oriData < len){
-		mean += *data_pos;
-		mean_count ++;
-		data_pos += mean_distance;
-		offset_count += mean_distance;
-		offset_count_2 += mean_distance;
-		if(offset_count >= r3){
-			offset_count = 0;
-			data_pos -= 1;
-		}
-		if(offset_count_2 >= r2 * r3){
-			offset_count_2 = 0;
-			data_pos -= 1;
-		}
-	}
-	if(mean_count > 0) mean /= mean_count;
-	size_t range = 65536;
-	size_t radius = 32768;
-	size_t * freq_intervals = (size_t *) malloc(range*sizeof(size_t));
-	memset(freq_intervals, 0, range*sizeof(size_t));
-
-	size_t i,j,k, index;
-	size_t radiusIndex;
-	size_t r23=r2*r3;
-	float pred_value = 0, pred_err;
-	size_t *intervals = (size_t*)malloc(maxRangeRadius*sizeof(size_t));
-	memset(intervals, 0, maxRangeRadius*sizeof(size_t));
-	size_t *intervals_2D = (size_t*)malloc(maxRangeRadius*sizeof(size_t));
-	memset(intervals_2D, 0, maxRangeRadius*sizeof(size_t));
-	float * sum_intervals = (float *) malloc(range*sizeof(float));
-	memset(sum_intervals, 0, range*sizeof(float));
-
-	float mean_diff;
-	ptrdiff_t freq_index;
-	data_pos = oriData + r2*r3 + r3 + 1;
-	offset_count = 0;
-	offset_count_2 = 0;
-	// size_t totalSampleSize = 0;
-	size_t totalSampleSize = (r1-1)*(r2-1)*(r3-1)/sampleDistance;
-
-	for(i=1;i<r1;i++)
-	{
-		for(j=1;j<r2;j++)
-		{
-			for(k=1;k<r3;k++)
-			{			
-				if((i+j+k)%sampleDistance==0)
-				{
-					// 3D prediction
-					index = i*r23+j*r3+k;
-					pred_value = oriData[index-1] + oriData[index-r3] + oriData[index-r23] 
-					- oriData[index-1-r23] - oriData[index-r3-1] - oriData[index-r3-r23] + oriData[index-r3-r23-1];
-					pred_err = fabs(pred_value - oriData[index]);
-					radiusIndex = (pred_err/realPrecision+1)/2;
-					if(radiusIndex>=maxRangeRadius)
-					{
-						radiusIndex = maxRangeRadius - 1;
-						//printf("radiusIndex=%d\n", radiusIndex);
-					}
-					intervals[radiusIndex]++;
-
-					// 2D prediction
-					pred_value = oriData[index-1] + oriData[index-r3] - oriData[index-1-r3];
-					pred_err = fabs(pred_value - oriData[index]);
-					radiusIndex = (pred_err/realPrecision+1)/2;
-					if(radiusIndex>=maxRangeRadius)
-					{
-						radiusIndex = maxRangeRadius - 1;
-						//printf("radiusIndex=%d\n", radiusIndex);
-					}
-					intervals_2D[radiusIndex]++;
-
-					//	if (max < oriData[index]) max = oriData[index];
-					//	if (min > oriData[index]) min = oriData[index];
-					mean_diff = oriData[index] - mean;
-					freq_index = (ptrdiff_t)(mean_diff/realPrecision) + radius;
-					if(freq_index <= 0){
-						freq_intervals[0] ++;
-					}
-					else if(freq_index >= range){
-						freq_intervals[range - 1] ++;
-					}
-					else{
-						freq_intervals[freq_index] ++;
-						sum_intervals[freq_index] += oriData[index];
-					}
-				}
-			}
-		}
-	}
-
-	//compute the appropriate number
-	size_t targetCount = totalSampleSize*predThreshold;
-	size_t sum = 0;
-	for(i=0;i<maxRangeRadius;i++)
-	{
-		sum += intervals[i];
-		if(sum>targetCount)
-			break;
-	}
-	if(i>=maxRangeRadius)
-		i = maxRangeRadius-1;
-	unsigned int accIntervals = 2*(i+1);
-
-	// use block or not
-	qsort(intervals, maxRangeRadius, sizeof(size_t), cmp);
-	qsort(intervals_2D, maxRangeRadius, sizeof(size_t), cmp);
-	unsigned int block_est[5] = {4, 8, 16, 32, 64};
-	float block_est_w[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
-	float block_inf_w = 0.0;
-	float factor = 1.0;
-	float w;
-	for(i=0; i<accIntervals/2; i++){
-		for(int j=0; j<5; j++){
-			w = 1.0 / block_est[j];
-			block_est_w[j] += ((1-w) * intervals[i] + w * intervals_2D[i])*factor;
-		}
-		block_inf_w += intervals[i] * factor;
-		factor *= 0.5;
-	}
-	printf("Weighted freq: ");
-	for(int j=0; j<5; j++){
-		block_est_w[j] /= totalSampleSize;
-		printf("%.6f ", block_est_w[j]);
-	}
-	block_inf_w /= totalSampleSize;
-	printf("%.6f\n", block_inf_w);
-
-	size_t block_unpred_sum[5] = {0, 0, 0, 0, 0};
-	size_t unpred_sum = 0;
-	float cost_est[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
-	float cost_inf = 0.0;
-	size_t cost_bit = 1;
-	for(i=0; i<accIntervals/2; i++){
-		for(int j=0; j<5; j++){
-			w = 1.0 / block_est[j];
-			cost_est[j] += ((1-w) * intervals[i] + w * intervals_2D[i])*cost_bit;
-			block_unpred_sum[j] += ((1-w) * intervals[i] + w * intervals_2D[i]);
-		}
-		cost_inf += intervals[i] * cost_bit;
-		unpred_sum += intervals[i];
-		cost_bit ++;
-	}
-	printf("unpredictable num: ");
-	for(int j=0; j<5; j++){
-		block_unpred_sum[j] = totalSampleSize - block_unpred_sum[j];
-		printf("%ld ", block_unpred_sum[j]);
-	}
-	unpred_sum = totalSampleSize - unpred_sum;
-	printf("%ld with respect to total sample size %ld\n", unpred_sum, totalSampleSize);
-	printf("Bit cost: ");
-	for(int j=0; j<5; j++){
-		cost_est[j] = (cost_est[j] * 1.0 + block_unpred_sum[j] * 32.0) / totalSampleSize;
-		printf("%.6f ", cost_est[j]);
-	}
-	cost_inf = (cost_inf * 1.0 + unpred_sum * 32.0) / totalSampleSize;
-	printf("%.6f\n", cost_inf);
-
-	// compute number of means to use
-
-	// unsigned int powerOf2 = roundUpToPowerOf2(accIntervals);
-	// size_t max_mean_count = powerOf2 - accIntervals;
-	// if(max_mean_count == 0) {
-	// 	max_mean_count = powerOf2;
-	// 	powerOf2 = powerOf2 * 2;
-	// }
-	// if(max_mean_count > 4) max_mean_count = 4;
-
-	// if(powerOf2<64)
-	// 	powerOf2 = 64;
+	// limit max_mean_count
+	size_t max_mean_count = powerOf2 - accIntervals;
+	if(max_mean_count == 0) max_mean_count = 1;
 	// do not limit max_mean_count
-	size_t max_mean_count = accIntervals;
-
-	//printf("targetCount=%d, sum=%d, totalSampleSize=%d, ratio=%f, accIntervals=%d, powerOf2=%d\n", targetCount, sum, totalSampleSize, (double)sum/(double)totalSampleSize, accIntervals, powerOf2);
-	// collect frequency
-	size_t max_sum = 0;
-	size_t max_index = 0;
-	size_t tmp_sum;
-	size_t * freq_pos = freq_intervals + 1;
-	for(size_t i=2; i<range-1; i++){
-		tmp_sum = freq_pos[0] + freq_pos[1];
-		if(tmp_sum > max_sum){
-			max_sum = tmp_sum;
-			max_index = i;
-		}
-		freq_pos ++;
-	}
-	printf("Max frequency: %.6f\n", max_sum * 1.0 / totalSampleSize);
-	*dense_pos = mean + realPrecision * (ptrdiff_t)(max_index - 1 - radius);
-	// printf("real precision: %.4f dense_pos: %.4f\n", realPrecision, dense_pos[0]);
-
+	// size_t max_mean_count = accIntervals;
 	// estimate on how many mean to use
 	mean_count = 1;
-	// have been sorted before
-	// qsort(intervals, maxRangeRadius, sizeof(size_t), cmp);
+	qsort(intervals, maxRangeRadius, sizeof(size_t), cmp);
 	size_t threshold = intervals[(int)(accIntervals/4)];
 	if(threshold < 0.05 * totalSampleSize) threshold = 0.05 * totalSampleSize;
 	printf("threshold: %ld\n", threshold);
-	size_t * left_freq_pos = freq_intervals + 1 + max_index - 2 - 2;
-	size_t * right_freq_pos = freq_intervals + 1 + max_index - 2 + 2;
+	size_t * left_freq_pos = freq_intervals + max_index - 2;
+	size_t * right_freq_pos = freq_intervals + max_index + 2;
 	size_t tmp_sum_left, tmp_sum_right;
 	while(mean_count < max_mean_count){
 		tmp_sum_left = left_freq_pos[0] + left_freq_pos[1];
@@ -908,6 +1014,12 @@ unsigned int optimize_intervals_and_compute_mean_intervals_float_3D(float *oriDa
 		if(left_freq_pos <= freq_intervals + 1) break;
 		if(right_freq_pos >= freq_intervals + range - 2) break;
 	}
+	// split 1 mean to 2
+	if(mean_count == 1 && max_sum > 0.9 * totalSampleSize){
+		printf("Split one mean to 2\n");
+		mean_count = 2;
+		left_freq_pos = left_freq_pos - 1;
+	}
 	*means = (float *) malloc(mean_count * sizeof(float));
 	freq_pos = left_freq_pos + 2;
 	float * sum_pos = sum_intervals + (freq_pos - freq_intervals);
@@ -923,14 +1035,14 @@ unsigned int optimize_intervals_and_compute_mean_intervals_float_3D(float *oriDa
 		printf("%.6f ", (*means)[i]);
 	}
 	printf("\nQI count: %d Mean count: %d\n", accIntervals, mean_count);
-	// exit(0);
-	free(freq_intervals);
+	
 	free(sum_intervals);
+	free(freq_intervals);
+	free(intervals_2D);
 	free(intervals);
 
 	// do not limit max_mean_count
-	unsigned int powerOf2 = roundUpToPowerOf2(accIntervals + mean_count);
-
+	// powerOf2 = roundUpToPowerOf2(accIntervals + mean_count);
 	return powerOf2;
 }
 
@@ -6295,6 +6407,144 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double re
 	return result;
 }
 
+unsigned char * SZ_compress_float_3D_MDQ_nonblocked_multi_means(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
+	unsigned int quantization_intervals;
+	float dense_pos;
+	float * means;
+	unsigned int mean_count;
+	if(optQuantMode==1)
+	{
+		quantization_intervals = optimize_intervals_and_compute_mean_intervals_float_3D(oriData, r1, r2, r3, realPrecision, &dense_pos, &mean_count, &means);
+		printf("number of bins: %d\nerror bound %.20f dense position %.20f\n", quantization_intervals, realPrecision, dense_pos);
+		// quantization_intervals = optimize_intervals_float_3D(oriData, r1, realPrecision);
+		// printf("new number of bins: %d\n", quantization_intervals);
+		// //dense_pos = realPrecision;
+		// //dense_pos = 2.5867;
+		// if(quantization_intervals < 64) quantization_intervals = 64;
+		// printf("adjusted number of bins: %d\n", quantization_intervals);
+		updateQuantizationInfo(quantization_intervals);
+		if(quantization_intervals < 64) quantization_intervals = 64;
+		intvCapacity = quantization_intervals - 2*((mean_count + 1)/2);
+		intvRadius = intvCapacity/2 + 2*((mean_count + 1)/2);
+	}	
+	else{
+		quantization_intervals = intvCapacity;
+		intvCapacity = quantization_intervals - 2*((mean_count + 1)/2);
+		intvRadius = intvCapacity/2 + 2*((mean_count + 1)/2);
+	}
+	printf("capacity %d radius %d\n", intvCapacity, intvRadius);
+
+	// calculate block dims
+	size_t num_blocks = 1;
+	size_t num_elements = r1 * r2 * r3;
+
+	size_t dim0_offset = r2 * r3;
+	size_t dim1_offset = r3;
+	
+	float *P0, *P1; // buffer
+	size_t buffer_size = r2 * r3 * sizeof(float);
+	P0 = (float *) malloc(buffer_size);
+	P1 = (float *) malloc(buffer_size);
+	int * result_type = (int *) malloc(num_elements * sizeof(int));
+	// int unpred_data_max_size = ((int)(num_block_elements * 0.2) + 1) ;
+	unsigned int unpred_data_max_size = num_elements;
+	float * result_unpredictable_data = (float *) malloc(unpred_data_max_size * sizeof(float) * num_blocks);
+
+	// int unpredictable_count = 0;
+	size_t total_unpred = 0;
+	size_t index = 0;
+	// NOTE: Currently max unpred count cannot exceed unsigned int limit
+	unsigned int max_unpred_count = 0;
+	float * data_pos = oriData;
+	int * type = result_type;
+	float * unpredictable_data = result_unpredictable_data;
+	// printf("Block wise compression start: %d %d %d\n", early_blockcount_x, early_blockcount_y, early_blockcount_z);
+	// fflush(stdout);
+	// float mean;
+	// unsigned int unpredictable_count = SZ_compress_float_3D_MDQ_RA_block_3D_pred(data_pos, &mean, dense_pos, r1, r2, r3, r1, r2, r3, realPrecision, P0, P1, type, unpredictable_data);
+	unsigned int unpredictable_count = SZ_compress_float_3D_MDQ_RA_block_3D_pred_multi_means(data_pos, mean_count, means, dense_pos, r1, r2, r3, r1, r2, r3, realPrecision, P0, P1, type, unpredictable_data);
+
+	if(unpredictable_count > max_unpred_count){
+		max_unpred_count = unpredictable_count;
+	}
+	total_unpred += unpredictable_count;
+	
+	//debug
+	size_t flushed_count = 0;
+	for(size_t i = 0;i<num_elements;i++){
+		if(result_type[i] >= 1 && result_type[i] <= mean_count){
+			flushed_count ++;
+		}
+	}
+	printf("flushed count: %d\n", flushed_count);
+	printf("Block wise compression end, unpredictable num %d, num_elements %ld, max unpred count %d\n", total_unpred, num_elements, max_unpred_count);
+	// fflush(stdout);
+	free(P0);
+	free(P1);
+
+	// huffman encode
+	SZ_Reset(allNodes, stateNum);
+	size_t nodeCount = 0;
+	init(result_type, num_elements);
+	for (size_t i = 0; i < stateNum; i++)
+		if (code[i]) nodeCount++;
+	nodeCount = nodeCount*2-1;
+	unsigned char *treeBytes;
+	unsigned int treeByteSize = convert_HuffTree_to_bytes_anyStates(nodeCount, &treeBytes);
+
+	unsigned int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	// total size 										metadata		real precision		intervals	nodeCount		huffman 	 	block index 						unpredicatable count						mean 					 	unpred size 				elements
+	unsigned char * result = (unsigned char *) malloc(meta_data_offset + sizeof(double) + sizeof(int) + sizeof(int) + treeByteSize + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(float) + total_unpred * sizeof(float) + num_elements * sizeof(int));
+	unsigned char * result_pos = result;
+	initRandomAccessBytes(result_pos);
+	result_pos += meta_data_offset;
+
+	size_t enCodeSize = 0;
+
+	doubleToBytes(result_pos, realPrecision);
+	result_pos += 8;
+	intToBytes_bigEndian(result_pos, quantization_intervals);
+	result_pos += 4;
+	intToBytes_bigEndian(result_pos, treeByteSize);
+	result_pos += 4;
+	intToBytes_bigEndian(result_pos, nodeCount);
+	result_pos += 4;
+	memcpy(result_pos, treeBytes, treeByteSize);
+	result_pos += treeByteSize;
+	free(treeBytes);
+
+	memcpy(result_pos, &dense_pos, sizeof(float));
+	result_pos += 4;
+	intToBytes_bigEndian(result_pos, mean_count);
+	result_pos += 4;
+	memcpy(result_pos, means, mean_count * sizeof(float));
+	result_pos += mean_count * sizeof(float);
+
+	size_t totalEncodeSize = 0;
+	memcpy(result_pos, &unpredictable_count, sizeof(unsigned int));
+	result_pos += num_blocks * sizeof(unsigned int);
+	size_t unpredictableEncodeSize = unpredictable_count * sizeof(float);
+	memcpy(result_pos, unpredictable_data, unpredictableEncodeSize);
+	result_pos += unpredictableEncodeSize;
+	// memcpy(result_pos, &mean, sizeof(float));
+	// result_pos += num_blocks * sizeof(float);
+	
+	encode(type, num_elements, result_pos, &enCodeSize);
+	result_pos += enCodeSize;
+	printf("type array size: %ld\n", enCodeSize);
+	printf("--------- True bitrate %.4f ------------\n", enCodeSize * 32.0 / (num_elements * sizeof(float)));
+
+	printf("type array size: %ld\n", enCodeSize);
+	totalEncodeSize = result_pos - result;
+	printf("Total size %ld\n", totalEncodeSize);
+	free(result_unpredictable_data);
+	free(result_type);
+	SZ_ReleaseHuffman();
+
+	*comp_size = totalEncodeSize;
+	return result;
+}
+
 unsigned char * SZ_compress_float_3D_MDQ_nonblocked(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
 	unsigned int quantization_intervals;
 	float dense_pos;
@@ -6308,7 +6558,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked(float *oriData, size_t r1, s
 		//dense_pos = realPrecision;
 		//dense_pos = 2.5867;
 		//quantization_intervals = 512;
-		// if(quantization_intervals < 128) quantization_intervals = 128;
+		// if(quantization_intervals < 64) quantization_intervals = 64;
 		updateQuantizationInfo(quantization_intervals);
 		intvCapacity = quantization_intervals - 2;
 	}	

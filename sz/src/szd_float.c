@@ -3052,6 +3052,77 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 
 }
 
+void decompressDataSeries_float_3D_nonblocked_multi_means(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data){
+	// calculate block dims
+	// printf("num_block_elements %d num_blocks %d\n", max_num_block_elements, num_blocks);
+	// fflush(stdout);
+
+	size_t num_elements = r1 * r2 * r3;
+	size_t dim0_offset = r2 * r3;
+	size_t dim1_offset = r3;
+
+	*data = (float*)malloc(sizeof(float)*num_elements);
+	
+	unsigned char * comp_data_pos = comp_data;
+	//int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	//comp_data_pos += meta_data_offset;
+
+	double realPrecision = bytesToDouble(comp_data_pos);
+	comp_data_pos += 8;
+	unsigned int intervals = bytesToInt_bigEndian(comp_data_pos);
+	comp_data_pos += 4;
+
+	unsigned int tree_size = bytesToInt_bigEndian(comp_data_pos);
+	comp_data_pos += 4;
+	allNodes = bytesToInt_bigEndian(comp_data_pos);
+	stateNum = allNodes/2;
+	SZ_Reset(allNodes, stateNum);
+	// printf("Reconstruct huffman tree with node count %ld\n", nodeCount);
+	// fflush(stdout);
+	node root = reconstruct_HuffTree_from_bytes_anyStates(comp_data_pos+4, allNodes);
+	comp_data_pos += 4 + tree_size;
+
+	float dense_pos = *((float *) comp_data_pos);
+	comp_data_pos += 4;
+	unsigned mean_count = bytesToInt_bigEndian(comp_data_pos);
+	comp_data_pos += 4;
+	float * means = (float *) comp_data_pos;
+	comp_data_pos += mean_count * sizeof(float);
+
+	updateQuantizationInfo(intervals);
+	intvCapacity = intervals - 2*((mean_count + 1)/2);
+	intvRadius = intvCapacity/2 + 2*((mean_count + 1)/2);
+
+	printf("decompress dense_pos %.8f mean_count %d intervals %d\n", dense_pos, mean_count, intervals);
+	printf("capacity %d radius %d\n", intvCapacity, intvRadius);
+
+	size_t unpred_count = *((unsigned int *)comp_data_pos);
+	comp_data_pos += 4;
+	float * unpredictable_data = (float *) comp_data_pos;
+	comp_data_pos += unpred_count * sizeof(float);
+	
+	// float mean = *((float *) comp_data_pos);
+	// comp_data_pos += 4;
+
+	// printf("Block wise decompression start: %d %d %d\n", early_blockcount_x, early_blockcount_y, early_blockcount_z);
+	// fflush(stdout);
+	int * type = (int *) malloc(num_elements * sizeof(int));
+	float * data_pos = *data;
+	decode(comp_data_pos, num_elements, root, type);
+	// size_t cur_unpred_count = decompressDataSeries_float_3D_RA_block_3D_pred(data_pos, mean, r1, r2, r3, r1, r2, r3, realPrecision, type, unpredictable_data);
+	size_t cur_unpred_count = decompressDataSeries_float_3D_RA_block_3D_pred_multi_means(data_pos, mean_count, means, dense_pos, r1, r2, r3, r1, r2, r3, realPrecision, type, unpredictable_data);
+	if(cur_unpred_count != unpred_count){
+		printf("Check bugs, unpredictable_count is not the same: %d %d\n", unpred_count, cur_unpred_count);
+		for(size_t i=0; i<512; i++){
+			printf("%d ", type[i]);
+		}
+		printf("\n");
+		exit(0);
+	}
+	free(type);
+
+}
+
 void decompressDataSeries_float_3D_RA_multi_means(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data){
 	// printf("num_block_elements %d num_blocks %d\n", max_num_block_elements, num_blocks);
 	// fflush(stdout);

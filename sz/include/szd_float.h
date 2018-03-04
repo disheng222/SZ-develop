@@ -21,6 +21,7 @@ void decompressDataSeries_float_2D(float** data, size_t r1, size_t r2, TightData
 void decompressDataSeries_float_3D(float** data, size_t r1, size_t r2, size_t r3, TightDataPointStorageF* tdps);
 void decompressDataSeries_float_4D(float** data, size_t r1, size_t r2, size_t r3, size_t r4, TightDataPointStorageF* tdps);
 void decompressDataSeries_float_3D_RA_multi_means(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data);
+void decompressDataSeries_float_3D_nonblocked_multi_means(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data);
 void decompressDataSeries_float_3D_nonblocked(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data);
 void decompressDataSeries_float_2D_nonblocked(float** data, size_t r1, size_t r2, unsigned char* comp_data);
 void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t r3, unsigned char * comp_data);
