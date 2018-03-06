@@ -15,14 +15,17 @@ extern "C" {
 #endif
 
 #include <stdio.h>
+#include <stdint.h>
 
 //TypeManager.c
-int convertIntArray2ByteArray_fast_2b(unsigned char* timeStepType, size_t timeStepTypeLength, unsigned char **result);
+size_t convertIntArray2ByteArray_fast_1b(unsigned char* intArray, size_t intArrayLength, unsigned char **result);
+void convertByteArray2IntArray_fast_1b(size_t intArrayLength, unsigned char* byteArray, size_t byteArrayLength, unsigned char **intArray);
+size_t convertIntArray2ByteArray_fast_2b(unsigned char* timeStepType, size_t timeStepTypeLength, unsigned char **result);
 void convertByteArray2IntArray_fast_2b(size_t stepLength, unsigned char* byteArray, size_t byteArrayLength, unsigned char **intArray);
-int convertIntArray2ByteArray_fast_3b(unsigned char* timeStepType, size_t timeStepTypeLength, unsigned char **result);
+size_t convertIntArray2ByteArray_fast_3b(unsigned char* timeStepType, size_t timeStepTypeLength, unsigned char **result);
 void convertByteArray2IntArray_fast_3b(size_t stepLength, unsigned char* byteArray, size_t byteArrayLength, unsigned char **intArray);
 int getLeftMovingSteps(size_t k, unsigned char resiBitLength);
-int convertIntArray2ByteArray_fast_dynamic(unsigned char* timeStepType, unsigned char* resiBitLength, size_t resiBitLengthLength, unsigned char **bytes);
+size_t convertIntArray2ByteArray_fast_dynamic(unsigned char* timeStepType, unsigned char* resiBitLength, size_t resiBitLengthLength, unsigned char **bytes);
 int computeBitNumRequired(size_t dataLength);
 void decompressBitArraybySimpleLZ77(int** result, unsigned char* bytes, size_t bytesLength, size_t totalLength, int validLength);
 
