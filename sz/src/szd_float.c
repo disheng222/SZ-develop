@@ -3661,6 +3661,9 @@ size_t decompressDataSeries_float_3D_RA_block_all_by_regression(float * block_or
 				else{
 					*data_pos = unpredictable_data[unpredictable_count ++];
 				}
+				// if(data_pos - tmp_dec_data == 13415){
+				// 	printf("DEC REG PPPPPPP\n");
+				// }
 				index ++;	
 				data_pos ++;
 			}
@@ -3787,12 +3790,9 @@ void decompressDataSeries_float_3D_RA_all_by_regression(float** data, size_t r1,
 	free(result_type);
 }
 
-extern float * tmp_data;
-float * tmp_pos;
-
 size_t decompressDataSeries_float_3D_blocked_nonblock_pred(float * data, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, size_t idx, size_t idy, size_t idz, double realPrecision, int * type, float * unpredictable_data){
 
-	float * tmp_tmp_pos = tmp_pos;
+	// float * tmp_tmp_pos = tmp_pos;
 
 	float * data_pos;
 	float pred;
@@ -3847,18 +3847,12 @@ size_t decompressDataSeries_float_3D_blocked_nonblock_pred(float * data, size_t 
 				else{
 					*data_pos = unpredictable_data[unpredictable_count ++];
 				}
-				if(((*data_pos - *tmp_tmp_pos) < -realPrecision) || ((*data_pos - *tmp_tmp_pos) > realPrecision)){
-					printf("pause\n");
-				}
 				index ++;
 				data_pos ++;
-				tmp_tmp_pos ++;
 			}
 			data_pos += dim1_offset - block_dim_2;
-			tmp_tmp_pos += dim1_offset - block_dim_2;
 		}
 		data_pos += dim0_offset - block_dim_1 * dim1_offset;
-		tmp_tmp_pos += dim0_offset - block_dim_1 * dim1_offset;
 	}
 	return unpredictable_count;
 }
@@ -3920,7 +3914,7 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 	for(size_t i=0; i<num_blocks; i++){
 		if(!indicator[i]) reg_count ++;
 	}
-	// printf("reg_count: %ld\n", reg_count);
+	printf("reg_count: %ld\n", reg_count);
 	float * reg_params = (float *) comp_data_pos;
 	comp_data_pos += reg_count * 4 * sizeof(float);
 	size_t total_unpred;
@@ -3966,8 +3960,7 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 				size_t current_block_elements = current_blockcount_x * current_blockcount_y * current_blockcount_z;
 				index = i * num_y * num_z + j * num_z + k;
 
-				tmp_pos = tmp_data + offset_x * dim0_offset + offset_y * dim1_offset + offset_z;
-				printf("i j k: %ld %ld %ld\toffset: %ld %ld %ld\n", i, j, k, offset_x, offset_y, offset_z);
+				// printf("i j k: %ld %ld %ld\toffset: %ld %ld %ld\tindicator: %ld\n", i, j, k, offset_x, offset_y, offset_z, indicator[index]);
 				if(indicator[index] == 0){
 					// decompress by regression
 					cur_unpred_count = decompressDataSeries_float_3D_RA_block_all_by_regression(data_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, reg_params, type, unpred_data);
