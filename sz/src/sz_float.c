@@ -8207,6 +8207,30 @@ size_t SZ_compress_float_3D_MDQ_nonblocked_pred_with_blocked_regression_strip(fl
 	return strip_unpredictable_count;
 }
 
+// void compress_regression_coefficients(float * coeff, size_t length, double realPrecision, unsigned char * bytes, size_t * bytes_size, DynamicByteArray * lead_num, DynamicByteArray * mid_byte, DynamicByteArray * residue_bit_len, DynamicIntArray * residue_bit){
+// 	float range;
+// 	float median;
+// 	computeRangeSize_float(coeff, length, &range, &median);
+// 	short radius = getExponent_float(range/2);
+// 	int reqLength;
+// 	computeReqLength_float(realPrecision, radius, &reqLength, &median);
+// 	int reqBytesLength = reqLength / 8;
+// 	int resiBitsLength = reqLength % 8;
+// 	FloatValueCompressElement * vce = (FloatValueCompressElement *) malloc(sizeof(FloatValueCompressElement));
+// 	LossyCompressionElement * lce = (LossyCompressionElement *) malloc(sizeof(LossyCompressionElement));
+// 	unsigned char preDataBytes[4] = {0, 0, 0, 0};
+// 	// CHANGE REALPRECISION
+// 	for(size_t i=0; i<length; i++){
+// 		compressSingleFloatValue(vce, coeff[i], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
+// 		updateLossyCompElement_Float(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
+// 		memcpy(preDataBytes, vce->curBytes, 4);
+// 		addExactData(lead_num, mid_byte, residue_bit, lce);
+// 	}
+
+// 	free(FloatValueCompressElement);
+// 	free(LossyCompressionElement);
+// }
+
 unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
 
 	unsigned int quantization_intervals;
@@ -8366,8 +8390,16 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 
 	memcpy(result_pos, indicator, num_blocks * sizeof(unsigned char));
 	result_pos += num_blocks * sizeof(unsigned char);
-	memcpy(result_pos, reg_params, reg_count * 4 * sizeof(float));
-	result_pos += reg_count * 4 * sizeof(float);
+	// memcpy(result_pos, reg_params, reg_count * 4 * sizeof(float));
+	// result_pos += reg_count * 4 * sizeof(float);
+	// reorder reg_count
+	float * params_pos = (float *) result_pos;
+	result_pos += reg_count * 4 * sizeof(float);	
+	for(size_t i=0; i<4; i++){
+		for(size_t j=0; j<reg_count; j++){
+			params_pos[i*reg_count + j] = reg_params[j*4 + i];
+		}
+	}
 	memcpy(result_pos, &total_unpred, sizeof(size_t));
 	result_pos += sizeof(size_t);
 	memcpy(result_pos, result_unpredictable_data, total_unpred * sizeof(float));

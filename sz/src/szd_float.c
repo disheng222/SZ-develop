@@ -3917,6 +3917,18 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 	printf("reg_count: %ld\n", reg_count);
 	float * reg_params = (float *) comp_data_pos;
 	comp_data_pos += reg_count * 4 * sizeof(float);
+	// reorder reg_params
+	float * reg_params_buf = (float *) malloc(reg_count * 4 * sizeof(float));
+	for(size_t i=0; i<reg_count; i++){
+		for(size_t j=0; j<4; j++){
+			reg_params_buf[4*i + j] = reg_params[j*reg_count + i];
+		}
+	}
+	reg_params = reg_params_buf;
+	// {
+	// 	int status;
+	// 	writeFloatData_inBytes(reg_params, reg_count * 4, "/Users/LiangXin/Documents/research/anl/lossy_comp/data/NYX/params.dat", &status);
+	// }
 	size_t total_unpred;
 	memcpy(&total_unpred, comp_data_pos, sizeof(size_t));
 	comp_data_pos += sizeof(size_t);
@@ -3982,6 +3994,7 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 			}
 		}
 	}
+	free(reg_params_buf);
 	free(result_type);
 }
 
