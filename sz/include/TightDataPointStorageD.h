@@ -59,7 +59,7 @@ void new_TightDataPointStorageD(TightDataPointStorageD **self,
 		int* type, unsigned char* exactMidBytes, size_t exactMidBytes_size,
 		unsigned char* leadNumIntArray,  //leadNumIntArray contains readable numbers....
 		unsigned char* resiMidBits, size_t resiMidBits_size,
-		unsigned char* resiBitLength, size_t resiBitLengthSize, 
+		unsigned char resiBitLength, 
 		double realPrecision, double medianValue, char reqLength, unsigned int intervals, 
 		unsigned char* pwrErrBoundBytes, size_t pwrErrBoundBytes_size, unsigned char radExpo);
 

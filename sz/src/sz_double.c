@@ -258,9 +258,6 @@ size_t dataLength, double realPrecision, double valueRangeSize, double medianVal
 		
 	double* spaceFillingValue = oriData; //
 	
-	DynamicByteArray *resiBitLengthArray;
-	new_DBA(&resiBitLengthArray, DynArrayInitLen);
-	
 	DynamicIntArray *exactLeadNumArray;
 	new_DIA(&exactLeadNumArray, DynArrayInitLen);
 	
@@ -282,7 +279,6 @@ size_t dataLength, double realPrecision, double valueRangeSize, double medianVal
 				
 	//add the first data	
 	type[0] = 0;
-	addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 	compressSingleDoubleValue(vce, spaceFillingValue[0], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 	updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 	memcpy(preDataBytes,vce->curBytes,8);
@@ -292,7 +288,6 @@ size_t dataLength, double realPrecision, double valueRangeSize, double medianVal
 		
 	//add the second data
 	type[1] = 0;
-	addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);			
 	compressSingleDoubleValue(vce, spaceFillingValue[1], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 	updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 	memcpy(preDataBytes,vce->curBytes,8);
@@ -335,9 +330,7 @@ size_t dataLength, double realPrecision, double valueRangeSize, double medianVal
 		}
 		
 		//unpredictable data processing
-		type[i] = 0;
-		addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
-		
+		type[i] = 0;		
 		compressSingleDoubleValue(vce, curData, realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 		updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 		memcpy(preDataBytes,vce->curBytes,8);
@@ -354,14 +347,13 @@ size_t dataLength, double realPrecision, double valueRangeSize, double medianVal
 			type, exactMidByteArray->array, exactMidByteArray->size,  
 			exactLeadNumArray->array,  
 			resiBitArray->array, resiBitArray->size, 
-			resiBitLengthArray->array, resiBitLengthArray->size, 
+			resiBitsLength, 
 			realPrecision, medianValue, (char)reqLength, quantization_intervals, NULL, 0, 0);
 	
-//	printf("exactDataNum=%d, expSegmentsInBytes_size=%d, exactMidByteArray->size=%d,resiBitLengthArray->size=%d\n", 
-//			exactDataNum, expSegmentsInBytes_size, exactMidByteArray->size, resiBitLengthArray->size);
+//	printf("exactDataNum=%d, expSegmentsInBytes_size=%d, exactMidByteArray->size=%d\n", 
+//			exactDataNum, expSegmentsInBytes_size, exactMidByteArray->size);
 	
 	//free memory
-	free_DBA(resiBitLengthArray);
 	free_DIA(exactLeadNumArray);
 	free_DIA(resiBitArray);
 	free(type);
@@ -458,9 +450,6 @@ TightDataPointStorageD* SZ_compress_double_2D_MDQ(double *oriData, size_t r1, si
 		
 	double* spaceFillingValue = oriData; //
 	
-	DynamicByteArray *resiBitLengthArray;
-	new_DBA(&resiBitLengthArray, DynArrayInitLen);
-	
 	DynamicIntArray *exactLeadNumArray;
 	new_DIA(&exactLeadNumArray, DynArrayInitLen);
 	
@@ -483,7 +472,6 @@ TightDataPointStorageD* SZ_compress_double_2D_MDQ(double *oriData, size_t r1, si
 			
 	/* Process Row-0 data 0*/
 	type[0] = 0;
-	addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 	compressSingleDoubleValue(vce, spaceFillingValue[0], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 	updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 	memcpy(preDataBytes,vce->curBytes,8);
@@ -505,8 +493,6 @@ TightDataPointStorageD* SZ_compress_double_2D_MDQ(double *oriData, size_t r1, si
 	else
 	{
 		type[1] = 0;
-
-		addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 		compressSingleDoubleValue(vce, spaceFillingValue[1], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 		updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 		memcpy(preDataBytes,vce->curBytes,8);
@@ -531,8 +517,6 @@ TightDataPointStorageD* SZ_compress_double_2D_MDQ(double *oriData, size_t r1, si
 		else
 		{
 			type[j] = 0;
-
-			addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 			compressSingleDoubleValue(vce, spaceFillingValue[j], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 			updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 			memcpy(preDataBytes,vce->curBytes,8);
@@ -561,8 +545,6 @@ TightDataPointStorageD* SZ_compress_double_2D_MDQ(double *oriData, size_t r1, si
 		else
 		{
 			type[index] = 0;
-
-			addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 			compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 			updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 			memcpy(preDataBytes,vce->curBytes,8);
@@ -589,8 +571,6 @@ TightDataPointStorageD* SZ_compress_double_2D_MDQ(double *oriData, size_t r1, si
 			else
 			{
 				type[index] = 0;
-
-				addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 				compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 				updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 				memcpy(preDataBytes,vce->curBytes,8);
@@ -616,7 +596,7 @@ TightDataPointStorageD* SZ_compress_double_2D_MDQ(double *oriData, size_t r1, si
 			type, exactMidByteArray->array, exactMidByteArray->size,  
 			exactLeadNumArray->array,  
 			resiBitArray->array, resiBitArray->size, 
-			resiBitLengthArray->array, resiBitLengthArray->size, 
+			resiBitsLength, 
 			realPrecision, medianValue, (char)reqLength, quantization_intervals, NULL, 0, 0);
 
 /*	int sum =0;
@@ -628,14 +608,13 @@ TightDataPointStorageD* SZ_compress_double_2D_MDQ(double *oriData, size_t r1, si
 		printf("%d ", type[i]);
 	printf("\n");*/
 
-//	printf("exactDataNum=%d, expSegmentsInBytes_size=%d, exactMidByteArray->size=%d,resiBitLengthArray->size=%d\n", 
-//			exactDataNum, expSegmentsInBytes_size, exactMidByteArray->size, resiBitLengthArray->size);
+//	printf("exactDataNum=%d, expSegmentsInBytes_size=%d, exactMidByteArray->size=%d\n", 
+//			exactDataNum, expSegmentsInBytes_size, exactMidByteArray->size);
 	
 //	for(i = 3800;i<3844;i++)
 //		printf("exactLeadNumArray->array[%d]=%d\n",i,exactLeadNumArray->array[i]);
 	
 	//free memory
-	free_DBA(resiBitLengthArray);
 	free_DIA(exactLeadNumArray);
 	free_DIA(resiBitArray);
 	free(type);	
@@ -699,9 +678,6 @@ TightDataPointStorageD* SZ_compress_double_3D_MDQ(double *oriData, size_t r1, si
 	//type[dataLength]=0;
 
 	double* spaceFillingValue = oriData; //
-	
-	DynamicByteArray *resiBitLengthArray;
-	new_DBA(&resiBitLengthArray, DynArrayInitLen);
 
 	DynamicIntArray *exactLeadNumArray;
 	new_DIA(&exactLeadNumArray, DynArrayInitLen);
@@ -727,7 +703,6 @@ TightDataPointStorageD* SZ_compress_double_3D_MDQ(double *oriData, size_t r1, si
 	///////////////////////////	Process layer-0 ///////////////////////////
 	/* Process Row-0 data 0*/
 	type[0] = 0;
-	addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 	compressSingleDoubleValue(vce, spaceFillingValue[0], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 	updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 	memcpy(preDataBytes,vce->curBytes,8);
@@ -749,8 +724,6 @@ TightDataPointStorageD* SZ_compress_double_3D_MDQ(double *oriData, size_t r1, si
 	else
 	{
 		type[1] = 0;
-
-		addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 		compressSingleDoubleValue(vce, spaceFillingValue[1], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 		updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 		memcpy(preDataBytes,vce->curBytes,8);
@@ -775,8 +748,6 @@ TightDataPointStorageD* SZ_compress_double_3D_MDQ(double *oriData, size_t r1, si
 		else
 		{
 			type[j] = 0;
-
-			addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 			compressSingleDoubleValue(vce, spaceFillingValue[j], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 			updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 			memcpy(preDataBytes,vce->curBytes,8);
@@ -805,8 +776,6 @@ TightDataPointStorageD* SZ_compress_double_3D_MDQ(double *oriData, size_t r1, si
 		else
 		{
 			type[index] = 0;
-
-			addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 			compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 			updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 			memcpy(preDataBytes,vce->curBytes,8);
@@ -833,8 +802,6 @@ TightDataPointStorageD* SZ_compress_double_3D_MDQ(double *oriData, size_t r1, si
 			else
 			{
 				type[index] = 0;
-
-				addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 				compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 				updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 				memcpy(preDataBytes,vce->curBytes,8);
@@ -865,8 +832,6 @@ TightDataPointStorageD* SZ_compress_double_3D_MDQ(double *oriData, size_t r1, si
 		else
 		{
 			type[index] = 0;
-
-			addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 			compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 			updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 			memcpy(preDataBytes,vce->curBytes,8);
@@ -894,8 +859,6 @@ TightDataPointStorageD* SZ_compress_double_3D_MDQ(double *oriData, size_t r1, si
 			else
 			{
 				type[index] = 0;
-
-				addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 				compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 				updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 				memcpy(preDataBytes,vce->curBytes,8);
@@ -925,8 +888,6 @@ TightDataPointStorageD* SZ_compress_double_3D_MDQ(double *oriData, size_t r1, si
 			else
 			{
 				type[index] = 0;
-
-				addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 				compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 				updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 				memcpy(preDataBytes,vce->curBytes,8);
@@ -954,8 +915,6 @@ TightDataPointStorageD* SZ_compress_double_3D_MDQ(double *oriData, size_t r1, si
 				else
 				{
 					type[index] = 0;
-
-					addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 					compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 					updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 					memcpy(preDataBytes,vce->curBytes,8);
@@ -981,17 +940,16 @@ TightDataPointStorageD* SZ_compress_double_3D_MDQ(double *oriData, size_t r1, si
 			type, exactMidByteArray->array, exactMidByteArray->size,
 			exactLeadNumArray->array,
 			resiBitArray->array, resiBitArray->size,
-			resiBitLengthArray->array, resiBitLengthArray->size, 
+			resiBitsLength, 
 			realPrecision, medianValue, (char)reqLength, quantization_intervals, NULL, 0, 0);
 
-//	printf("exactDataNum=%d, expSegmentsInBytes_size=%d, exactMidByteArray->size=%d,resiBitLengthArray->size=%d\n",
-//			exactDataNum, expSegmentsInBytes_size, exactMidByteArray->size, resiBitLengthArray->size);
+//	printf("exactDataNum=%d, expSegmentsInBytes_size=%d, exactMidByteArray->size=%d\n",
+//			exactDataNum, expSegmentsInBytes_size, exactMidByteArray->size);
 
 //	for(i = 3800;i<3844;i++)
 //		printf("exactLeadNumArray->array[%d]=%d\n",i,exactLeadNumArray->array[i]);
 
 	//free memory
-	free_DBA(resiBitLengthArray);
 	free_DIA(exactLeadNumArray);
 	free_DIA(resiBitArray);
 	free(type);
@@ -1052,9 +1010,6 @@ TightDataPointStorageD* SZ_compress_double_4D_MDQ(double *oriData, size_t r1, si
 
 	double* spaceFillingValue = oriData; //
 
-	DynamicByteArray *resiBitLengthArray;
-	new_DBA(&resiBitLengthArray, DynArrayInitLen);
-
 	DynamicIntArray *exactLeadNumArray;
 	new_DIA(&exactLeadNumArray, DynArrayInitLen);
 
@@ -1084,7 +1039,6 @@ TightDataPointStorageD* SZ_compress_double_4D_MDQ(double *oriData, size_t r1, si
 		size_t index2D = 0;
 
 		type[index] = 0;
-		addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 		compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 		updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 		memcpy(preDataBytes,vce->curBytes,8);
@@ -1109,8 +1063,6 @@ TightDataPointStorageD* SZ_compress_double_4D_MDQ(double *oriData, size_t r1, si
 		else
 		{
 			type[index] = 0;
-
-			addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 			compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 			updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 			memcpy(preDataBytes,vce->curBytes,8);
@@ -1138,8 +1090,6 @@ TightDataPointStorageD* SZ_compress_double_4D_MDQ(double *oriData, size_t r1, si
 			else
 			{
 				type[index] = 0;
-
-				addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 				compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 				updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 				memcpy(preDataBytes,vce->curBytes,8);
@@ -1169,8 +1119,6 @@ TightDataPointStorageD* SZ_compress_double_4D_MDQ(double *oriData, size_t r1, si
 			else
 			{
 				type[index] = 0;
-
-				addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 				compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 				updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 				memcpy(preDataBytes,vce->curBytes,8);
@@ -1199,8 +1147,6 @@ TightDataPointStorageD* SZ_compress_double_4D_MDQ(double *oriData, size_t r1, si
 				else
 				{
 					type[index] = 0;
-
-					addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 					compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 					updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 					memcpy(preDataBytes,vce->curBytes,8);
@@ -1233,8 +1179,6 @@ TightDataPointStorageD* SZ_compress_double_4D_MDQ(double *oriData, size_t r1, si
 			else
 			{
 				type[index] = 0;
-
-				addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 				compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 				updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 				memcpy(preDataBytes,vce->curBytes,8);
@@ -1263,8 +1207,6 @@ TightDataPointStorageD* SZ_compress_double_4D_MDQ(double *oriData, size_t r1, si
 				else
 				{
 					type[index] = 0;
-
-					addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 					compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 					updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 					memcpy(preDataBytes,vce->curBytes,8);
@@ -1294,8 +1236,6 @@ TightDataPointStorageD* SZ_compress_double_4D_MDQ(double *oriData, size_t r1, si
 				else
 				{
 					type[index] = 0;
-
-					addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 					compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 					updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 					memcpy(preDataBytes,vce->curBytes,8);
@@ -1324,8 +1264,6 @@ TightDataPointStorageD* SZ_compress_double_4D_MDQ(double *oriData, size_t r1, si
 					else
 					{
 						type[index] = 0;
-
-						addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 						compressSingleDoubleValue(vce, spaceFillingValue[index], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 						updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 						memcpy(preDataBytes,vce->curBytes,8);
@@ -1352,11 +1290,10 @@ TightDataPointStorageD* SZ_compress_double_4D_MDQ(double *oriData, size_t r1, si
 			type, exactMidByteArray->array, exactMidByteArray->size,
 			exactLeadNumArray->array,
 			resiBitArray->array, resiBitArray->size,
-			resiBitLengthArray->array, resiBitLengthArray->size,
+			resiBitsLength,
 			realPrecision, medianValue, (char)reqLength, quantization_intervals, NULL, 0, 0);
 
 	//free memory
-	free_DBA(resiBitLengthArray);
 	free_DIA(exactLeadNumArray);
 	free_DIA(resiBitArray);
 	free(type);
@@ -2002,9 +1939,6 @@ size_t r1, size_t s1, size_t e1)
 
 	double* spaceFillingValue = oriData + s1; //
 
-	DynamicByteArray *resiBitLengthArray;
-	new_DBA(&resiBitLengthArray, DynArrayInitLen);
-
 	DynamicIntArray *exactLeadNumArray;
 	new_DIA(&exactLeadNumArray, DynArrayInitLen);
 
@@ -2027,7 +1961,6 @@ size_t r1, size_t s1, size_t e1)
 	LossyCompressionElement *lce = (LossyCompressionElement*)malloc(sizeof(LossyCompressionElement));
 
 	//add the first data
-	addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 	compressSingleDoubleValue(vce, spaceFillingValue[0], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 	updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 	memcpy(preDataBytes,vce->curBytes,8);
@@ -2036,7 +1969,6 @@ size_t r1, size_t s1, size_t e1)
 
 	//add the second data
 	type[1] = 0;
-	addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 	compressSingleDoubleValue(vce, spaceFillingValue[1], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 	updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 	memcpy(preDataBytes,vce->curBytes,8);
@@ -2080,8 +2012,6 @@ size_t r1, size_t s1, size_t e1)
 
 		//unpredictable data processing
 		type[i] = 0;
-		addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
-
 		compressSingleDoubleValue(vce, curData, realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 		updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 		memcpy(preDataBytes,vce->curBytes,8);
@@ -2098,11 +2028,10 @@ size_t r1, size_t s1, size_t e1)
 			type, exactMidByteArray->array, exactMidByteArray->size,
 			exactLeadNumArray->array,
 			resiBitArray->array, resiBitArray->size,
-			resiBitLengthArray->array, resiBitLengthArray->size,
+			resiBitsLength,
 			realPrecision, medianValue, (char)reqLength, quantization_intervals, NULL, 0, 0);
 
 	//free memory
-	free_DBA(resiBitLengthArray);
 	free_DIA(exactLeadNumArray);
 	free_DIA(resiBitArray);
 	free(type);
@@ -2150,9 +2079,6 @@ size_t r1, size_t r2, size_t s1, size_t s2, size_t e1, size_t e2)
 
 	double* spaceFillingValue = oriData; //
 
-	DynamicByteArray *resiBitLengthArray;
-	new_DBA(&resiBitLengthArray, DynArrayInitLen);
-
 	DynamicIntArray *exactLeadNumArray;
 	new_DIA(&exactLeadNumArray, DynArrayInitLen);
 
@@ -2179,7 +2105,6 @@ size_t r1, size_t r2, size_t s1, size_t s2, size_t e1, size_t e2)
 	lIndex = 0;
 
 	type[lIndex] = 0;
-	addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 	compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 	updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 	memcpy(preDataBytes,vce->curBytes,8);
@@ -2204,8 +2129,6 @@ size_t r1, size_t r2, size_t s1, size_t s2, size_t e1, size_t e2)
 	else
 	{
 		type[lIndex] = 0;
-
-		addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 		compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 		updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 		memcpy(preDataBytes,vce->curBytes,8);
@@ -2233,8 +2156,6 @@ size_t r1, size_t r2, size_t s1, size_t s2, size_t e1, size_t e2)
 		else
 		{
 			type[lIndex] = 0;
-
-			addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 			compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 			updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 			memcpy(preDataBytes,vce->curBytes,8);
@@ -2264,8 +2185,6 @@ size_t r1, size_t r2, size_t s1, size_t s2, size_t e1, size_t e2)
 		else
 		{
 			type[lIndex] = 0;
-
-			addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 			compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 			updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 			memcpy(preDataBytes,vce->curBytes,8);
@@ -2293,8 +2212,6 @@ size_t r1, size_t r2, size_t s1, size_t s2, size_t e1, size_t e2)
 			else
 			{
 				type[lIndex] = 0;
-
-				addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 				compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 				updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 				memcpy(preDataBytes,vce->curBytes,8);
@@ -2319,11 +2236,10 @@ size_t r1, size_t r2, size_t s1, size_t s2, size_t e1, size_t e2)
 			type, exactMidByteArray->array, exactMidByteArray->size,
 			exactLeadNumArray->array,
 			resiBitArray->array, resiBitArray->size,
-			resiBitLengthArray->array, resiBitLengthArray->size,
+			resiBitsLength,
 			realPrecision, medianValue, (char)reqLength, quantization_intervals, NULL, 0, 0);
 
 	//free memory
-	free_DBA(resiBitLengthArray);
 	free_DIA(exactLeadNumArray);
 	free_DIA(resiBitArray);
 	free(type);
@@ -2372,9 +2288,6 @@ size_t r1, size_t r2, size_t r3, size_t s1, size_t s2, size_t s3, size_t e1, siz
 
 	double* spaceFillingValue = oriData; //
 
-	DynamicByteArray *resiBitLengthArray;
-	new_DBA(&resiBitLengthArray, DynArrayInitLen);
-
 	DynamicIntArray *exactLeadNumArray;
 	new_DIA(&exactLeadNumArray, DynArrayInitLen);
 
@@ -2405,7 +2318,6 @@ size_t r1, size_t r2, size_t r3, size_t s1, size_t s2, size_t s3, size_t e1, siz
 	index2D = 0;
 
 	type[lIndex] = 0;
-	addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 	compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 	updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 	memcpy(preDataBytes,vce->curBytes,8);
@@ -2431,8 +2343,6 @@ size_t r1, size_t r2, size_t r3, size_t s1, size_t s2, size_t s3, size_t e1, siz
 	else
 	{
 		type[lIndex] = 0;
-
-		addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 		compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 		updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 		memcpy(preDataBytes,vce->curBytes,8);
@@ -2461,8 +2371,6 @@ size_t r1, size_t r2, size_t r3, size_t s1, size_t s2, size_t s3, size_t e1, siz
 		else
 		{
 			type[lIndex] = 0;
-
-			addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 			compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 			updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 			memcpy(preDataBytes,vce->curBytes,8);
@@ -2493,8 +2401,6 @@ size_t r1, size_t r2, size_t r3, size_t s1, size_t s2, size_t s3, size_t e1, siz
 		else
 		{
 			type[lIndex] = 0;
-
-			addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 			compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 			updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 			memcpy(preDataBytes,vce->curBytes,8);
@@ -2523,8 +2429,6 @@ size_t r1, size_t r2, size_t r3, size_t s1, size_t s2, size_t s3, size_t e1, siz
 			else
 			{
 				type[lIndex] = 0;
-
-				addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 				compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 				updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 				memcpy(preDataBytes,vce->curBytes,8);
@@ -2558,8 +2462,6 @@ size_t r1, size_t r2, size_t r3, size_t s1, size_t s2, size_t s3, size_t e1, siz
 		else
 		{
 			type[lIndex] = 0;
-
-			addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 			compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 			updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 			memcpy(preDataBytes,vce->curBytes,8);
@@ -2589,8 +2491,6 @@ size_t r1, size_t r2, size_t r3, size_t s1, size_t s2, size_t s3, size_t e1, siz
 			else
 			{
 				type[lIndex] = 0;
-
-				addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 				compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 				updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 				memcpy(preDataBytes,vce->curBytes,8);
@@ -2621,8 +2521,6 @@ size_t r1, size_t r2, size_t r3, size_t s1, size_t s2, size_t s3, size_t e1, siz
 			else
 			{
 				type[lIndex] = 0;
-
-				addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 				compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 				updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 				memcpy(preDataBytes,vce->curBytes,8);
@@ -2651,8 +2549,6 @@ size_t r1, size_t r2, size_t r3, size_t s1, size_t s2, size_t s3, size_t e1, siz
 				else
 				{
 					type[lIndex] = 0;
-
-					addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 					compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 					updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 					memcpy(preDataBytes,vce->curBytes,8);
@@ -2678,11 +2574,10 @@ size_t r1, size_t r2, size_t r3, size_t s1, size_t s2, size_t s3, size_t e1, siz
 			type, exactMidByteArray->array, exactMidByteArray->size,
 			exactLeadNumArray->array,
 			resiBitArray->array, resiBitArray->size,
-			resiBitLengthArray->array, resiBitLengthArray->size,
+			resiBitsLength,
 			realPrecision, medianValue, (char)reqLength, quantization_intervals, NULL, 0, 0);
 
 	//free memory
-	free_DBA(resiBitLengthArray);
 	free_DIA(exactLeadNumArray);
 	free_DIA(resiBitArray);
 	free(type);
@@ -2735,9 +2630,6 @@ size_t r1, size_t r2, size_t r3, size_t r4, size_t s1, size_t s2, size_t s3, siz
 
 	double* spaceFillingValue = oriData; //
 
-	DynamicByteArray *resiBitLengthArray;
-	new_DBA(&resiBitLengthArray, DynArrayInitLen);
-
 	DynamicIntArray *exactLeadNumArray;
 	new_DIA(&exactLeadNumArray, DynArrayInitLen);
 
@@ -2771,7 +2663,6 @@ size_t r1, size_t r2, size_t r3, size_t r4, size_t s1, size_t s2, size_t s3, siz
 		index2D = 0;
 
 		type[lIndex] = 0;
-		addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 		compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 		updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 		memcpy(preDataBytes,vce->curBytes,8);
@@ -2797,8 +2688,6 @@ size_t r1, size_t r2, size_t r3, size_t r4, size_t s1, size_t s2, size_t s3, siz
 		else
 		{
 			type[lIndex] = 0;
-
-			addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 			compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 			updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 			memcpy(preDataBytes,vce->curBytes,8);
@@ -2827,8 +2716,6 @@ size_t r1, size_t r2, size_t r3, size_t r4, size_t s1, size_t s2, size_t s3, siz
 			else
 			{
 				type[lIndex] = 0;
-
-				addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 				compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 				updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 				memcpy(preDataBytes,vce->curBytes,8);
@@ -2859,8 +2746,6 @@ size_t r1, size_t r2, size_t r3, size_t r4, size_t s1, size_t s2, size_t s3, siz
 			else
 			{
 				type[lIndex] = 0;
-
-				addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 				compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 				updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 				memcpy(preDataBytes,vce->curBytes,8);
@@ -2889,8 +2774,6 @@ size_t r1, size_t r2, size_t r3, size_t r4, size_t s1, size_t s2, size_t s3, siz
 				else
 				{
 					type[lIndex] = 0;
-
-					addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 					compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 					updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 					memcpy(preDataBytes,vce->curBytes,8);
@@ -2924,8 +2807,6 @@ size_t r1, size_t r2, size_t r3, size_t r4, size_t s1, size_t s2, size_t s3, siz
 			else
 			{
 				type[lIndex] = 0;
-
-				addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 				compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 				updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 				memcpy(preDataBytes,vce->curBytes,8);
@@ -2955,8 +2836,6 @@ size_t r1, size_t r2, size_t r3, size_t r4, size_t s1, size_t s2, size_t s3, siz
 				else
 				{
 					type[lIndex] = 0;
-
-					addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 					compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 					updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 					memcpy(preDataBytes,vce->curBytes,8);
@@ -2987,8 +2866,6 @@ size_t r1, size_t r2, size_t r3, size_t r4, size_t s1, size_t s2, size_t s3, siz
 				else
 				{
 					type[lIndex] = 0;
-
-					addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 					compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 					updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 					memcpy(preDataBytes,vce->curBytes,8);
@@ -3019,8 +2896,6 @@ size_t r1, size_t r2, size_t r3, size_t r4, size_t s1, size_t s2, size_t s3, siz
 					else
 					{
 						type[lIndex] = 0;
-
-						addDBA_Data(resiBitLengthArray, (unsigned char)resiBitsLength);
 						compressSingleDoubleValue(vce, spaceFillingValue[gIndex], realPrecision, medianValue, reqLength, reqBytesLength, resiBitsLength);
 						updateLossyCompElement_Double(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 						memcpy(preDataBytes,vce->curBytes,8);
@@ -3047,11 +2922,10 @@ size_t r1, size_t r2, size_t r3, size_t r4, size_t s1, size_t s2, size_t s3, siz
 			type, exactMidByteArray->array, exactMidByteArray->size,
 			exactLeadNumArray->array,
 			resiBitArray->array, resiBitArray->size,
-			resiBitLengthArray->array, resiBitLengthArray->size,
+			resiBitsLength,
 			realPrecision, medianValue, (char)reqLength, quantization_intervals, NULL, 0, 0);
 
 	//free memory
-	free_DBA(resiBitLengthArray);
 	free_DIA(exactLeadNumArray);
 	free_DIA(resiBitArray);
 	free(type);

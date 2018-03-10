@@ -302,20 +302,19 @@ int getLeftMovingSteps(size_t k, unsigned char resiBitLength)
  * @param resiBitLength is the length of resiMidBits for each element, (the number of resiBitLength == the # of unpredictable elements
  * @return
  */
-size_t convertIntArray2ByteArray_fast_dynamic(unsigned char* timeStepType, unsigned char* resiBitLength, size_t resiBitLengthLength, unsigned char **bytes)
+size_t convertIntArray2ByteArray_fast_dynamic(unsigned char* timeStepType, unsigned char resiBitLength, size_t nbEle, unsigned char **bytes)
 {
 	size_t i = 0, j = 0, k = 0; 
 	int value;
 	DynamicByteArray* dba;
 	new_DBA(&dba, 1024);
 	int tmp = 0, leftMovSteps = 0;
-	for(j = 0;j<resiBitLengthLength;j++)
+	for(j = 0;j<nbEle;j++)
 	{
-		unsigned char rbl = resiBitLength[j];
-		if(rbl==0)
+		if(resiBitLength==0)
 			continue;
 		value = timeStepType[i];
-		leftMovSteps = getLeftMovingSteps(k, rbl);
+		leftMovSteps = getLeftMovingSteps(k, resiBitLength);
 		if(leftMovSteps < 0)
 		{
 			tmp = tmp | (value >> (-leftMovSteps));
@@ -333,7 +332,7 @@ size_t convertIntArray2ByteArray_fast_dynamic(unsigned char* timeStepType, unsig
 			tmp = 0;
 		}
 		i++;
-		k += rbl;
+		k += resiBitLength;
 	}
 	if(leftMovSteps != 0)
 		addDBA_Data(dba, (unsigned char)tmp);

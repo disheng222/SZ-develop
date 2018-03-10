@@ -102,7 +102,8 @@ int SZ_decompress_args_float(float** newData, size_t r5, size_t r4, size_t r3, s
 			else if(dim == 2)
 				;
 			else if(dim == 3)
-				decompressDataSeries_float_3D_nonblocked(newData, r3, r2, r1, tdps->raBytes);
+				//decompressDataSeries_float_3D_nonblocked(newData, r3, r2, r1, tdps->raBytes);
+				decompressDataSeries_float_3D_nonblocked_with_blocked_regression(newData, r3, r2, r1, tdps->raBytes);
 			else if(dim == 4)
 				;
 			else

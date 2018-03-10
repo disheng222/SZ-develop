@@ -264,7 +264,7 @@ void new_TightDataPointStorageD(TightDataPointStorageD **this,
 		int* type, unsigned char* exactMidBytes, size_t exactMidBytes_size,
 		unsigned char* leadNumIntArray,  //leadNumIntArray contains readable numbers....
 		unsigned char* resiMidBits, size_t resiMidBits_size,
-		unsigned char* resiBitLength, size_t resiBitLengthSize, 
+		unsigned char resiBitLength, 
 		double realPrecision, double medianValue, char reqLength, unsigned int intervals,
 		unsigned char* pwrErrBoundBytes, size_t pwrErrBoundBytes_size, unsigned char radExpo) {
 	//int i = 0;
@@ -304,7 +304,7 @@ void new_TightDataPointStorageD(TightDataPointStorageD **this,
 	//(*this)->residualMidBits = resiMidBits;
 	//(*this)->residualMidBits_size = resiMidBits_size;
 
-	(*this)->residualMidBits_size = convertIntArray2ByteArray_fast_dynamic(resiMidBits, resiBitLength, resiBitLengthSize, &((*this)->residualMidBits));
+	(*this)->residualMidBits_size = convertIntArray2ByteArray_fast_dynamic(resiMidBits, resiBitLength, exactDataNum, &((*this)->residualMidBits));
 	
 	(*this)->intervals = intervals;
 	(*this)->isLossless = 0;
