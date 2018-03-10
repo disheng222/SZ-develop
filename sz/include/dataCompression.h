@@ -78,6 +78,7 @@ int computeBlockEdgeSize_2D(int segmentSize);
 
 int initRandomAccessBytes(unsigned char* raBytes);
 void isSameOrRandomAccessMode(unsigned char* cmprBytes, int* constantData, int* randomAccess);
+void compressExactDataArray(float* oriData, double precision, size_t nbEle, unsigned char** leadArray, unsigned char** midArray, unsigned char** resiArray, int* reqBytesLength, int* resiBitsLength, float* medianValue);
 
 #ifdef __cplusplus
 }

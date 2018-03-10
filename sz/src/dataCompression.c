@@ -601,4 +601,59 @@ void isSameOrRandomAccessMode(unsigned char* cmprBytes, int* constantData, int* 
 	unsigned char stateByte = cmprBytes[3];
 	*constantData = (stateByte & 0x01);
 	*randomAccess = (stateByte >> 7);
+}		
+		
+/**
+ * @param float* oriData: inplace argument (input / output)
+ * 
+ * */		
+void compressExactDataArray(float* oriData, double precision, size_t nbEle, unsigned char** leadArray, unsigned char** midArray, unsigned char** resiArray, int* reqBytesLength, int* resiBitsLength, float* medianValue)
+{
+	//compute the median value and value range for each coefficient datset
+	//float valueRangeSize_a, valueRangeSize_b, valueRangeSize_c, valueRangeSize_d;
+	float valueRangeSize;
+	
+	computeRangeSize_float(oriData, nbEle, &valueRangeSize, medianValue);
+		
+	short radExpo = getExponent_float(valueRangeSize/2);
+	
+	int reqLength;
+	computeReqLength_float(precision, radExpo, &reqLength, medianValue);	
+		
+	//allocate memory for coefficient compression arrays
+	DynamicIntArray *exactLeadNumArray;
+	new_DIA(&exactLeadNumArray, DynArrayInitLen);	
+	DynamicByteArray *exactMidByteArray;
+	new_DBA(&exactMidByteArray, DynArrayInitLen);
+	DynamicIntArray *resiBitArray;
+	new_DIA(&resiBitArray, DynArrayInitLen);
+	unsigned char preDataBytes[4] = {0,0,0,0};	
+
+	*reqBytesLength = reqLength/8;
+	*resiBitsLength = reqLength%8;
+
+	//allocate memory for vce and lce
+	FloatValueCompressElement *vce = (FloatValueCompressElement*)malloc(sizeof(FloatValueCompressElement));
+	LossyCompressionElement *lce = (LossyCompressionElement*)malloc(sizeof(LossyCompressionElement));	
+
+	size_t i = 0;
+	for(i = 0;i < nbEle;i++)
+	{
+		compressSingleFloatValue(vce, oriData[i], precision, *medianValue, reqLength, *reqBytesLength, *resiBitsLength);
+		updateLossyCompElement_Float(vce->curBytes, preDataBytes, *reqBytesLength, *resiBitsLength, lce);
+		memcpy(preDataBytes,vce->curBytes,4);
+		addExactData(exactMidByteArray, exactLeadNumArray, resiBitArray, lce);
+		oriData[i] = vce->data;
+	}
+
+	convertDIAtoInts(exactLeadNumArray, leadArray);
+	convertDBAtoBytes(exactMidByteArray,midArray);
+	convertDIAtoInts(resiBitArray, resiArray);
+
+	free(vce);
+	free(lce);
+	
+	free_DIA(exactLeadNumArray);
+	free_DBA(exactMidByteArray);
+	free_DIA(resiBitArray);
 }

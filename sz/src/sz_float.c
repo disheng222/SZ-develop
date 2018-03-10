@@ -8114,38 +8114,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	size_t num_elements = r1 * r2 * r3;
 
 	size_t dim0_offset = r2 * r3;
-	size_t dim1_offset = r3;
-
-	//allocate memory for coefficient compression arrays
-	DynamicIntArray *exactLeadNumArray_a;
-	new_DIA(&exactLeadNumArray_a, DynArrayInitLen);	
-	DynamicByteArray *exactMidByteArray_a;
-	new_DBA(&exactMidByteArray_a, DynArrayInitLen);
-	DynamicIntArray *resiBitArray_a;
-	new_DIA(&resiBitArray_a, DynArrayInitLen);
-	unsigned char preDataBytes_a[4] = {0,0,0,0};	
-	DynamicIntArray *exactLeadNumArray_b;
-	new_DIA(&exactLeadNumArray_b, DynArrayInitLen);	
-	DynamicByteArray *exactMidByteArray_b;
-	new_DBA(&exactMidByteArray_b, DynArrayInitLen);
-	DynamicIntArray *resiBitArray_b;
-	new_DIA(&resiBitArray_b, DynArrayInitLen);	
-	unsigned char preDataBytes_b[4] = {0,0,0,0};	
-	DynamicIntArray *exactLeadNumArray_c;
-	new_DIA(&exactLeadNumArray_c, DynArrayInitLen);	
-	DynamicByteArray *exactMidByteArray_c;
-	new_DBA(&exactMidByteArray_c, DynArrayInitLen);
-	DynamicIntArray *resiBitArray_c;
-	new_DIA(&resiBitArray_c, DynArrayInitLen);	
-	unsigned char preDataBytes_c[4] = {0,0,0,0};	
-	DynamicIntArray *exactLeadNumArray_d;
-	new_DIA(&exactLeadNumArray_d, DynArrayInitLen);	
-	DynamicByteArray *exactMidByteArray_d;
-	new_DBA(&exactMidByteArray_d, DynArrayInitLen);
-	DynamicIntArray *resiBitArray_d;
-	new_DIA(&resiBitArray_d, DynArrayInitLen);	
-	unsigned char preDataBytes_d[4] = {0,0,0,0};	
-	
+	size_t dim1_offset = r3;	
 
 	int * result_type = (int *) malloc(num_elements * sizeof(int));
 	size_t unpred_data_max_size = max_num_block_elements;
@@ -8241,8 +8210,53 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 			}
 		}
 	}
-	reg_params_pos = reg_params;
 
+	//Compress coefficient arrays
+	float medianValue_a, medianValue_b, medianValue_c, medianValue_d;
+	double precision_a, precision_b, precision_c, precision_d;
+	float rel_param_err = 0.0025;
+	precision_a = rel_param_err * realPrecision / late_blockcount_x;
+	precision_b = rel_param_err * realPrecision / late_blockcount_y;
+	precision_c = rel_param_err * realPrecision / late_blockcount_z;
+	precision_d = rel_param_err * realPrecision;
+
+	unsigned char* leadArray_a = NULL, *midArray_a = NULL, *resiArray_a = NULL;
+	int reqBytesLength_a = 0, resiBitsLength_a = 0; 
+	compressExactDataArray(reg_params, precision_a, num_blocks, &leadArray_a, &midArray_a, &resiArray_a, &reqBytesLength_a, &resiBitsLength_a, &medianValue_a);	
+	unsigned char* leadArray_b = NULL, *midArray_b = NULL, *resiArray_b = NULL;
+	int reqBytesLength_b = 0, resiBitsLength_b = 0; 
+	compressExactDataArray(reg_params+params_offset_b, precision_b, num_blocks, &leadArray_b, &midArray_b, &resiArray_b, &reqBytesLength_b, &resiBitsLength_b, &medianValue_b);	
+	unsigned char* leadArray_c = NULL, *midArray_c = NULL, *resiArray_c = NULL;
+	int reqBytesLength_c = 0, resiBitsLength_c = 0; 
+	compressExactDataArray(reg_params+params_offset_c, precision_c, num_blocks, &leadArray_c, &midArray_c, &resiArray_c, &reqBytesLength_c, &resiBitsLength_c, &medianValue_c);			
+	unsigned char* leadArray_d = NULL, *midArray_d = NULL, *resiArray_d = NULL;
+	int reqBytesLength_d = 0, resiBitsLength_d = 0; 
+	compressExactDataArray(reg_params+params_offset_d, precision_d, num_blocks, &leadArray_d, &midArray_d, &resiArray_d, &reqBytesLength_d, &resiBitsLength_d, &medianValue_d);	
+
+	unsigned char *int_lead_a = (unsigned char*)malloc(num_blocks);
+	unsigned char* pre_mid_a_p = midArray_a, *byte_mid_a = (unsigned char*)malloc(num_blocks*4);
+	unsigned char* post_mid_a_p = byte_mid_a;
+	unsigned char* int_resi_a = (unsigned char*)malloc(num_blocks); 
+	
+	unsigned char* int_lead_b = (unsigned char*)malloc(num_blocks);
+	unsigned char* pre_mid_b_p = midArray_b, *byte_mid_b = (unsigned char*)malloc(num_blocks*4);
+	unsigned char* post_mid_b_p = byte_mid_b;
+	unsigned char* int_resi_b = (unsigned char*)malloc(num_blocks); 
+	
+	unsigned char* int_lead_c = (unsigned char*)malloc(num_blocks);
+	unsigned char* pre_mid_c_p = midArray_c, *byte_mid_c = (unsigned char*)malloc(num_blocks*4);
+	unsigned char* post_mid_c_p = byte_mid_c;
+	unsigned char* int_resi_c = (unsigned char*)malloc(num_blocks); 
+	
+	unsigned char* int_lead_d = (unsigned char*)malloc(num_blocks);
+	unsigned char* pre_mid_d_p = midArray_d, *byte_mid_d = (unsigned char*)malloc(num_blocks*4);
+	unsigned char* post_mid_d_p = byte_mid_d;
+	unsigned char* int_resi_d = (unsigned char*)malloc(num_blocks); 		 			
+	
+	size_t sel_block_index = 0;
+	
+	reg_params_pos = reg_params;	
+		
 	double tmp_realPrecision = realPrecision;
 	for(size_t i=0; i<num_x; i++){
 		current_blockcount_x = (i < split_index_x) ? early_blockcount_x : late_blockcount_x;
@@ -8317,10 +8331,39 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 					reg_correct_freq = (correct_pred_count * 1.0 / (current_blockcount_x * current_blockcount_y * current_blockcount_z));				
 				}
 				reg_params_pos ++;
+				//compute the offset for mid_array
+				int midByteSize_a = reqBytesLength_a - leadArray_a[sel_block_index];
+				int midByteSize_b = reqBytesLength_b - leadArray_b[sel_block_index];
+				int midByteSize_c = reqBytesLength_c - leadArray_c[sel_block_index];
+				int midByteSize_d = reqBytesLength_d - leadArray_d[sel_block_index];
+				
 				if(reg_correct_freq > sz_sample_correct_freq){
 					// use regression, which is default in indicator
 					strip_unpredictable_count += unpredictable_count;
 					unpredictable_data += unpredictable_count;
+					
+					int_lead_a[sel_block_index] = leadArray_a[sel_block_index];
+					int_lead_b[sel_block_index] = leadArray_b[sel_block_index];					
+					int_lead_c[sel_block_index] = leadArray_c[sel_block_index];
+					int_lead_d[sel_block_index] = leadArray_d[sel_block_index];										
+					
+					int_resi_a[sel_block_index] = resiArray_a[sel_block_index];
+					int_resi_b[sel_block_index] = resiArray_b[sel_block_index];
+					int_resi_c[sel_block_index] = resiArray_c[sel_block_index];
+					int_resi_d[sel_block_index] = resiArray_d[sel_block_index];															
+					
+					memcpy(post_mid_a_p, pre_mid_a_p, midByteSize_a);
+					memcpy(post_mid_b_p, pre_mid_b_p, midByteSize_b);
+					memcpy(post_mid_c_p, pre_mid_c_p, midByteSize_c);
+					printf("%zu, %zu, %zu: pre_mid_d_p offset = %ld\n", i, j, k, pre_mid_d_p - midArray_d);
+					fflush(stdout);
+					memcpy(post_mid_d_p, pre_mid_d_p, midByteSize_d);
+					
+					post_mid_a_p += midByteSize_a;
+					post_mid_b_p += midByteSize_b;
+					post_mid_c_p += midByteSize_c;
+					post_mid_d_p += midByteSize_d;
+					
 					// reg_params_pos += 4;
 					reg_count ++;
 				}
@@ -8375,6 +8418,14 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 					// change indicator
 					indicator_pos[k] = 1;
 				}// end SZ
+				//TODO
+
+				pre_mid_a_p += midByteSize_a;
+				pre_mid_b_p += midByteSize_b;
+				pre_mid_c_p += midByteSize_c;
+				pre_mid_d_p += midByteSize_d;
+				
+				sel_block_index++;
 				data_pos += current_blockcount_z;
 				pb_pos += current_blockcount_z;
 				type += current_blockcount_x * current_blockcount_y * current_blockcount_z;
@@ -8406,7 +8457,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	free(buffer2);
 	printf("Block wise compression end, unpredictable num %d, num_elements %ld, max unpred count %d\n", total_unpred, num_elements, max_unpred_count);
 	printf("sz_count: %ld reg_count: %ld\n", num_blocks - reg_count, reg_count);
-	reg_count = num_x * num_y * num_z;
+	//reg_count = num_x * num_y * num_z;
 	// huffman encode
 	SZ_Reset(allNodes, stateNum);
 	size_t nodeCount = 0;
@@ -8451,8 +8502,8 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	// 	printf("total reg_count: %ld\n", tmp_count);
 	// 	exit(0);
 	// }
-	memcpy(result_pos, reg_params, reg_count * 4 * sizeof(float));
-	result_pos += reg_count * 4 * sizeof(float);
+	//memcpy(result_pos, reg_params, reg_count * 4 * sizeof(float));
+	//result_pos += reg_count * 4 * sizeof(float);
 	// reorder reg_count
 	// float * params_pos = (float *) result_pos;
 	// result_pos += reg_count * 4 * sizeof(float);	
@@ -8461,6 +8512,88 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	// 		params_pos[i*reg_count + j] = reg_params[j*4 + i];
 	// 	}
 	// }
+	
+	//convert the lead/mid/resi to byte stream 
+	
+	
+	/*int sum_mid = 0, sum_lead = 0;
+	for(int i = 0;i<num_blocks;i++)
+	{
+		if(int_lead_a[i] > 3 || int_lead_b[i] > 3 || int_lead_c[i] > 3 || int_lead_d[i] > 3)
+		{
+			printf("%d: %d\n", i, int_lead_a[i]);
+			exit(0);
+		}
+		sum_mid += (reqBytesLength_d - int_lead_a[i]);
+	}*/		
+	
+	
+	if(reg_count>0)
+	{
+		size_t leadNumArray_size_a = convertIntArray2ByteArray_fast_2b_inplace(int_lead_a, reg_count, result_pos);
+		result_pos += leadNumArray_size_a;
+		size_t leadNumArray_size_b = convertIntArray2ByteArray_fast_2b_inplace(int_lead_b, reg_count, result_pos);
+		result_pos += leadNumArray_size_b;
+		size_t leadNumArray_size_c = convertIntArray2ByteArray_fast_2b_inplace(int_lead_c, reg_count, result_pos);
+		result_pos += leadNumArray_size_c;
+		size_t leadNumArray_size_d = convertIntArray2ByteArray_fast_2b_inplace(int_lead_d, reg_count, result_pos);
+		result_pos += leadNumArray_size_d;
+		
+		size_t mid_byte_size_a = post_mid_a_p - byte_mid_a;
+		memcpy(result_pos, &mid_byte_size_a, sizeof(size_t));
+		result_pos += sizeof(size_t);
+		memcpy(result_pos, byte_mid_a, mid_byte_size_a);
+		result_pos += mid_byte_size_a;
+
+		size_t mid_byte_size_b = post_mid_b_p - byte_mid_b;
+		memcpy(result_pos, &mid_byte_size_b, sizeof(size_t));
+		result_pos += sizeof(size_t);
+		memcpy(result_pos, byte_mid_b, mid_byte_size_b);
+		result_pos += mid_byte_size_b;
+		
+		size_t mid_byte_size_c = post_mid_c_p - byte_mid_c;
+		memcpy(result_pos, &mid_byte_size_c, sizeof(size_t));
+		result_pos += sizeof(size_t);
+		memcpy(result_pos, byte_mid_c, mid_byte_size_c);
+		result_pos += mid_byte_size_c;
+		
+		size_t mid_byte_size_d = post_mid_d_p - byte_mid_d;
+		memcpy(result_pos, &mid_byte_size_d, sizeof(size_t));
+		result_pos += sizeof(size_t);
+		memcpy(result_pos, byte_mid_d, mid_byte_size_d);
+		result_pos += mid_byte_size_d;		
+		
+		unsigned char* byteBuffer = NULL;
+		size_t residualResiBits_size_a = convertIntArray2ByteArray_fast_dynamic(int_resi_a, resiBitsLength_a, num_blocks, &byteBuffer);
+		memcpy(result_pos, &residualResiBits_size_a, sizeof(size_t));
+		result_pos += sizeof(size_t);
+		memcpy(result_pos, byteBuffer, residualResiBits_size_a);
+		result_pos += residualResiBits_size_a;
+		free(byteBuffer);
+
+		size_t residualResiBits_size_b = convertIntArray2ByteArray_fast_dynamic(int_resi_b, resiBitsLength_b, num_blocks, &byteBuffer);
+		memcpy(result_pos, &residualResiBits_size_b, sizeof(size_t));
+		result_pos += sizeof(size_t);
+		memcpy(result_pos, byteBuffer, residualResiBits_size_b);
+		result_pos += residualResiBits_size_b;
+		free(byteBuffer);
+		
+		size_t residualResiBits_size_c = convertIntArray2ByteArray_fast_dynamic(int_resi_c, resiBitsLength_c, num_blocks, &byteBuffer);
+		memcpy(result_pos, &residualResiBits_size_c, sizeof(size_t));
+		result_pos += sizeof(size_t);
+		memcpy(result_pos, byteBuffer, residualResiBits_size_c);
+		result_pos += residualResiBits_size_c;
+		free(byteBuffer);
+		
+		size_t residualResiBits_size_d = convertIntArray2ByteArray_fast_dynamic(int_resi_c, resiBitsLength_c, num_blocks, &byteBuffer);
+		memcpy(result_pos, &residualResiBits_size_d, sizeof(size_t));
+		result_pos += sizeof(size_t);
+		memcpy(result_pos, byteBuffer, residualResiBits_size_d);
+		result_pos += residualResiBits_size_d;
+		free(byteBuffer);		
+	}
+	
+	//record the number of unpredictable data and also store them
 	memcpy(result_pos, &total_unpred, sizeof(size_t));
 	result_pos += sizeof(size_t);
 	memcpy(result_pos, result_unpredictable_data, total_unpred * sizeof(float));
@@ -8478,6 +8611,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	free(result_unpredictable_data);
 	free(result_type);
 	free(reg_params);
+				
 	SZ_ReleaseHuffman();
 	*comp_size = totalEncodeSize;
 	return result;

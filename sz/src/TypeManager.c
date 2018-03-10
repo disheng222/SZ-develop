@@ -148,6 +148,46 @@ size_t convertIntArray2ByteArray_fast_2b(unsigned char* timeStepType, size_t tim
 	return byteLength;
 }
 
+size_t convertIntArray2ByteArray_fast_2b_inplace(unsigned char* timeStepType, size_t timeStepTypeLength, unsigned char *result)
+{
+	size_t i, j, byteLength = 0;
+	if(timeStepTypeLength%4==0)
+		byteLength = timeStepTypeLength*2/8;
+	else
+		byteLength = timeStepTypeLength*2/8+1;
+
+	size_t n = 0;
+	for(i = 0;i<byteLength;i++)
+	{
+		int tmp = 0;
+		for(j = 0;j<4&&n<timeStepTypeLength;j++)
+		{
+			int type = timeStepType[n];
+			switch(type)
+			{
+			case 0: 
+				
+				break;
+			case 1:
+				tmp = (tmp | (1 << (6-j*2)));
+				break;
+			case 2:
+				tmp = (tmp | (2 << (6-j*2)));
+				break;
+			case 3:
+				tmp = (tmp | (3 << (6-j*2)));
+				break;
+			default:
+				printf("Error: wrong timestep type...: type[%d]=%d\n", n, type);
+				exit(0);
+			}
+			n++;
+		}
+		result[i] = (unsigned char)tmp;
+	}
+	return byteLength;
+}
+
 void convertByteArray2IntArray_fast_2b(size_t stepLength, unsigned char* byteArray, size_t byteArrayLength, unsigned char **intArray)
 {
 	if(stepLength > byteArrayLength*4)
