@@ -3917,6 +3917,8 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 		if(!indicator[i]) reg_count ++;
 	}
 	printf("reg_count: %ld\n", reg_count);
+	reg_count = num_x * num_y * num_z;
+
 	float * reg_params = (float *) comp_data_pos;
 	comp_data_pos += reg_count * 4 * sizeof(float);
 	// reorder reg_params
@@ -3978,12 +3980,13 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 				if(indicator[index] == 0){
 					// decompress by regression
 					cur_unpred_count = decompressDataSeries_float_3D_RA_block_all_by_regression(data_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, reg_params, type, unpred_data);
-					reg_params += 4;
+					// reg_params += 4;
 				}
 				else{
 					// decompress by SZ
 					cur_unpred_count = decompressDataSeries_float_3D_blocked_nonblock_pred(data_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, i, j, k, realPrecision, type, unpred_data);
 				}
+				reg_params += 4;
 
 				unpred_data += cur_unpred_count;
 				decomp_unpred += cur_unpred_count;
