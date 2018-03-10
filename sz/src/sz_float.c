@@ -8185,6 +8185,64 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	unsigned char * indicator_pos = indicator;
 	float sz_sample_correct_freq = 0.5;
 	float reg_correct_freq;
+	// move regression part out
+	size_t params_offset_b = num_blocks;
+	size_t params_offset_c = 2*num_blocks;
+	size_t params_offset_d = 3*num_blocks;
+	for(size_t i=0; i<num_x; i++){
+		for(size_t j=0; j<num_y; j++){
+			for(size_t k=0; k<num_z; k++){
+				current_blockcount_x = (i < split_index_x) ? early_blockcount_x : late_blockcount_x;
+				current_blockcount_y = (j < split_index_y) ? early_blockcount_y : late_blockcount_y;
+				current_blockcount_z = (k < split_index_z) ? early_blockcount_z : late_blockcount_z;
+				offset_x = (i < split_index_x) ? i * early_blockcount_x : i * late_blockcount_x + split_index_x;
+				offset_y = (j < split_index_y) ? j * early_blockcount_y : j * late_blockcount_y + split_index_y;
+				offset_z = (k < split_index_z) ? k * early_blockcount_z : k * late_blockcount_z + split_index_z;
+	
+				data_pos = oriData + offset_x * dim0_offset + offset_y * dim1_offset + offset_z;
+				// SZ_blocked_regression(data_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, reg_params_pos);
+				{
+					float * cur_data_pos = data_pos;
+					float fx = 0.0;
+					float fy = 0.0;
+					float fz = 0.0;
+					float f = 0;
+					float sum_x, sum_y; 
+					float curData;
+					for(size_t i=0; i<current_blockcount_x; i++){
+						sum_x = 0;
+						for(size_t j=0; j<current_blockcount_y; j++){
+							sum_y = 0;
+							for(size_t k=0; k<current_blockcount_z; k++){
+								curData = *cur_data_pos;
+								// f += curData;
+								// fx += curData * i;
+								// fy += curData * j;
+								// fz += curData * k;
+								sum_y += curData;
+								fz += curData * k;
+								cur_data_pos ++;
+							}
+							fy += sum_y * j;
+							sum_x += sum_y;
+							cur_data_pos += dim1_offset - current_blockcount_z;
+						}
+						fx += sum_x * i;
+						f += sum_x;
+						cur_data_pos += dim0_offset - current_blockcount_y * dim1_offset;
+					}
+					float coeff = 1.0 / (current_blockcount_x * current_blockcount_y * current_blockcount_z);
+					reg_params_pos[0] = (2 * fx / (current_blockcount_x - 1) - f) * 6 * coeff / (current_blockcount_x + 1);
+					reg_params_pos[params_offset_b] = (2 * fy / (current_blockcount_y - 1) - f) * 6 * coeff / (current_blockcount_y + 1);
+					reg_params_pos[params_offset_c] = (2 * fz / (current_blockcount_z - 1) - f) * 6 * coeff / (current_blockcount_z + 1);
+					reg_params_pos[params_offset_d] = f * coeff - ((current_blockcount_x - 1) * reg_params_pos[0] / 2 + (current_blockcount_y - 1) * reg_params_pos[params_offset_b] / 2 + (current_blockcount_z - 1) * reg_params_pos[params_offset_c] / 2);
+				}
+				reg_params_pos ++;
+			}
+		}
+	}
+	reg_params_pos = reg_params;
+
 	double tmp_realPrecision = realPrecision;
 	for(size_t i=0; i<num_x; i++){
 		current_blockcount_x = (i < split_index_x) ? early_blockcount_x : late_blockcount_x;
@@ -8201,26 +8259,69 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 			memcpy(prediction_buffer, bottom_buffer + offset_y * strip_dim1_offset, (current_blockcount_y + 1) * strip_dim1_offset * sizeof(float));
 			type_offset = offset_x * dim0_offset +  offset_y * current_blockcount_x * dim1_offset;
 			type = result_type + type_offset;
-			// printf("i j k: %d %d %d, offset %ld %ld %ld type offset %ld\n", i, j, k, offset_x, offset_y, offset_z, type_offset);
-			// printf("i j: %ld %ld, offset %ld %ld type offset %ld\n", i, j, offset_x, offset_y, type_offset);
-			// unpredictable_count = SZ_compress_float_3D_MDQ_nonblocked_pred_with_blocked_regression_strip(data_pos, r1, r2, r3, strip_dim_0, strip_dim_1, strip_dim_2,
-			// 	current_blockcount_x, current_blockcount_y, num_z, split_index_z, early_blockcount_z, late_blockcount_z, realPrecision, sz_sample_correct_freq, 
-			// 	prediction_buffer, reg_params_pos, type, unpredictable_data, &strip_reg_count, indicator_pos);
-		
+
 			// prediction buffer is (current_block_count_x + 1) * (current_block_count_y + 1) * (current_block_count_z + 1)
 			size_t current_blockcount_z;
 			float * pb_pos = prediction_buffer + strip_dim0_offset + strip_dim1_offset + 1;
 			size_t strip_unpredictable_count = 0;
 			for(size_t k=0; k<num_z; k++){
 				current_blockcount_z = (k < split_index_z) ? early_blockcount_z : late_blockcount_z;
-				SZ_blocked_regression(data_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, reg_params_pos);
-				reg_correct_freq = SZ_compress_float_3D_MDQ_strip_pred_by_regression_with_freq(data_pos, r1, r2, r3, strip_dim_0, strip_dim_1, strip_dim_2, current_blockcount_x, current_blockcount_y, current_blockcount_z, tmp_realPrecision, reg_params_pos, pb_pos, type, &unpredictable_count, unpredictable_data);
-				// reg_correct_freq = 0;
+				// SZ_blocked_regression(data_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, reg_params_pos);
+				// reg_correct_freq = SZ_compress_float_3D_MDQ_strip_pred_by_regression_with_freq(data_pos, r1, r2, r3, strip_dim_0, strip_dim_1, strip_dim_2, current_blockcount_x, current_blockcount_y, current_blockcount_z, tmp_realPrecision, reg_params_pos, pb_pos, type, &unpredictable_count, unpredictable_data);
+				{
+					float curData;
+					float pred;
+					double itvNum;
+					double diff;
+					size_t index = 0;
+					size_t block_unpredictable_count = 0;
+					size_t correct_pred_count = 0;
+					float * cur_data_pos = data_pos;
+					for(size_t ii=0; ii<current_blockcount_x; ii++){
+						for(size_t jj=0; jj<current_blockcount_y; jj++){
+							for(size_t kk=0; kk<current_blockcount_z; kk++){
+								curData = *cur_data_pos;
+								pred = reg_params_pos[0] * ii + reg_params_pos[params_offset_b] * jj + reg_params_pos[params_offset_c] * kk + reg_params_pos[params_offset_d];
+								diff = curData - pred;
+								itvNum = fabs(diff)/tmp_realPrecision + 1;
+								if (itvNum < intvCapacity){
+									if (diff < 0) itvNum = -itvNum;
+									type[index] = (int) (itvNum/2) + intvRadius;
+									pred = pred + 2 * (type[index] - intvRadius) * tmp_realPrecision;
+									if(type[index] == intvRadius) correct_pred_count ++;
+									//ganrantee comporession error against the case of machine-epsilon
+									if(fabs(curData - pred)>tmp_realPrecision){	
+										type[index] = 0;
+										pred = curData;
+										unpredictable_data[block_unpredictable_count ++] = curData;
+									}		
+								}
+								else{
+									type[index] = 0;
+									pred = curData;
+									unpredictable_data[block_unpredictable_count ++] = curData;
+								}
+
+								if((ii == current_blockcount_x - 1) || (jj == current_blockcount_y - 1) || (kk == current_blockcount_z - 1)){
+									// assign value to strip surfaces
+									pb_pos[ii * strip_dim0_offset + jj * strip_dim1_offset + kk] = pred;
+								}
+								index ++;	
+								cur_data_pos ++;
+							}
+							cur_data_pos += dim1_offset - current_blockcount_z;
+						}
+						cur_data_pos += dim0_offset - current_blockcount_y * dim1_offset;
+					}
+					unpredictable_count = block_unpredictable_count;
+					reg_correct_freq = (correct_pred_count * 1.0 / (current_blockcount_x * current_blockcount_y * current_blockcount_z));				
+				}
+				reg_params_pos ++;
 				if(reg_correct_freq > sz_sample_correct_freq){
 					// use regression, which is default in indicator
 					strip_unpredictable_count += unpredictable_count;
 					unpredictable_data += unpredictable_count;
-					reg_params_pos += 4;
+					// reg_params_pos += 4;
 					reg_count ++;
 				}
 				else{
@@ -8305,6 +8406,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	free(buffer2);
 	printf("Block wise compression end, unpredictable num %d, num_elements %ld, max unpred count %d\n", total_unpred, num_elements, max_unpred_count);
 	printf("sz_count: %ld reg_count: %ld\n", num_blocks - reg_count, reg_count);
+	reg_count = num_x * num_y * num_z;
 	// huffman encode
 	SZ_Reset(allNodes, stateNum);
 	size_t nodeCount = 0;
@@ -8349,16 +8451,16 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	// 	printf("total reg_count: %ld\n", tmp_count);
 	// 	exit(0);
 	// }
-	// memcpy(result_pos, reg_params, reg_count * 4 * sizeof(float));
-	// result_pos += reg_count * 4 * sizeof(float);
+	memcpy(result_pos, reg_params, reg_count * 4 * sizeof(float));
+	result_pos += reg_count * 4 * sizeof(float);
 	// reorder reg_count
-	float * params_pos = (float *) result_pos;
-	result_pos += reg_count * 4 * sizeof(float);	
-	for(size_t i=0; i<4; i++){
-		for(size_t j=0; j<reg_count; j++){
-			params_pos[i*reg_count + j] = reg_params[j*4 + i];
-		}
-	}
+	// float * params_pos = (float *) result_pos;
+	// result_pos += reg_count * 4 * sizeof(float);	
+	// for(size_t i=0; i<4; i++){
+	// 	for(size_t j=0; j<reg_count; j++){
+	// 		params_pos[i*reg_count + j] = reg_params[j*4 + i];
+	// 	}
+	// }
 	memcpy(result_pos, &total_unpred, sizeof(size_t));
 	result_pos += sizeof(size_t);
 	memcpy(result_pos, result_unpredictable_data, total_unpred * sizeof(float));
