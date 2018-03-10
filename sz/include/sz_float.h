@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-void computeReqLength_float(float realPrecision, short radExpo, int* reqLength, float* medianValue);
+void computeReqLength_float(double realPrecision, short radExpo, int* reqLength, float* medianValue);
 
 unsigned int optimize_intervals_float_1D(float *oriData, size_t dataLength, double realPrecision);
 unsigned int optimize_intervals_float_2D(float *oriData, size_t r1, size_t r2, double realPrecision);
@@ -52,22 +52,22 @@ size_t SZ_compress_float_3D_MDQ_RA_block_3D_pred_flush_after_compare(float * blo
 size_t SZ_compress_float_3D_MDQ_RA_block_2_layers(float * block_ori_data, float * mean, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, float * P0, float * P1, float * P_, int * type, float * unpredictable_data);
 size_t SZ_compress_float_3D_MDQ_pred_by_regression(float * block_ori_data, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, float * reg_params, int * type, float * unpredictable_data);
 void SZ_blocked_regression(float * block_ori_data, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, float *params);
-unsigned char * SZ_compress_float_3D_MDQ_RA_all_by_regression(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size);
+unsigned char * SZ_compress_float_3D_MDQ_RA_all_by_regression(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size);
 float SZ_compress_float_3D_MDQ_RA_block_no_mean(float * block_ori_data, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, float * P0, float * P1, int * type, unsigned short * unpred_count, float * unpredictable_data);
 float SZ_compress_float_3D_MDQ_pred_by_regression_with_err(float * block_ori_data, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, float * reg_params, int * type, unsigned short * unpred_count, float * unpredictable_data);
-unsigned char * SZ_compress_float_3D_MDQ_RA_blocked_with_regression(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size);
+unsigned char * SZ_compress_float_3D_MDQ_RA_blocked_with_regression(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size);
 void decompressDataSeries_float_3D_RA_blocked_with_regression(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data);
 
 unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double realPrecision, size_t * comp_size);
-unsigned char * SZ_compress_float_2D_MDQ_RA(float *oriData, size_t r1, size_t r2, float realPrecision, size_t * comp_size);
-unsigned char * SZ_compress_float_2D_MDQ_nonblocked(float *oriData, size_t r1, size_t r2, float realPrecision, size_t * comp_size);
-unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size);
-unsigned char * SZ_compress_float_3D_MDQ_nonblocked(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size);
-unsigned char * SZ_compress_float_3D_MDQ_nonblocked_ori(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size);
-unsigned char * SZ_compress_float_3D_MDQ_nonblocked_multi_means(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size);
-unsigned char * SZ_compress_float_3D_MDQ_RA_multi_means(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size);
-unsigned char * SZ_compress_float_3D_MDQ_nonblocked_adaptive(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size);
-unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size);
+unsigned char * SZ_compress_float_2D_MDQ_RA(float *oriData, size_t r1, size_t r2, double realPrecision, size_t * comp_size);
+unsigned char * SZ_compress_float_2D_MDQ_nonblocked(float *oriData, size_t r1, size_t r2, double realPrecision, size_t * comp_size);
+unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size);
+unsigned char * SZ_compress_float_3D_MDQ_nonblocked(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size);
+unsigned char * SZ_compress_float_3D_MDQ_nonblocked_ori(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size);
+unsigned char * SZ_compress_float_3D_MDQ_nonblocked_multi_means(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size);
+unsigned char * SZ_compress_float_3D_MDQ_RA_multi_means(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size);
+unsigned char * SZ_compress_float_3D_MDQ_nonblocked_adaptive(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size);
+unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size);
 
 TightDataPointStorageF* SZ_compress_float_4D_MDQ(float *oriData, size_t r1, size_t r2, size_t r3, size_t r4, double realPrecision, float valueRangeSize, float medianValue_f);
 

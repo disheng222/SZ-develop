@@ -2659,7 +2659,7 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwRelBoundRa
 }
 
 
-void computeReqLength_float(float realPrecision, short radExpo, int* reqLength, float* medianValue)
+void computeReqLength_float(double realPrecision, short radExpo, int* reqLength, float* medianValue)
 {
 	short reqExpo = getPrecisionReqLength_double(realPrecision);
 	*reqLength = 9+radExpo - reqExpo; //radExpo-reqExpo == reqMantiLength
@@ -4419,7 +4419,7 @@ size_t SZ_compress_float_2D_MDQ_RA_block_2D_pred(float * block_ori_data, float *
 	return unpredictable_count;
 }
 
-unsigned char * SZ_compress_float_2D_MDQ_nonblocked(float *oriData, size_t r1, size_t r2, float realPrecision, size_t * comp_size){
+unsigned char * SZ_compress_float_2D_MDQ_nonblocked(float *oriData, size_t r1, size_t r2, double realPrecision, size_t * comp_size){
 	unsigned int quantization_intervals;
 	float dense_pos =0.532267;
 	if(optQuantMode==1)
@@ -4539,7 +4539,7 @@ unsigned char * SZ_compress_float_2D_MDQ_nonblocked(float *oriData, size_t r1, s
 	return result;
 }
 
-unsigned char * SZ_compress_float_2D_MDQ_RA(float *oriData, size_t r1, size_t r2, float realPrecision, size_t * comp_size){
+unsigned char * SZ_compress_float_2D_MDQ_RA(float *oriData, size_t r1, size_t r2, double realPrecision, size_t * comp_size){
 
 	unsigned int quantization_intervals;
 	float dense_pos =0.532267;
@@ -7401,7 +7401,7 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double re
 	return result;
 }
 
-unsigned char * SZ_compress_float_3D_MDQ_nonblocked_multi_means(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
+unsigned char * SZ_compress_float_3D_MDQ_nonblocked_multi_means(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
 	unsigned int quantization_intervals;
 	float dense_pos;
 	float * means;
@@ -7543,7 +7543,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_multi_means(float *oriData, 
 	return result;
 }
 
-unsigned char * SZ_compress_float_3D_MDQ_nonblocked_ori(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
+unsigned char * SZ_compress_float_3D_MDQ_nonblocked_ori(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
 	unsigned int quantization_intervals;
 	float dense_pos;
 	if(optQuantMode==1)
@@ -7673,7 +7673,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_ori(float *oriData, size_t r
 	return result;
 }
 
-unsigned char * SZ_compress_float_3D_MDQ_nonblocked_adaptive(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
+unsigned char * SZ_compress_float_3D_MDQ_nonblocked_adaptive(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
 	unsigned int quantization_intervals;
 	float dense_pos;
 	if(optQuantMode==1)
@@ -7801,7 +7801,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_adaptive(float *oriData, siz
 	return result;
 }
 
-unsigned char * SZ_compress_float_3D_MDQ_nonblocked(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
+unsigned char * SZ_compress_float_3D_MDQ_nonblocked(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
 	unsigned int quantization_intervals;
 	float dense_pos;
 	if(optQuantMode==1)
@@ -8235,7 +8235,7 @@ float SZ_compress_float_3D_MDQ_strip_pred_by_regression_with_freq(float * block_
 
 // }
 
-unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
+unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
 
 	unsigned int quantization_intervals;
 	if(optQuantMode==1)
@@ -8505,7 +8505,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	return result;
 }
 
-unsigned char * SZ_compress_float_3D_MDQ_RA_all_by_regression(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
+unsigned char * SZ_compress_float_3D_MDQ_RA_all_by_regression(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
 
 	unsigned int quantization_intervals;
 	if(optQuantMode==1)
@@ -8672,7 +8672,7 @@ unsigned char * SZ_compress_float_3D_MDQ_RA_all_by_regression(float *oriData, si
 	return result;
 }
 
-unsigned char * SZ_compress_float_3D_MDQ_RA_blocked_with_regression(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
+unsigned char * SZ_compress_float_3D_MDQ_RA_blocked_with_regression(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
 
 	unsigned int quantization_intervals;
 	if(optQuantMode==1)
@@ -8871,7 +8871,7 @@ unsigned char * SZ_compress_float_3D_MDQ_RA_blocked_with_regression(float *oriDa
 }
 
 
-unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
+unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
 
 	unsigned int quantization_intervals;
 	float dense_pos;
@@ -9114,7 +9114,7 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	return result;
 }
 
-unsigned char * SZ_compress_float_3D_MDQ_RA_multi_means(float *oriData, size_t r1, size_t r2, size_t r3, float realPrecision, size_t * comp_size){
+unsigned char * SZ_compress_float_3D_MDQ_RA_multi_means(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
 
 	unsigned int quantization_intervals;
 	float dense_pos;
