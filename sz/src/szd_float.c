@@ -3847,6 +3847,7 @@ size_t decompressDataSeries_float_3D_blocked_nonblock_pred(float * data, size_t 
 				else{
 					*data_pos = unpredictable_data[unpredictable_count ++];
 				}
+
 				index ++;
 				data_pos ++;
 			}
@@ -3866,7 +3867,7 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 	size_t num_elements = r1 * r2 * r3;
 
 	*data = (float*)malloc(sizeof(float)*num_elements);
-	
+
 	unsigned char * comp_data_pos = comp_data;
 	//int meta_data_offset = 3 + 1 + MetaDataByteLength;
 	//comp_data_pos += meta_data_offset;
