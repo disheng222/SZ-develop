@@ -3918,21 +3918,22 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 	}
 	printf("reg_count: %ld\n", reg_count);
 	// reg_count = num_x * num_y * num_z;
+	if(reg_count > 0){
+		float * medians = (float *) comp_data_pos;
+		float medianValue_a = *medians;
+		float medianValue_b = *(medians + 1);
+		float medianValue_c = *(medians + 2);
+		float medianValue_d = *(medians + 3);
+		comp_data_pos += 4 * sizeof(float);
 
-	float * medians = (float *) comp_data_pos;
-	float medianValue_a = *medians;
-	float medianValue_b = *(medians + 1);
-	float medianValue_c = *(medians + 2);
-	float medianValue_d = *(medians + 3);
-	comp_data_pos += 4 * sizeof(float);
-
-	int * reqLength = (int *) comp_data_pos;
-	int reqLength_a = *reqLength;
-	int reqLength_b = *(reqLength + 1);
-	int reqLength_c = *(reqLength + 2);
-	int reqLength_d = *(reqLength + 3);
-	comp_data_pos += 4 * sizeof(int);
-
+		int * reqLength = (int *) comp_data_pos;
+		int reqLength_a = *reqLength;
+		int reqLength_b = *(reqLength + 1);
+		int reqLength_c = *(reqLength + 2);
+		int reqLength_d = *(reqLength + 3);
+		comp_data_pos += 4 * sizeof(int);
+		
+	}
 	// float * reg_params = (float *) comp_data_pos;
 	// comp_data_pos += reg_count * 4 * sizeof(float);
 	// reorder reg_params
@@ -4013,7 +4014,7 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 			}
 		}
 	}
-	free(reg_params_buf);
+	// free(reg_params_buf);
 	free(result_type);
 }
 
