@@ -3917,18 +3917,32 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 		if(!indicator[i]) reg_count ++;
 	}
 	printf("reg_count: %ld\n", reg_count);
-	reg_count = num_x * num_y * num_z;
+	// reg_count = num_x * num_y * num_z;
 
-	float * reg_params = (float *) comp_data_pos;
-	comp_data_pos += reg_count * 4 * sizeof(float);
+	float * medians = (float *) comp_data_pos;
+	float medianValue_a = *medians;
+	float medianValue_b = *(medians + 1);
+	float medianValue_c = *(medians + 2);
+	float medianValue_d = *(medians + 3);
+	comp_data_pos += 4 * sizeof(float);
+
+	int * reqLength = (int *) comp_data_pos;
+	int reqLength_a = *reqLength;
+	int reqLength_b = *(reqLength + 1);
+	int reqLength_c = *(reqLength + 2);
+	int reqLength_d = *(reqLength + 3);
+	comp_data_pos += 4 * sizeof(int);
+
+	// float * reg_params = (float *) comp_data_pos;
+	// comp_data_pos += reg_count * 4 * sizeof(float);
 	// reorder reg_params
-	float * reg_params_buf = (float *) malloc(reg_count * 4 * sizeof(float));
-	for(size_t i=0; i<reg_count; i++){
-		for(size_t j=0; j<4; j++){
-			reg_params_buf[4*i + j] = reg_params[j*reg_count + i];
-		}
-	}
-	reg_params = reg_params_buf;
+	// float * reg_params_buf = (float *) malloc(reg_count * 4 * sizeof(float));
+	// for(size_t i=0; i<reg_count; i++){
+	// 	for(size_t j=0; j<4; j++){
+	// 		reg_params_buf[4*i + j] = reg_params[j*reg_count + i];
+	// 	}
+	// }
+	// reg_params = reg_params_buf;
 	// {
 	// 	int status;
 	// 	writeFloatData_inBytes(reg_params, reg_count * 4, "/Users/LiangXin/Documents/research/anl/lossy_comp/data/NYX/params.dat", &status);

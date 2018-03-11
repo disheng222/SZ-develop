@@ -8526,6 +8526,30 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	
 	if(reg_count>0)
 	{
+		// write coefficient info
+		memcpy(result_pos, &medianValue_a, sizeof(float));
+		result_pos += sizeof(float);
+		memcpy(result_pos, &medianValue_b, sizeof(float));
+		result_pos += sizeof(float);
+		memcpy(result_pos, &medianValue_c, sizeof(float));
+		result_pos += sizeof(float);
+		memcpy(result_pos, &medianValue_d, sizeof(float));
+		result_pos += sizeof(float);
+
+		int reqLength_a, reqLength_b, reqLength_c, reqLength_d;
+		reqLength_a = reqBytesLength_a * 8 + resiBitsLength_a;
+		memcpy(result_pos, &reqLength_a, sizeof(int));
+		result_pos += sizeof(int);
+		reqLength_b = reqBytesLength_b * 8 + resiBitsLength_b;
+		memcpy(result_pos, &reqLength_b, sizeof(int));
+		result_pos += sizeof(int);
+		reqLength_c = reqBytesLength_c * 8 + resiBitsLength_c;
+		memcpy(result_pos, &reqLength_c, sizeof(int));
+		result_pos += sizeof(int);
+		reqLength_d = reqBytesLength_d * 8 + resiBitsLength_d;
+		memcpy(result_pos, &reqLength_d, sizeof(int));
+		result_pos += sizeof(int);
+
 		size_t leadNumArray_size_a = convertIntArray2ByteArray_fast_2b_inplace(int_lead_a, reg_count, result_pos);
 		result_pos += leadNumArray_size_a;
 		size_t leadNumArray_size_b = convertIntArray2ByteArray_fast_2b_inplace(int_lead_b, reg_count, result_pos);
