@@ -8341,15 +8341,15 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 					strip_unpredictable_count += unpredictable_count;
 					unpredictable_data += unpredictable_count;
 					
-					int_lead_a[sel_block_index] = leadArray_a[sel_block_index];
-					int_lead_b[sel_block_index] = leadArray_b[sel_block_index];					
-					int_lead_c[sel_block_index] = leadArray_c[sel_block_index];
-					int_lead_d[sel_block_index] = leadArray_d[sel_block_index];										
+					int_lead_a[reg_count] = leadArray_a[sel_block_index];
+					int_lead_b[reg_count] = leadArray_b[sel_block_index];					
+					int_lead_c[reg_count] = leadArray_c[sel_block_index];
+					int_lead_d[reg_count] = leadArray_d[sel_block_index];										
 					
-					int_resi_a[sel_block_index] = resiArray_a[sel_block_index];
-					int_resi_b[sel_block_index] = resiArray_b[sel_block_index];
-					int_resi_c[sel_block_index] = resiArray_c[sel_block_index];
-					int_resi_d[sel_block_index] = resiArray_d[sel_block_index];															
+					int_resi_a[reg_count] = resiArray_a[sel_block_index];
+					int_resi_b[reg_count] = resiArray_b[sel_block_index];
+					int_resi_c[reg_count] = resiArray_c[sel_block_index];
+					int_resi_d[reg_count] = resiArray_d[sel_block_index];															
 					
 					memcpy(post_mid_a_p, pre_mid_a_p, midByteSize_a);
 					memcpy(post_mid_b_p, pre_mid_b_p, midByteSize_b);
@@ -8526,14 +8526,6 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	
 	if(reg_count>0)
 	{
-		for(size_t i=0; i<reg_count; i++){
-			if(int_lead_a[i] > 2) printf("%ld: %d\n", i, int_lead_a[i]);
-			if(int_lead_b[i] > 2) printf("%ld: %d\n", i, int_lead_b[i]);
-			if(int_lead_c[i] > 2) printf("%ld: %d\n", i, int_lead_c[i]);
-			if(int_lead_d[i] > 2) printf("%ld: %d\n", i, int_lead_d[i]);
-		}
-		exit(0);
-
 		size_t leadNumArray_size_a = convertIntArray2ByteArray_fast_2b_inplace(int_lead_a, reg_count, result_pos);
 		result_pos += leadNumArray_size_a;
 		size_t leadNumArray_size_b = convertIntArray2ByteArray_fast_2b_inplace(int_lead_b, reg_count, result_pos);
