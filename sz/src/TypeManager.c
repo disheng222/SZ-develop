@@ -331,7 +331,7 @@ void convertByteArray2IntArray_fast_3b(size_t stepLength, unsigned char* byteArr
 	}
 }
 
-int getLeftMovingSteps(size_t k, unsigned char resiBitLength)
+inline int getLeftMovingSteps(size_t k, unsigned char resiBitLength)
 {
 	return 8 - k%8 - resiBitLength;
 }

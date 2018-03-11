@@ -8466,7 +8466,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 
 	unsigned int meta_data_offset = 3 + 1 + MetaDataByteLength;
 	// total size 										metadata		real precision		intervals	nodeCount		huffman 	 	block index 						unpredicatable count						mean 					 	unpred size 				elements
-	unsigned char * result = (unsigned char *) malloc(meta_data_offset + sizeof(double) + sizeof(int) + sizeof(int) + treeByteSize + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(float) + total_unpred * sizeof(float) + num_elements * sizeof(int));
+	unsigned char * result = (unsigned char *) calloc(meta_data_offset + sizeof(double) + sizeof(int) + sizeof(int) + treeByteSize + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(float) + total_unpred * sizeof(float) + num_elements * sizeof(int), 1);
 	unsigned char * result_pos = result;
 	initRandomAccessBytes(result_pos);
 	result_pos += meta_data_offset;
@@ -8560,28 +8560,28 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 		result_pos += mid_byte_size_d;		
 		
 		unsigned char* byteBuffer = NULL;
-		size_t residualResiBits_size_a = convertIntArray2ByteArray_fast_dynamic(int_resi_a, resiBitsLength_a, num_blocks, &byteBuffer);
+		size_t residualResiBits_size_a = convertIntArray2ByteArray_fast_dynamic(int_resi_a, resiBitsLength_a, reg_count, &byteBuffer);
 		memcpy(result_pos, &residualResiBits_size_a, sizeof(size_t));
 		result_pos += sizeof(size_t);
 		memcpy(result_pos, byteBuffer, residualResiBits_size_a);
 		result_pos += residualResiBits_size_a;
 		free(byteBuffer);
 
-		size_t residualResiBits_size_b = convertIntArray2ByteArray_fast_dynamic(int_resi_b, resiBitsLength_b, num_blocks, &byteBuffer);
+		size_t residualResiBits_size_b = convertIntArray2ByteArray_fast_dynamic(int_resi_b, resiBitsLength_b, reg_count, &byteBuffer);
 		memcpy(result_pos, &residualResiBits_size_b, sizeof(size_t));
 		result_pos += sizeof(size_t);
 		memcpy(result_pos, byteBuffer, residualResiBits_size_b);
 		result_pos += residualResiBits_size_b;
 		free(byteBuffer);
 		
-		size_t residualResiBits_size_c = convertIntArray2ByteArray_fast_dynamic(int_resi_c, resiBitsLength_c, num_blocks, &byteBuffer);
+		size_t residualResiBits_size_c = convertIntArray2ByteArray_fast_dynamic(int_resi_c, resiBitsLength_c, reg_count, &byteBuffer);
 		memcpy(result_pos, &residualResiBits_size_c, sizeof(size_t));
 		result_pos += sizeof(size_t);
 		memcpy(result_pos, byteBuffer, residualResiBits_size_c);
 		result_pos += residualResiBits_size_c;
 		free(byteBuffer);
 		
-		size_t residualResiBits_size_d = convertIntArray2ByteArray_fast_dynamic(int_resi_c, resiBitsLength_c, num_blocks, &byteBuffer);
+		size_t residualResiBits_size_d = convertIntArray2ByteArray_fast_dynamic(int_resi_c, resiBitsLength_c, reg_count, &byteBuffer);
 		memcpy(result_pos, &residualResiBits_size_d, sizeof(size_t));
 		result_pos += sizeof(size_t);
 		memcpy(result_pos, byteBuffer, residualResiBits_size_d);
