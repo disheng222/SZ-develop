@@ -657,3 +657,58 @@ void compressExactDataArray(float* oriData, double precision, size_t nbEle, unsi
 	free_DBA(exactMidByteArray);
 	free_DIA(resiBitArray);
 }
+
+void decompressExactDataArray(unsigned char* leadNum, unsigned char* exactMidBytes, unsigned char* residualMidBits, size_t nbEle, int reqBytesLength, int resiBitsLength, float medianValue, float** decData)
+{
+	*decData = (float*)malloc(nbEle*sizeof(float));
+	size_t i = 0, j = 0, k = 0, l = 0, p = 0, curByteIndex = 0;
+	float exactData = 0;
+	unsigned char preBytes[4] = {0,0,0,0};
+	unsigned char curBytes[4];
+	int resiBits; 
+	unsigned char leadingNum;		
+	
+	for(i = 0; i<nbEle;i++)
+	{
+		// compute resiBits
+		resiBits = 0;
+		if (resiBitsLength != 0) {
+			int kMod8 = k % 8;
+			int rightMovSteps = getRightMovingSteps(kMod8, resiBitsLength);
+			if (rightMovSteps > 0) {
+				int code = getRightMovingCode(kMod8, resiBitsLength);
+				resiBits = (residualMidBits[p] & code) >> rightMovSteps;
+			} else if (rightMovSteps < 0) {
+				int code1 = getLeftMovingCode(kMod8);
+				int code2 = getRightMovingCode(kMod8, resiBitsLength);
+				int leftMovSteps = -rightMovSteps;
+				rightMovSteps = 8 - leftMovSteps;
+				resiBits = (residualMidBits[p] & code1) << leftMovSteps;
+				p++;
+				resiBits = resiBits
+						| ((residualMidBits[p] & code2) >> rightMovSteps);
+			} else // rightMovSteps == 0
+			{
+				int code = getRightMovingCode(kMod8, resiBitsLength);
+				resiBits = (residualMidBits[p] & code);
+				p++;
+			}
+			k += resiBitsLength;
+		}
+
+		// recover the exact data	
+		memset(curBytes, 0, 4);
+		leadingNum = leadNum[l++];
+		memcpy(curBytes, preBytes, leadingNum);
+		for (j = leadingNum; j < reqBytesLength; j++)
+			curBytes[j] = exactMidBytes[curByteIndex++];
+		if (resiBitsLength != 0) {
+			unsigned char resiByte = (unsigned char) (resiBits << (8 - resiBitsLength));
+			curBytes[reqBytesLength] = resiByte;
+		}
+
+		exactData = bytesToFloat(curBytes);
+		(*decData)[i] = exactData + medianValue;
+		memcpy(preBytes,curBytes,4);
+	}	
+}
