@@ -658,7 +658,7 @@ void compressExactDataArray(float* oriData, double precision, size_t nbEle, unsi
 	free_DIA(resiBitArray);
 }
 
-void decompressExactDataArray(unsigned char* leadNum, unsigned char* exactMidBytes, unsigned char* residualMidBits, size_t nbEle, int reqBytesLength, int resiBitsLength, float medianValue, float** decData)
+void decompressExactDataArray(unsigned char* leadNum, unsigned char* exactMidBytes, unsigned char* residualMidBits, size_t nbEle, int reqLength, float medianValue, float** decData)
 {
 	*decData = (float*)malloc(nbEle*sizeof(float));
 	size_t i = 0, j = 0, k = 0, l = 0, p = 0, curByteIndex = 0;
@@ -667,6 +667,9 @@ void decompressExactDataArray(unsigned char* leadNum, unsigned char* exactMidByt
 	unsigned char curBytes[4];
 	int resiBits; 
 	unsigned char leadingNum;		
+	
+	int reqBytesLength = reqLength/8;
+	int resiBitsLength = reqLength%8;
 	
 	for(i = 0; i<nbEle;i++)
 	{
