@@ -8607,7 +8607,32 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	free(result_unpredictable_data);
 	free(result_type);
 	free(reg_params);
-				
+
+	free(leadArray_a);
+	free(midArray_a);
+	free(resiArray_a);
+	free(leadArray_b);
+	free(midArray_b);
+	free(resiArray_b);
+	free(leadArray_c);
+	free(midArray_c);
+	free(resiArray_c);
+	free(leadArray_d);
+	free(midArray_d);
+	free(resiArray_d);
+	free(int_lead_a);
+	free(byte_mid_a);
+	free(int_resi_a);
+	free(int_lead_b);
+	free(byte_mid_b);
+	free(int_resi_b);
+	free(int_lead_c);
+	free(byte_mid_c);
+	free(int_resi_c);
+	free(int_lead_d);
+	free(byte_mid_d);
+	free(int_resi_d);
+
 	SZ_ReleaseHuffman();
 	*comp_size = totalEncodeSize;
 	return result;
