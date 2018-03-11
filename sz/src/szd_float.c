@@ -3933,6 +3933,76 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 		int reqLength_d = *(reqLength + 3);
 		comp_data_pos += 4 * sizeof(int);
 		
+		//reconstruct leading_number array in the form of meaningful integers....
+		size_t leadNumArray_size = (reg_count-1)/4+1;
+		
+		unsigned char* leadNum_a = NULL, *leadNum_b = NULL, *leadNum_c = NULL, *leadNum_d = NULL;
+		
+		unsigned char* leadNumArray = comp_data_pos;
+		convertByteArray2IntArray_fast_2b(reg_count, leadNumArray, leadNumArray_size, &leadNum_a);
+		comp_data_pos += leadNumArray_size;
+		
+		leadNumArray = comp_data_pos;
+		convertByteArray2IntArray_fast_2b(reg_count, leadNumArray, leadNumArray_size, &leadNum_b);
+		comp_data_pos += leadNumArray_size;
+		
+		leadNumArray = comp_data_pos;
+		convertByteArray2IntArray_fast_2b(reg_count, leadNumArray, leadNumArray_size, &leadNum_c);	
+		comp_data_pos += leadNumArray_size;
+		
+		leadNumArray = comp_data_pos;
+		convertByteArray2IntArray_fast_2b(reg_count, leadNumArray, leadNumArray_size, &leadNum_d);			
+		comp_data_pos += leadNumArray_size;
+		
+		//reconstruct mid bytes...
+		size_t * mid_byte_size_a = (size_t *) comp_data_pos;
+		comp_data_pos += sizeof(size_t);
+		unsigned char* exactMidBytes_a = comp_data_pos;
+		comp_data_pos += *mid_byte_size_a;
+		
+		size_t * mid_byte_size_b = (size_t *) comp_data_pos;
+		comp_data_pos += sizeof(size_t);
+		unsigned char* exactMidBytes_b = comp_data_pos;	
+		comp_data_pos += *mid_byte_size_b;	
+		
+		size_t * mid_byte_size_c = (size_t *) comp_data_pos;
+		comp_data_pos += sizeof(size_t);
+		unsigned char* exactMidBytes_c = comp_data_pos;	
+		comp_data_pos += *mid_byte_size_c;			
+		
+		size_t * mid_byte_size_d = (size_t *) comp_data_pos;
+		comp_data_pos += sizeof(size_t);
+		unsigned char* exactMidBytes_d = comp_data_pos;	
+		comp_data_pos += *mid_byte_size_d;			
+
+		//reconstruct the residualMidBits		
+		size_t * resiMidBites_a_size = (size_t *) comp_data_pos;
+		comp_data_pos += sizeof(size_t);
+		unsigned char* residualMidBits_a = comp_data_pos;
+		comp_data_pos += *resiMidBites_a_size;
+
+		size_t * resiMidBites_b_size = (size_t *) comp_data_pos;
+		comp_data_pos += sizeof(size_t);
+		unsigned char* residualMidBits_b = comp_data_pos;
+		comp_data_pos += *resiMidBites_b_size;
+		
+		size_t * resiMidBites_c_size = (size_t *) comp_data_pos;
+		comp_data_pos += sizeof(size_t);
+		unsigned char* residualMidBits_c = comp_data_pos;
+		comp_data_pos += *resiMidBites_c_size;
+		
+		size_t * resiMidBites_d_size = (size_t *) comp_data_pos;
+		comp_data_pos += sizeof(size_t);
+		unsigned char* residualMidBits_d = comp_data_pos;
+		comp_data_pos += *resiMidBites_d_size;				
+		
+		//perform the decompression using the reconstructed leadNum, exactMidBytes and residualMidBits....
+		float* dec_a = NULL, *dec_b = NULL, *dec_c = NULL, *dec_d = NULL;
+		decompressExactDataArray(leadNum_a, exactMidBytes_a, residualMidBits_a, reg_count, reqLength_a, medianValue_a, &dec_a);
+		decompressExactDataArray(leadNum_b, exactMidBytes_b, residualMidBits_b, reg_count, reqLength_b, medianValue_b, &dec_b);
+		decompressExactDataArray(leadNum_c, exactMidBytes_c, residualMidBits_c, reg_count, reqLength_c, medianValue_c, &dec_c);
+		decompressExactDataArray(leadNum_d, exactMidBytes_d, residualMidBits_d, reg_count, reqLength_d, medianValue_d, &dec_d);
+
 	}
 	// float * reg_params = (float *) comp_data_pos;
 	// comp_data_pos += reg_count * 4 * sizeof(float);
