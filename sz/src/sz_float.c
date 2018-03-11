@@ -8254,7 +8254,6 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	unsigned char* int_resi_d = (unsigned char*)malloc(num_blocks); 		 			
 	
 	size_t sel_block_index = 0;
-	
 	reg_params_pos = reg_params;	
 		
 	double tmp_realPrecision = realPrecision;
@@ -8355,8 +8354,6 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 					memcpy(post_mid_a_p, pre_mid_a_p, midByteSize_a);
 					memcpy(post_mid_b_p, pre_mid_b_p, midByteSize_b);
 					memcpy(post_mid_c_p, pre_mid_c_p, midByteSize_c);
-					printf("%zu, %zu, %zu: pre_mid_d_p offset = %ld\n", i, j, k, pre_mid_d_p - midArray_d);
-					fflush(stdout);
 					memcpy(post_mid_d_p, pre_mid_d_p, midByteSize_d);
 					
 					post_mid_a_p += midByteSize_a;
@@ -8419,7 +8416,6 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 					indicator_pos[k] = 1;
 				}// end SZ
 				//TODO
-
 				pre_mid_a_p += midByteSize_a;
 				pre_mid_b_p += midByteSize_b;
 				pre_mid_c_p += midByteSize_c;
@@ -8530,6 +8526,14 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	
 	if(reg_count>0)
 	{
+		for(size_t i=0; i<reg_count; i++){
+			if(int_lead_a[i] > 2) printf("%ld: %d\n", i, int_lead_a[i]);
+			if(int_lead_b[i] > 2) printf("%ld: %d\n", i, int_lead_b[i]);
+			if(int_lead_c[i] > 2) printf("%ld: %d\n", i, int_lead_c[i]);
+			if(int_lead_d[i] > 2) printf("%ld: %d\n", i, int_lead_d[i]);
+		}
+		exit(0);
+
 		size_t leadNumArray_size_a = convertIntArray2ByteArray_fast_2b_inplace(int_lead_a, reg_count, result_pos);
 		result_pos += leadNumArray_size_a;
 		size_t leadNumArray_size_b = convertIntArray2ByteArray_fast_2b_inplace(int_lead_b, reg_count, result_pos);
