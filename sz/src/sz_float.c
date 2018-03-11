@@ -8080,9 +8080,10 @@ float SZ_compress_float_3D_MDQ_strip_pred_by_regression_with_freq(float * block_
 // void SZ_concat_coefficient_array(){
 
 // }
-
+// float * tmp_data;
 unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
 
+	// tmp_data = oriData;
 	unsigned int quantization_intervals;
 	if(optQuantMode==1)
 	{
@@ -8152,7 +8153,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	float * bottom_buffer = buffer1;
 	float * bottom_buffer2 = buffer2;
 	unsigned char * indicator_pos = indicator;
-	float sz_sample_correct_freq = 0.5;
+	float sz_sample_correct_freq = -1;
 	float reg_correct_freq;
 	// move regression part out
 	size_t params_offset_b = num_blocks;
@@ -8211,6 +8212,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 		}
 	}
 
+	printf("first coeff: %.8f %.8f %.8f %.8f\n", reg_params[0], reg_params[num_blocks], reg_params[2*num_blocks], reg_params[3*num_blocks]);
 	//Compress coefficient arrays
 	float medianValue_a, medianValue_b, medianValue_c, medianValue_d;
 	double precision_a, precision_b, precision_c, precision_d;
@@ -8293,6 +8295,9 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 					for(size_t ii=0; ii<current_blockcount_x; ii++){
 						for(size_t jj=0; jj<current_blockcount_y; jj++){
 							for(size_t kk=0; kk<current_blockcount_z; kk++){
+								// if(ii==3 && jj==0 && kk ==3){
+								// 	pred =222;
+								// }
 								curData = *cur_data_pos;
 								pred = reg_params_pos[0] * ii + reg_params_pos[params_offset_b] * jj + reg_params_pos[params_offset_c] * kk + reg_params_pos[params_offset_d];
 								diff = curData - pred;
@@ -8346,6 +8351,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 					int_lead_c[reg_count] = leadArray_c[sel_block_index];
 					int_lead_d[reg_count] = leadArray_d[sel_block_index];										
 					
+					// printf("%ld %ld %ld: reg_count %ld sel_block_index %ld\n", i, j, k, reg_count, sel_block_index);
 					int_resi_a[reg_count] = resiArray_a[sel_block_index];
 					int_resi_b[reg_count] = resiArray_b[sel_block_index];
 					int_resi_c[reg_count] = resiArray_c[sel_block_index];

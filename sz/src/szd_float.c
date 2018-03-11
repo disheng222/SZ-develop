@@ -3640,6 +3640,8 @@ void decompressDataSeries_float_3D_nonblocked(float** data, size_t r1, size_t r2
 
 }
 
+// float * tmp_dec_data;
+// extern float * tmp_data;
 size_t decompressDataSeries_float_3D_RA_block_all_by_regression(float * block_ori_data, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, float * reg_params, int * type, float * unpredictable_data){
 
 	float * data_pos;
@@ -3662,8 +3664,8 @@ size_t decompressDataSeries_float_3D_RA_block_all_by_regression(float * block_or
 				else{
 					*data_pos = unpredictable_data[unpredictable_count ++];
 				}
-				// if(data_pos - tmp_dec_data == 13415){
-				// 	printf("DEC REG PPPPPPP\n");
+				// if(*data_pos - *(tmp_data + (data_pos - tmp_dec_data)) < -1.3046569824 || *data_pos - *(tmp_data + (data_pos - tmp_dec_data)) > 1.3046569824){
+					// printf("DEC REG PPPPPPP\n");
 				// }
 				index ++;	
 				data_pos ++;
@@ -3862,12 +3864,12 @@ size_t decompressDataSeries_float_3D_blocked_nonblock_pred(float * data, size_t 
 void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data){
 	// printf("num_block_elements %d num_blocks %d\n", max_num_block_elements, num_blocks);
 	// fflush(stdout);
-
 	size_t dim0_offset = r2 * r3;
 	size_t dim1_offset = r3;
 	size_t num_elements = r1 * r2 * r3;
 
 	*data = (float*)malloc(sizeof(float)*num_elements);
+	// tmp_dec_data = *data;
 
 	unsigned char * comp_data_pos = comp_data;
 	//int meta_data_offset = 3 + 1 + MetaDataByteLength;
@@ -3917,7 +3919,6 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 		if(!indicator[i]) reg_count ++;
 	}
 	printf("reg_count: %ld\n", reg_count);
-	// reg_count = num_x * num_y * num_z;
 	float * reg_params_buf = (float *) malloc(reg_count * 4 * sizeof(float));
 	if(reg_count > 0){
 		float * medians = (float *) comp_data_pos;
@@ -4009,11 +4010,11 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 			reg_params_buf[4*i + 2] = dec_c[i];
 			reg_params_buf[4*i + 3] = dec_d[i];
 		}
+		printf("first coeff: %.8f %.8f %.8f %.8f\n", dec_a[0], dec_b[0], dec_c[0], dec_d[0]);
 		free(dec_a);
 		free(dec_b);
 		free(dec_c);
 		free(dec_d);
-
 	}
 	float * reg_params = reg_params_buf;
 	// float * reg_params = (float *) comp_data_pos;
@@ -4077,13 +4078,12 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 				if(indicator[index] == 0){
 					// decompress by regression
 					cur_unpred_count = decompressDataSeries_float_3D_RA_block_all_by_regression(data_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, reg_params, type, unpred_data);
-					// reg_params += 4;
+					reg_params += 4;
 				}
 				else{
 					// decompress by SZ
 					cur_unpred_count = decompressDataSeries_float_3D_blocked_nonblock_pred(data_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, i, j, k, realPrecision, type, unpred_data);
 				}
-				reg_params += 4;
 
 				unpred_data += cur_unpred_count;
 				decomp_unpred += cur_unpred_count;
