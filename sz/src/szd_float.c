@@ -4010,7 +4010,6 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 			reg_params_buf[4*i + 2] = dec_c[i];
 			reg_params_buf[4*i + 3] = dec_d[i];
 		}
-		printf("first coeff: %.8f %.8f %.8f %.8f\n", dec_a[0], dec_b[0], dec_c[0], dec_d[0]);
 		free(dec_a);
 		free(dec_b);
 		free(dec_c);

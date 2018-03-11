@@ -645,7 +645,6 @@ void compressExactDataArray(float* oriData, double precision, size_t nbEle, unsi
 		addExactData(exactMidByteArray, exactLeadNumArray, resiBitArray, lce);
 		oriData[i] = vce->data;
 	}
-
 	convertDIAtoInts(exactLeadNumArray, leadArray);
 	convertDBAtoBytes(exactMidByteArray,midArray);
 	convertDIAtoInts(resiBitArray, resiArray);

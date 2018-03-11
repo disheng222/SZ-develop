@@ -8080,10 +8080,8 @@ float SZ_compress_float_3D_MDQ_strip_pred_by_regression_with_freq(float * block_
 // void SZ_concat_coefficient_array(){
 
 // }
-// float * tmp_data;
 unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
 
-	// tmp_data = oriData;
 	unsigned int quantization_intervals;
 	if(optQuantMode==1)
 	{
@@ -8212,7 +8210,6 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 		}
 	}
 
-	printf("first coeff: %.8f %.8f %.8f %.8f\n", reg_params[0], reg_params[num_blocks], reg_params[2*num_blocks], reg_params[3*num_blocks]);
 	//Compress coefficient arrays
 	float medianValue_a, medianValue_b, medianValue_c, medianValue_d;
 	double precision_a, precision_b, precision_c, precision_d;
@@ -8352,10 +8349,10 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 					int_lead_d[reg_count] = leadArray_d[sel_block_index];										
 					
 					// printf("%ld %ld %ld: reg_count %ld sel_block_index %ld\n", i, j, k, reg_count, sel_block_index);
-					int_resi_a[reg_count] = resiArray_a[sel_block_index];
-					int_resi_b[reg_count] = resiArray_b[sel_block_index];
-					int_resi_c[reg_count] = resiArray_c[sel_block_index];
-					int_resi_d[reg_count] = resiArray_d[sel_block_index];															
+					if(resiArray_a != NULL) int_resi_a[reg_count] = resiArray_a[sel_block_index];
+					if(resiArray_b != NULL) int_resi_b[reg_count] = resiArray_b[sel_block_index];
+					if(resiArray_c != NULL) int_resi_c[reg_count] = resiArray_c[sel_block_index];
+					if(resiArray_d != NULL) int_resi_d[reg_count] = resiArray_d[sel_block_index];															
 					
 					memcpy(post_mid_a_p, pre_mid_a_p, midByteSize_a);
 					memcpy(post_mid_b_p, pre_mid_b_p, midByteSize_b);
@@ -8367,7 +8364,6 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 					post_mid_c_p += midByteSize_c;
 					post_mid_d_p += midByteSize_d;
 					
-					// reg_params_pos += 4;
 					reg_count ++;
 				}
 				else{
@@ -8611,7 +8607,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 		result_pos += residualResiBits_size_c;
 		free(byteBuffer);
 		
-		size_t residualResiBits_size_d = convertIntArray2ByteArray_fast_dynamic(int_resi_c, resiBitsLength_c, reg_count, &byteBuffer);
+		size_t residualResiBits_size_d = convertIntArray2ByteArray_fast_dynamic(int_resi_d, resiBitsLength_d, reg_count, &byteBuffer);
 		memcpy(result_pos, &residualResiBits_size_d, sizeof(size_t));
 		result_pos += sizeof(size_t);
 		memcpy(result_pos, byteBuffer, residualResiBits_size_d);
