@@ -3918,6 +3918,7 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 	}
 	printf("reg_count: %ld\n", reg_count);
 	// reg_count = num_x * num_y * num_z;
+	float * reg_params_buf = (float *) malloc(reg_count * 4 * sizeof(float));
 	if(reg_count > 0){
 		float * medians = (float *) comp_data_pos;
 		float medianValue_a = *medians;
@@ -4002,12 +4003,23 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 		decompressExactDataArray(leadNum_b, exactMidBytes_b, residualMidBits_b, reg_count, reqLength_b, medianValue_b, &dec_b);
 		decompressExactDataArray(leadNum_c, exactMidBytes_c, residualMidBits_c, reg_count, reqLength_c, medianValue_c, &dec_c);
 		decompressExactDataArray(leadNum_d, exactMidBytes_d, residualMidBits_d, reg_count, reqLength_d, medianValue_d, &dec_d);
+		for(size_t i=0; i<reg_count; i++){
+			reg_params_buf[4*i] = dec_a[i];
+			reg_params_buf[4*i + 1] = dec_b[i];
+			reg_params_buf[4*i + 2] = dec_c[i];
+			reg_params_buf[4*i + 3] = dec_d[i];
+		}
+		free(dec_a);
+		free(dec_b);
+		free(dec_c);
+		free(dec_d);
 
 	}
+	float * reg_params = reg_params_buf;
 	// float * reg_params = (float *) comp_data_pos;
 	// comp_data_pos += reg_count * 4 * sizeof(float);
 	// reorder reg_params
-	// float * reg_params_buf = (float *) malloc(reg_count * 4 * sizeof(float));
+
 	// for(size_t i=0; i<reg_count; i++){
 	// 	for(size_t j=0; j<4; j++){
 	// 		reg_params_buf[4*i + j] = reg_params[j*reg_count + i];
@@ -4084,7 +4096,7 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 			}
 		}
 	}
-	// free(reg_params_buf);
+	free(reg_params_buf);
 	free(result_type);
 }
 
