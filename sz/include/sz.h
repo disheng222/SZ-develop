@@ -75,7 +75,7 @@ extern "C" {
 #define SZ_VER_MAJOR 1
 #define SZ_VER_MINOR 4
 #define SZ_VER_BUILD 13
-#define SZ_VER_REVISION 0
+#define SZ_VER_REVISION 1
 
 #define HZ 102
 #define SZ 101

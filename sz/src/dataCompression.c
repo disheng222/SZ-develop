@@ -602,24 +602,49 @@ void isSameOrRandomAccessMode(unsigned char* cmprBytes, int* constantData, int* 
 	*constantData = (stateByte & 0x01);
 	*randomAccess = (stateByte >> 7);
 }		
+	
+	
+int generateLossyCoefficients(float* oriData, double precision, size_t nbEle, int* reqBytesLength, int* resiBitsLength, float* medianValue)
+{
+	float valueRangeSize;
+	
+	computeRangeSize_float(oriData, nbEle, &valueRangeSize, medianValue);
+	short radExpo = getExponent_float(valueRangeSize/2);
+	
+	int reqLength;
+	computeReqLength_float(precision, radExpo, &reqLength, medianValue);
+	
+	*reqBytesLength = reqLength/8;
+	*resiBitsLength = reqLength%8;
+	
+	size_t i = 0;
+	for(i = 0;i < nbEle;i++)
+	{
+		float normValue = oriData[i] - *medianValue;
+
+		lfloat lfBuf;
+		lfBuf.value = normValue;
+				
+		int ignBytesLength = 32 - reqLength;
+		if(ignBytesLength<0)
+			ignBytesLength = 0;
+			
+		lfBuf.ivalue = (lfBuf.ivalue >> ignBytesLength) << ignBytesLength;
+		
+		//float tmpValue = lfBuf.value;
+		
+		oriData[i] = lfBuf.value + *medianValue;
+	}
+	return reqLength;
+}	
 		
 /**
  * @param float* oriData: inplace argument (input / output)
  * 
  * */		
-void compressExactDataArray(float* oriData, double precision, size_t nbEle, unsigned char** leadArray, unsigned char** midArray, unsigned char** resiArray, int* reqBytesLength, int* resiBitsLength, float* medianValue)
+int compressExactDataArray(float* oriData, double precision, size_t nbEle, unsigned char** leadArray, unsigned char** midArray, unsigned char** resiArray, 
+int reqLength, int reqBytesLength, int resiBitsLength, float medianValue)
 {
-	//compute the median value and value range for each coefficient datset
-	//float valueRangeSize_a, valueRangeSize_b, valueRangeSize_c, valueRangeSize_d;
-	float valueRangeSize;
-	
-	computeRangeSize_float(oriData, nbEle, &valueRangeSize, medianValue);
-		
-	short radExpo = getExponent_float(valueRangeSize/2);
-	
-	int reqLength;
-	computeReqLength_float(precision, radExpo, &reqLength, medianValue);	
-		
 	//allocate memory for coefficient compression arrays
 	DynamicIntArray *exactLeadNumArray;
 	new_DIA(&exactLeadNumArray, DynArrayInitLen);	
@@ -629,9 +654,6 @@ void compressExactDataArray(float* oriData, double precision, size_t nbEle, unsi
 	new_DIA(&resiBitArray, DynArrayInitLen);
 	unsigned char preDataBytes[4] = {0,0,0,0};	
 
-	*reqBytesLength = reqLength/8;
-	*resiBitsLength = reqLength%8;
-
 	//allocate memory for vce and lce
 	FloatValueCompressElement *vce = (FloatValueCompressElement*)malloc(sizeof(FloatValueCompressElement));
 	LossyCompressionElement *lce = (LossyCompressionElement*)malloc(sizeof(LossyCompressionElement));	
@@ -639,8 +661,8 @@ void compressExactDataArray(float* oriData, double precision, size_t nbEle, unsi
 	size_t i = 0;
 	for(i = 0;i < nbEle;i++)
 	{
-		compressSingleFloatValue(vce, oriData[i], precision, *medianValue, reqLength, *reqBytesLength, *resiBitsLength);
-		updateLossyCompElement_Float(vce->curBytes, preDataBytes, *reqBytesLength, *resiBitsLength, lce);
+		compressSingleFloatValue(vce, oriData[i], precision, medianValue, reqLength, reqBytesLength, resiBitsLength);
+		updateLossyCompElement_Float(vce->curBytes, preDataBytes, reqBytesLength, resiBitsLength, lce);
 		memcpy(preDataBytes,vce->curBytes,4);
 		addExactData(exactMidByteArray, exactLeadNumArray, resiBitArray, lce);
 		oriData[i] = vce->data;
@@ -649,12 +671,16 @@ void compressExactDataArray(float* oriData, double precision, size_t nbEle, unsi
 	convertDBAtoBytes(exactMidByteArray,midArray);
 	convertDIAtoInts(resiBitArray, resiArray);
 
+	size_t midArraySize = exactMidByteArray->size;
+	
 	free(vce);
 	free(lce);
 	
 	free_DIA(exactLeadNumArray);
 	free_DBA(exactMidByteArray);
 	free_DIA(resiBitArray);
+	
+	return midArraySize;
 }
 
 void decompressExactDataArray(unsigned char* leadNum, unsigned char* exactMidBytes, unsigned char* residualMidBits, size_t nbEle, int reqLength, float medianValue, float** decData)
