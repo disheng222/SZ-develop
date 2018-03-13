@@ -561,6 +561,8 @@ int main(int argc, char* argv[])
 				printf ("PSNR = %f, NRMSE= %.20G\n", psnr,nrmse);
 				printf ("acEff=%f\n", acEff);	
 				printf ("compressionRatio=%f\n", compressionRatio);
+				
+				free(ori_data);
 			}
 			free(data);	
 			
@@ -737,6 +739,8 @@ int main(int argc, char* argv[])
 				printf ("PSNR = %f, NRMSE = %.20G\n", psnr,nrmse);
 				printf ("acEff = %f\n", acEff);
 				printf ("compressionRatio = %f\n", compressionRatio);
+				
+				free(ori_data);
 			}			
 			free(data);								
 		}	

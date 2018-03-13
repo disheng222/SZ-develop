@@ -8219,21 +8219,23 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	precision_c = rel_param_err * realPrecision / late_blockcount_z;
 	precision_d = rel_param_err * realPrecision;
 
+	float* reg_pred_params = (float *) malloc(4*num_blocks*sizeof(float));
 	int reqBytesLength_a = 0, resiBitsLength_a = 0; 
-	int reqLength_a = generateLossyCoefficients(reg_params, precision_a, num_blocks, &reqBytesLength_a, &resiBitsLength_a, &medianValue_a);
+	int reqLength_a = generateLossyCoefficients(reg_params, precision_a, num_blocks, &reqBytesLength_a, &resiBitsLength_a, &medianValue_a, reg_pred_params);
 	int reqBytesLength_b = 0, resiBitsLength_b = 0; 
-	int reqLength_b = generateLossyCoefficients(reg_params+params_offset_b, precision_b, num_blocks, &reqBytesLength_b, &resiBitsLength_b, &medianValue_b);
+	int reqLength_b = generateLossyCoefficients(reg_params+params_offset_b, precision_b, num_blocks, &reqBytesLength_b, &resiBitsLength_b, &medianValue_b, reg_pred_params+params_offset_b);
 	int reqBytesLength_c = 0, resiBitsLength_c = 0; 
-	int reqLength_c = generateLossyCoefficients(reg_params+params_offset_c, precision_c, num_blocks, &reqBytesLength_c, &resiBitsLength_c, &medianValue_c);			
+	int reqLength_c = generateLossyCoefficients(reg_params+params_offset_c, precision_c, num_blocks, &reqBytesLength_c, &resiBitsLength_c, &medianValue_c, reg_pred_params+params_offset_c);			
 	int reqBytesLength_d = 0, resiBitsLength_d = 0; 
-	int reqLength_d = generateLossyCoefficients(reg_params+params_offset_d, precision_d, num_blocks, &reqBytesLength_d, &resiBitsLength_d, &medianValue_d);	 			
+	int reqLength_d = generateLossyCoefficients(reg_params+params_offset_d, precision_d, num_blocks, &reqBytesLength_d, &resiBitsLength_d, &medianValue_d, reg_pred_params+params_offset_d);	 			
 	
 	float* selectCoeffs_a = (float*) malloc(num_blocks*sizeof(float));
 	float* selectCoeffs_b = (float*) malloc(num_blocks*sizeof(float));
 	float* selectCoeffs_c = (float*) malloc(num_blocks*sizeof(float));
 	float* selectCoeffs_d = (float*) malloc(num_blocks*sizeof(float));
 	
-	reg_params_pos = reg_params;	
+	reg_params_pos = reg_pred_params;
+	ptrdiff_t reg_pred_diff = reg_params - reg_pred_params;
 		
 	double tmp_realPrecision = realPrecision;
 	for(size_t i=0; i<num_x; i++){
@@ -8317,10 +8319,10 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 					strip_unpredictable_count += unpredictable_count;
 					unpredictable_data += unpredictable_count;
 					
-					selectCoeffs_a[reg_count] = reg_params_pos[0];
-					selectCoeffs_b[reg_count] = reg_params_pos[params_offset_b];
-					selectCoeffs_c[reg_count] = reg_params_pos[params_offset_c];
-					selectCoeffs_d[reg_count] = reg_params_pos[params_offset_d];
+					selectCoeffs_a[reg_count] = (reg_params_pos + reg_pred_diff)[0];
+					selectCoeffs_b[reg_count] = (reg_params_pos + reg_pred_diff)[params_offset_b];
+					selectCoeffs_c[reg_count] = (reg_params_pos + reg_pred_diff)[params_offset_c];
+					selectCoeffs_d[reg_count] = (reg_params_pos + reg_pred_diff)[params_offset_d];
 					
 					reg_count ++;
 				}
@@ -8479,6 +8481,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 		sum_mid += (reqBytesLength_d - int_lead_a[i]);
 	}*/		
 	
+	free(reg_pred_params);
 	
 	if(reg_count>0)
 	{

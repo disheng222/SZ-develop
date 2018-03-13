@@ -604,7 +604,7 @@ void isSameOrRandomAccessMode(unsigned char* cmprBytes, int* constantData, int* 
 }		
 	
 	
-int generateLossyCoefficients(float* oriData, double precision, size_t nbEle, int* reqBytesLength, int* resiBitsLength, float* medianValue)
+int generateLossyCoefficients(float* oriData, double precision, size_t nbEle, int* reqBytesLength, int* resiBitsLength, float* medianValue, float* decData)
 {
 	float valueRangeSize;
 	
@@ -633,7 +633,7 @@ int generateLossyCoefficients(float* oriData, double precision, size_t nbEle, in
 		
 		//float tmpValue = lfBuf.value;
 		
-		oriData[i] = lfBuf.value + *medianValue;
+		decData[i] = lfBuf.value + *medianValue;
 	}
 	return reqLength;
 }	

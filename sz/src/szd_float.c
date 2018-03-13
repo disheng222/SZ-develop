@@ -4014,6 +4014,11 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 		free(dec_b);
 		free(dec_c);
 		free(dec_d);
+		free(leadNum_a);
+		free(leadNum_b);
+		free(leadNum_c);
+		free(leadNum_d);				
+		
 	}
 	float * reg_params = reg_params_buf;
 	// float * reg_params = (float *) comp_data_pos;
@@ -4095,6 +4100,7 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 			}
 		}
 	}
+	
 	free(reg_params_buf);
 	free(result_type);
 }
