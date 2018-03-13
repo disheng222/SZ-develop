@@ -358,6 +358,70 @@ unsigned int optimize_intervals_float_3D(float *oriData, size_t r1, size_t r2, s
 	return powerOf2;
 }
 
+unsigned int optimize_intervals_float_3D_with_freq(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, float * max_freq)
+{	
+	size_t i,j,k, index;
+	size_t radiusIndex;
+	size_t r23=r2*r3;
+	float pred_value = 0, pred_err;
+	size_t *intervals = (size_t*)malloc(maxRangeRadius*sizeof(size_t));
+	memset(intervals, 0, maxRangeRadius*sizeof(size_t));
+	size_t totalSampleSize = (r1-1)*(r2-1)*(r3-1)/sampleDistance;
+
+	//float max = oriData[0];
+	//float min = oriData[0];
+	size_t freq_count = 0;
+	for(i=1;i<r1;i++)
+	{
+		for(j=1;j<r2;j++)
+		{
+			for(k=1;k<r3;k++)
+			{			
+				if((i+j+k)%sampleDistance==0)
+				{
+					index = i*r23+j*r3+k;
+					pred_value = oriData[index-1] + oriData[index-r3] + oriData[index-r23] 
+					- oriData[index-1-r23] - oriData[index-r3-1] - oriData[index-r3-r23] + oriData[index-r3-r23-1];
+					pred_err = fabs(pred_value - oriData[index]);
+					if(pred_err < realPrecision) freq_count ++;
+					radiusIndex = (pred_err/realPrecision+1)/2;
+					if(radiusIndex>=maxRangeRadius)
+					{
+						radiusIndex = maxRangeRadius - 1;
+						//printf("radiusIndex=%d\n", radiusIndex);
+					}
+					intervals[radiusIndex]++;
+
+					//	if (max < oriData[index]) max = oriData[index];
+					//	if (min > oriData[index]) min = oriData[index];
+				}
+			}
+		}
+	}
+	*max_freq = freq_count * 0.5/ totalSampleSize;
+	if(*max_freq < 0.05) *max_freq *= 2;
+	//compute the appropriate number
+	size_t targetCount = totalSampleSize*predThreshold;
+	size_t sum = 0;
+	for(i=0;i<maxRangeRadius;i++)
+	{
+		sum += intervals[i];
+		if(sum>targetCount)
+			break;
+	}
+	if(i>=maxRangeRadius)
+		i = maxRangeRadius-1;
+	unsigned int accIntervals = 2*(i+1);
+	unsigned int powerOf2 = roundUpToPowerOf2(accIntervals);
+
+	if(powerOf2<32)
+		powerOf2 = 32;
+	free(intervals);
+	//printf("targetCount=%d, sum=%d, totalSampleSize=%d, ratio=%f, accIntervals=%d, powerOf2=%d\n", targetCount, sum, totalSampleSize, (double)sum/(double)totalSampleSize, accIntervals, powerOf2);
+	return powerOf2;
+}
+
+
 unsigned int optimize_intervals_and_compute_dense_position_float_3D(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, float * dense_pos){	
 	// compute mean
 	float mean = 0.0;
@@ -8083,11 +8147,12 @@ float SZ_compress_float_3D_MDQ_strip_pred_by_regression_with_freq(float * block_
 unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
 
 	unsigned int quantization_intervals;
+	float sz_sample_correct_freq = -1;//0.5; //-1
 	if(optQuantMode==1)
 	{
-		quantization_intervals = optimize_intervals_float_3D(oriData, r1, r2, r3, realPrecision);
+		quantization_intervals = optimize_intervals_float_3D_with_freq(oriData, r1, r2, r3, realPrecision, &sz_sample_correct_freq);
 		// quantization_intervals = optimize_intervals_and_compute_dense_position_float_3D(oriData, r1, r2, r3, realPrecision, &dense_pos);
-		printf("number of bins: %d\n", quantization_intervals);
+		printf("number of bins: %d\tcorrect_freq: %.4f\n", quantization_intervals, sz_sample_correct_freq);
 		updateQuantizationInfo(quantization_intervals);
 	}	
 	else{
@@ -8151,7 +8216,6 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	float * bottom_buffer = buffer1;
 	float * bottom_buffer2 = buffer2;
 	unsigned char * indicator_pos = indicator;
-	float sz_sample_correct_freq = 0.5; //-1
 	float reg_correct_freq;
 	// move regression part out
 	size_t params_offset_b = num_blocks;
