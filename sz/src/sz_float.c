@@ -399,7 +399,7 @@ unsigned int optimize_intervals_float_3D_with_freq(float *oriData, size_t r1, si
 		}
 	}
 	*max_freq = freq_count * 0.5/ totalSampleSize;
-	if(*max_freq < 0.05) *max_freq *= 2;
+	if(*max_freq < 0.15) *max_freq *= 2;
 	//compute the appropriate number
 	size_t targetCount = totalSampleSize*predThreshold;
 	size_t sum = 0;
