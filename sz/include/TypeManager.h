@@ -19,6 +19,7 @@ extern "C" {
 
 //TypeManager.c
 size_t convertIntArray2ByteArray_fast_1b(unsigned char* intArray, size_t intArrayLength, unsigned char **result);
+size_t convertIntArray2ByteArray_fast_1b_to_result(unsigned char* intArray, size_t intArrayLength, unsigned char *result);
 void convertByteArray2IntArray_fast_1b(size_t intArrayLength, unsigned char* byteArray, size_t byteArrayLength, unsigned char **intArray);
 size_t convertIntArray2ByteArray_fast_2b(unsigned char* timeStepType, size_t timeStepTypeLength, unsigned char **result);
 size_t convertIntArray2ByteArray_fast_2b_inplace(unsigned char* timeStepType, size_t timeStepTypeLength, unsigned char *result);
