@@ -8552,7 +8552,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 
 					// if(reg_correct_pred_count >= 6) use_reg = 1;
 					// else
-					if(reg_correct_pred_count >= 2 && reg_correct_pred_count >= sz_correct_pred_count && reg_correct_pred_count >= mean_flush_count) use_reg = 1;
+					if(mean_flush_count != 8 && reg_correct_pred_count >= 2 && reg_correct_pred_count >= sz_correct_pred_count && reg_correct_pred_count >= mean_flush_count) use_reg = 1;
 					// if(use_reg){
 					// 	printf("%ld %ld %ld: reg_correct_pred_count %d\tsz_correct_pred_count %d\n", i, j, k, reg_correct_pred_count, sz_correct_pred_count);
 					// }
