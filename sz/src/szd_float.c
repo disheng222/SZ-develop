@@ -3899,7 +3899,6 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 	comp_data_pos += 4;
 
 	updateQuantizationInfo(intervals);
-	int intvCapacity_sz = intervals - 2;
 
 	unsigned int tree_size = bytesToInt_bigEndian(comp_data_pos);
 	comp_data_pos += 4;
@@ -3912,6 +3911,9 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 	comp_data_pos += 4 + tree_size;
 
 	float mean;
+	unsigned char use_mean;
+	memcpy(&use_mean, comp_data_pos, sizeof(unsigned char));
+	comp_data_pos += 1;
 	memcpy(&mean, comp_data_pos, sizeof(float));
 	comp_data_pos += 4;
 	size_t reg_count = 0;
@@ -4067,49 +4069,117 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 	size_t decomp_unpred = 0;
 	// printf("decompress offset to start: %ld\n", comp_data_pos - tdps->data);
 	// fflush(stdout);
-	for(size_t i=0; i<num_x; i++){
-		for(size_t j=0; j<num_y; j++){
-			for(size_t k=0; k<num_z; k++){
-				offset_x = (i < split_index_x) ? i * early_blockcount_x : i * late_blockcount_x + split_index_x;
-				offset_y = (j < split_index_y) ? j * early_blockcount_y : j * late_blockcount_y + split_index_y;
-				offset_z = (k < split_index_z) ? k * early_blockcount_z : k * late_blockcount_z + split_index_z;
-				data_pos = *data + offset_x * dim0_offset + offset_y * dim1_offset + offset_z;
+	if(use_mean){
+		for(size_t i=0; i<num_x; i++){
+			for(size_t j=0; j<num_y; j++){
+				for(size_t k=0; k<num_z; k++){
+					offset_x = (i < split_index_x) ? i * early_blockcount_x : i * late_blockcount_x + split_index_x;
+					offset_y = (j < split_index_y) ? j * early_blockcount_y : j * late_blockcount_y + split_index_y;
+					offset_z = (k < split_index_z) ? k * early_blockcount_z : k * late_blockcount_z + split_index_z;
+					data_pos = *data + offset_x * dim0_offset + offset_y * dim1_offset + offset_z;
 
-				current_blockcount_x = (i < split_index_x) ? early_blockcount_x : late_blockcount_x;
-				current_blockcount_y = (j < split_index_y) ? early_blockcount_y : late_blockcount_y;
-				current_blockcount_z = (k < split_index_z) ? early_blockcount_z : late_blockcount_z;
+					current_blockcount_x = (i < split_index_x) ? early_blockcount_x : late_blockcount_x;
+					current_blockcount_y = (j < split_index_y) ? early_blockcount_y : late_blockcount_y;
+					current_blockcount_z = (k < split_index_z) ? early_blockcount_z : late_blockcount_z;
 
-				type_offset = offset_x * dim0_offset +  offset_y * current_blockcount_x * dim1_offset + offset_z * current_blockcount_x * current_blockcount_y;
-				type = result_type + type_offset;
-				size_t current_block_elements = current_blockcount_x * current_blockcount_y * current_blockcount_z;
-				index = i * num_y * num_z + j * num_z + k;
+					type_offset = offset_x * dim0_offset +  offset_y * current_blockcount_x * dim1_offset + offset_z * current_blockcount_x * current_blockcount_y;
+					type = result_type + type_offset;
+					size_t current_block_elements = current_blockcount_x * current_blockcount_y * current_blockcount_z;
+					index = i * num_y * num_z + j * num_z + k;
 
-				// printf("i j k: %ld %ld %ld\toffset: %ld %ld %ld\tindicator: %ld\n", i, j, k, offset_x, offset_y, offset_z, indicator[index]);
-				if(indicator[index] == 0){
-					// decompress by regression
-					// cur_unpred_count = decompressDataSeries_float_3D_RA_block_all_by_regression(data_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, reg_params, type, unpred_data);
-					{
+					// printf("i j k: %ld %ld %ld\toffset: %ld %ld %ld\tindicator: %ld\n", i, j, k, offset_x, offset_y, offset_z, indicator[index]);
+					if(indicator[index] == 0){
+						// decompress by regression
+						// cur_unpred_count = decompressDataSeries_float_3D_RA_block_all_by_regression(data_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, reg_params, type, unpred_data);
+						{
+							float * block_data_pos = data_pos;
+							float curData;
+							float pred;
+							int type_;
+							size_t index = 0;
+							size_t unpredictable_count = 0;
+							for(size_t ii=0; ii<current_blockcount_x; ii++){
+								for(size_t jj=0; jj<current_blockcount_y; jj++){
+									for(size_t kk=0; kk<current_blockcount_z; kk++){
+										type_ = type[index];
+										if (type_ != 0){
+											pred = reg_params[0] * ii + reg_params[1] * jj + reg_params[2] * kk + reg_params[3];
+											*block_data_pos = pred + 2 * (type_ - intvRadius) * realPrecision;
+										}
+										else{
+											*block_data_pos = unpred_data[unpredictable_count ++];
+										}
+										// if(*block_data_pos - *(tmp_data + (block_data_pos - tmp_dec_data)) < -1.3046569824 || *block_data_pos - *(tmp_data + (block_data_pos - tmp_dec_data)) > 1.3046569824){
+											// printf("DEC REG PPPPPPP\n");
+										// }
+										index ++;	
+										block_data_pos ++;
+									}
+									block_data_pos += dim1_offset - current_blockcount_z;
+								}
+								block_data_pos += dim0_offset - current_blockcount_y * dim1_offset;
+							}
+							cur_unpred_count = unpredictable_count;
+						}
+						reg_params += 4;
+					}
+					else{
+						// decompress by SZ
+						// cur_unpred_count = decompressDataSeries_float_3D_blocked_nonblock_pred(data_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, i, j, k, realPrecision, type, unpred_data);
 						float * block_data_pos = data_pos;
-						float curData;
 						float pred;
-						int type_;
 						size_t index = 0;
+						int type_;
+						// d111 is current data
 						size_t unpredictable_count = 0;
+						float d000, d001, d010, d011, d100, d101, d110;
 						for(size_t ii=0; ii<current_blockcount_x; ii++){
 							for(size_t jj=0; jj<current_blockcount_y; jj++){
 								for(size_t kk=0; kk<current_blockcount_z; kk++){
 									type_ = type[index];
-									if (type_ != 0){
-										pred = reg_params[0] * ii + reg_params[1] * jj + reg_params[2] * kk + reg_params[3];
-										*block_data_pos = pred + 2 * (type_ - intvRadius) * realPrecision;
+									if(type_ == intvRadius){
+										*block_data_pos = mean;
 									}
-									else{
+									else if(type_ == 0){
 										*block_data_pos = unpred_data[unpredictable_count ++];
 									}
-									// if(*block_data_pos - *(tmp_data + (block_data_pos - tmp_dec_data)) < -1.3046569824 || *block_data_pos - *(tmp_data + (block_data_pos - tmp_dec_data)) > 1.3046569824){
-										// printf("DEC REG PPPPPPP\n");
-									// }
-									index ++;	
+									else{
+										d000 = d001 = d010 = d011 = d100 = d101 = d110 = 1;
+										if(i == 0 && ii == 0){
+											d000 = d001 = d010 = d011 = 0;
+										}
+										if(j == 0 && jj == 0){
+											d000 = d001 = d100 = d101 = 0;
+										}
+										if(k == 0 && kk == 0){
+											d000 = d010 = d100 = d110 = 0;
+										}
+										if(d000){
+											d000 = block_data_pos[- dim0_offset - dim1_offset - 1];
+										}
+										if(d001){
+											d001 = block_data_pos[- dim0_offset - dim1_offset];
+										}
+										if(d010){
+											d010 = block_data_pos[- dim0_offset - 1];
+										}
+										if(d011){
+											d011 = block_data_pos[- dim0_offset];
+										}
+										if(d100){
+											d100 = block_data_pos[- dim1_offset - 1];
+										}
+										if(d101){
+											d101 = block_data_pos[- dim1_offset];
+										}
+										if(d110){
+											d110 = block_data_pos[- 1];
+										}
+										if(type_ < intvRadius) type_ += 1;
+										pred = d110 + d101 + d011 - d100 - d010 - d001 + d000;
+										*block_data_pos = pred + 2 * (type_ - intvRadius) * realPrecision;
+									}
+									index ++;
 									block_data_pos ++;
 								}
 								block_data_pos += dim1_offset - current_blockcount_z;
@@ -4118,82 +4188,144 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 						}
 						cur_unpred_count = unpredictable_count;
 					}
-					reg_params += 4;
-				}
-				else{
-					// decompress by SZ
-					// cur_unpred_count = decompressDataSeries_float_3D_blocked_nonblock_pred(data_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, i, j, k, realPrecision, type, unpred_data);
-					float * block_data_pos = data_pos;
-					float pred;
-					size_t index = 0;
-					int type_;
-					// d111 is current data
-					size_t unpredictable_count = 0;
-					float d000, d001, d010, d011, d100, d101, d110;
-					for(size_t ii=0; ii<current_blockcount_x; ii++){
-						for(size_t jj=0; jj<current_blockcount_y; jj++){
-							for(size_t kk=0; kk<current_blockcount_z; kk++){
-								type_ = type[index];
-								if(type_ == intvRadius){
-									*block_data_pos = mean;
-								}
-								else if(type_ == 0){
-									*block_data_pos = unpred_data[unpredictable_count ++];
-								}
-								else{
-									d000 = d001 = d010 = d011 = d100 = d101 = d110 = 1;
-									if(i == 0 && ii == 0){
-										d000 = d001 = d010 = d011 = 0;
-									}
-									if(j == 0 && jj == 0){
-										d000 = d001 = d100 = d101 = 0;
-									}
-									if(k == 0 && kk == 0){
-										d000 = d010 = d100 = d110 = 0;
-									}
-									if(d000){
-										d000 = block_data_pos[- dim0_offset - dim1_offset - 1];
-									}
-									if(d001){
-										d001 = block_data_pos[- dim0_offset - dim1_offset];
-									}
-									if(d010){
-										d010 = block_data_pos[- dim0_offset - 1];
-									}
-									if(d011){
-										d011 = block_data_pos[- dim0_offset];
-									}
-									if(d100){
-										d100 = block_data_pos[- dim1_offset - 1];
-									}
-									if(d101){
-										d101 = block_data_pos[- dim1_offset];
-									}
-									if(d110){
-										d110 = block_data_pos[- 1];
-									}
-									if(type_ < intvRadius) type_ += 1;
-									pred = d110 + d101 + d011 - d100 - d010 - d001 + d000;
-									*block_data_pos = pred + 2 * (type_ - intvRadius) * realPrecision;
-								}
-								index ++;
-								block_data_pos ++;
-							}
-							block_data_pos += dim1_offset - current_blockcount_z;
-						}
-						block_data_pos += dim0_offset - current_blockcount_y * dim1_offset;
-					}
-					cur_unpred_count = unpredictable_count;
-				}
 
-				unpred_data += cur_unpred_count;
-				decomp_unpred += cur_unpred_count;
-				if(decomp_unpred > total_unpred){
-					printf("more unpred data than compress. check bugs\n");
-					exit(0);
+					unpred_data += cur_unpred_count;
+					decomp_unpred += cur_unpred_count;
+					if(decomp_unpred > total_unpred){
+						printf("more unpred data than compress. check bugs\n");
+						exit(0);
+					}
+					// printf("block comp done, data_offset from %ld to %ld: diff %ld\n", *data, data_pos, data_pos - *data);
+					// fflush(stdout);
 				}
-				// printf("block comp done, data_offset from %ld to %ld: diff %ld\n", *data, data_pos, data_pos - *data);
-				// fflush(stdout);
+			}
+		}
+	}
+	else{
+		for(size_t i=0; i<num_x; i++){
+			for(size_t j=0; j<num_y; j++){
+				for(size_t k=0; k<num_z; k++){
+					offset_x = (i < split_index_x) ? i * early_blockcount_x : i * late_blockcount_x + split_index_x;
+					offset_y = (j < split_index_y) ? j * early_blockcount_y : j * late_blockcount_y + split_index_y;
+					offset_z = (k < split_index_z) ? k * early_blockcount_z : k * late_blockcount_z + split_index_z;
+					data_pos = *data + offset_x * dim0_offset + offset_y * dim1_offset + offset_z;
+
+					current_blockcount_x = (i < split_index_x) ? early_blockcount_x : late_blockcount_x;
+					current_blockcount_y = (j < split_index_y) ? early_blockcount_y : late_blockcount_y;
+					current_blockcount_z = (k < split_index_z) ? early_blockcount_z : late_blockcount_z;
+
+					type_offset = offset_x * dim0_offset +  offset_y * current_blockcount_x * dim1_offset + offset_z * current_blockcount_x * current_blockcount_y;
+					type = result_type + type_offset;
+					size_t current_block_elements = current_blockcount_x * current_blockcount_y * current_blockcount_z;
+					index = i * num_y * num_z + j * num_z + k;
+
+					// printf("i j k: %ld %ld %ld\toffset: %ld %ld %ld\tindicator: %ld\n", i, j, k, offset_x, offset_y, offset_z, indicator[index]);
+					if(indicator[index] == 0){
+						// decompress by regression
+						// cur_unpred_count = decompressDataSeries_float_3D_RA_block_all_by_regression(data_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, reg_params, type, unpred_data);
+						{
+							float * block_data_pos = data_pos;
+							float curData;
+							float pred;
+							int type_;
+							size_t index = 0;
+							size_t unpredictable_count = 0;
+							for(size_t ii=0; ii<current_blockcount_x; ii++){
+								for(size_t jj=0; jj<current_blockcount_y; jj++){
+									for(size_t kk=0; kk<current_blockcount_z; kk++){
+										type_ = type[index];
+										if (type_ != 0){
+											pred = reg_params[0] * ii + reg_params[1] * jj + reg_params[2] * kk + reg_params[3];
+											*block_data_pos = pred + 2 * (type_ - intvRadius) * realPrecision;
+										}
+										else{
+											*block_data_pos = unpred_data[unpredictable_count ++];
+										}
+										// if(*block_data_pos - *(tmp_data + (block_data_pos - tmp_dec_data)) < -1.3046569824 || *block_data_pos - *(tmp_data + (block_data_pos - tmp_dec_data)) > 1.3046569824){
+											// printf("DEC REG PPPPPPP\n");
+										// }
+										index ++;	
+										block_data_pos ++;
+									}
+									block_data_pos += dim1_offset - current_blockcount_z;
+								}
+								block_data_pos += dim0_offset - current_blockcount_y * dim1_offset;
+							}
+							cur_unpred_count = unpredictable_count;
+						}
+						reg_params += 4;
+					}
+					else{
+						// decompress by SZ
+						// cur_unpred_count = decompressDataSeries_float_3D_blocked_nonblock_pred(data_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, i, j, k, realPrecision, type, unpred_data);
+						float * block_data_pos = data_pos;
+						float pred;
+						size_t index = 0;
+						int type_;
+						// d111 is current data
+						size_t unpredictable_count = 0;
+						float d000, d001, d010, d011, d100, d101, d110;
+						for(size_t ii=0; ii<current_blockcount_x; ii++){
+							for(size_t jj=0; jj<current_blockcount_y; jj++){
+								for(size_t kk=0; kk<current_blockcount_z; kk++){
+									type_ = type[index];
+									if(type_ == 0){
+										*block_data_pos = unpred_data[unpredictable_count ++];
+									}
+									else{
+										d000 = d001 = d010 = d011 = d100 = d101 = d110 = 1;
+										if(i == 0 && ii == 0){
+											d000 = d001 = d010 = d011 = 0;
+										}
+										if(j == 0 && jj == 0){
+											d000 = d001 = d100 = d101 = 0;
+										}
+										if(k == 0 && kk == 0){
+											d000 = d010 = d100 = d110 = 0;
+										}
+										if(d000){
+											d000 = block_data_pos[- dim0_offset - dim1_offset - 1];
+										}
+										if(d001){
+											d001 = block_data_pos[- dim0_offset - dim1_offset];
+										}
+										if(d010){
+											d010 = block_data_pos[- dim0_offset - 1];
+										}
+										if(d011){
+											d011 = block_data_pos[- dim0_offset];
+										}
+										if(d100){
+											d100 = block_data_pos[- dim1_offset - 1];
+										}
+										if(d101){
+											d101 = block_data_pos[- dim1_offset];
+										}
+										if(d110){
+											d110 = block_data_pos[- 1];
+										}
+										pred = d110 + d101 + d011 - d100 - d010 - d001 + d000;
+										*block_data_pos = pred + 2 * (type_ - intvRadius) * realPrecision;
+									}
+									index ++;
+									block_data_pos ++;
+								}
+								block_data_pos += dim1_offset - current_blockcount_z;
+							}
+							block_data_pos += dim0_offset - current_blockcount_y * dim1_offset;
+						}
+						cur_unpred_count = unpredictable_count;
+					}
+
+					unpred_data += cur_unpred_count;
+					decomp_unpred += cur_unpred_count;
+					if(decomp_unpred > total_unpred){
+						printf("more unpred data than compress. check bugs\n");
+						exit(0);
+					}
+					// printf("block comp done, data_offset from %ld to %ld: diff %ld\n", *data, data_pos, data_pos - *data);
+					// fflush(stdout);
+				}
 			}
 		}
 	}
