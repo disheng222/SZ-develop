@@ -8630,13 +8630,13 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 
 						if(i && j && k){							
-							if(mean_flush_count <= 21){
+							if(mean_flush_count < 24){
 								err_sz += realPrecision * 24 * 1.2;
 								if(err_reg < err_sz && err_reg < err_mean) use_reg = 1;
 							}
 						}
 						else {
-							if(mean_flush_count <= 14){
+							if(mean_flush_count < 16){
 								err_sz += realPrecision * 16 * 1.2;
 								if(err_reg < err_sz && err_reg < err_mean) use_reg = 1;
 							}
