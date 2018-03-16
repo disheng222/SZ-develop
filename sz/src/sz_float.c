@@ -8427,7 +8427,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 						float * cur_data_pos;
 						float curData;
 						float pred_reg, pred_sz;
-						float err_sz = 0.0, err_reg = 0.0, err_mean = 0.0;
+						float err_sz = 0.0, err_reg = 0.0;
 						if(i>0 && j>0 && k>0){
 							// [0, 0, 0]
 							cur_data_pos = data_pos;
@@ -8632,13 +8632,13 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 						if(i && j && k){							
 							if(mean_flush_count < 24){
 								err_sz += realPrecision * 24 * 1.2;
-								if(err_reg < err_sz && err_reg < err_mean) use_reg = 1;
+								if(err_reg < err_sz) use_reg = 1;
 							}
 						}
 						else {
 							if(mean_flush_count < 16){
 								err_sz += realPrecision * 16 * 1.2;
-								if(err_reg < err_sz && err_reg < err_mean) use_reg = 1;
+								if(err_reg < err_sz) use_reg = 1;
 							}
 						}
 						
