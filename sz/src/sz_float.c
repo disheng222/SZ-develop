@@ -402,49 +402,100 @@ unsigned int optimize_intervals_float_3D_with_freq_and_dense_pos(float *oriData,
 	float mean_diff;
 	ptrdiff_t freq_index;
 	size_t freq_count = 0;
-	for(i=1;i<r1;i++)
-	{
-		for(j=1;j<r2;j++)
+	size_t sample_count = 0;
+	// old estimate
+	// for(i=1;i<r1;i++)
+	// {
+	// 	for(j=1;j<r2;j++)
+	// 	{
+	// 		for(k=1;k<r3;k++)
+	// 		{			
+	// 			if((i+j+k)%sampleDistance==0)
+	// 			{
+	// 				index = i*r23+j*r3+k;
+	// 				pred_value = oriData[index-1] + oriData[index-r3] + oriData[index-r23] 
+	// 				- oriData[index-1-r23] - oriData[index-r3-1] - oriData[index-r3-r23] + oriData[index-r3-r23-1];
+	// 				pred_err = fabs(pred_value - oriData[index]);
+	// 				if(pred_err < realPrecision) freq_count ++;
+	// 				radiusIndex = (pred_err/realPrecision+1)/2;
+	// 				if(radiusIndex>=maxRangeRadius)
+	// 				{
+	// 					radiusIndex = maxRangeRadius - 1;
+	// 					//printf("radiusIndex=%d\n", radiusIndex);
+	// 				}
+	// 				intervals[radiusIndex]++;
+
+	// 				mean_diff = oriData[index] - mean;
+	// 				if(mean_diff > 0) freq_index = (ptrdiff_t)(mean_diff/realPrecision) + radius;
+	// 				else freq_index = (ptrdiff_t)(mean_diff/realPrecision) - 1 + radius;
+	// 				if(freq_index <= 0){
+	// 					freq_intervals[0] ++;
+	// 				}
+	// 				else if(freq_index >= range){
+	// 					freq_intervals[range - 1] ++;
+	// 				}
+	// 				else{
+	// 					freq_intervals[freq_index] ++;
+	// 					sum_intervals[freq_index] += oriData[index];
+	// 				}
+	// 				// printf("%ld\t%ld\t%ld:\t%ld\n", i, j, k, index);
+	// 				sample_count ++;
+	// 			}
+	// 		}
+	// 	}
+	// }
+	data_pos = oriData + r23 + r3 + 98;
+	offset_count = 98; // count r3 offset
+	size_t n1_count = 1, n2_count = 1; // count i,j sum
+	float * last_pos = data_pos;
+	while(data_pos - oriData < len){
+
+		pred_value = data_pos[-1] + data_pos[-r3] + data_pos[-r23] - data_pos[-1-r23] - data_pos[-r3-1] - data_pos[-r3-r23] + data_pos[-r3-r23-1];
+		pred_err = fabs(pred_value - *data_pos);
+		if(pred_err < realPrecision) freq_count ++;
+		radiusIndex = (pred_err/realPrecision+1)/2;
+		if(radiusIndex>=maxRangeRadius)
 		{
-			for(k=1;k<r3;k++)
-			{			
-				if((i+j+k)%sampleDistance==0)
-				{
-					index = i*r23+j*r3+k;
-					pred_value = oriData[index-1] + oriData[index-r3] + oriData[index-r23] 
-					- oriData[index-1-r23] - oriData[index-r3-1] - oriData[index-r3-r23] + oriData[index-r3-r23-1];
-					pred_err = fabs(pred_value - oriData[index]);
-					if(pred_err < realPrecision) freq_count ++;
-					radiusIndex = (pred_err/realPrecision+1)/2;
-					if(radiusIndex>=maxRangeRadius)
-					{
-						radiusIndex = maxRangeRadius - 1;
-						//printf("radiusIndex=%d\n", radiusIndex);
-					}
-					intervals[radiusIndex]++;
-
-					mean_diff = oriData[index] - mean;
-					if(mean_diff > 0) freq_index = (ptrdiff_t)(mean_diff/realPrecision) + radius;
-					else freq_index = (ptrdiff_t)(mean_diff/realPrecision) - 1 + radius;
-					if(freq_index <= 0){
-						freq_intervals[0] ++;
-					}
-					else if(freq_index >= range){
-						freq_intervals[range - 1] ++;
-					}
-					else{
-						freq_intervals[freq_index] ++;
-						sum_intervals[freq_index] += oriData[index];
-					}
-
-					//	if (max < oriData[index]) max = oriData[index];
-					//	if (min > oriData[index]) min = oriData[index];
-				}
-			}
+			radiusIndex = maxRangeRadius - 1;
+			//printf("radiusIndex=%d\n", radiusIndex);
 		}
-	}
-	*max_freq = freq_count * 0.5/ totalSampleSize;
-	if(*max_freq < 0.15) *max_freq *= 2;
+		intervals[radiusIndex]++;
+		// printf("TEST: %ld, i: %ld\tj: %ld\tk: %ld\n", data_pos - oriData);
+		// fflush(stdout);
+
+		mean_diff = *data_pos - mean;
+		if(mean_diff > 0) freq_index = (ptrdiff_t)(mean_diff/realPrecision) + radius;
+		else freq_index = (ptrdiff_t)(mean_diff/realPrecision) - 1 + radius;
+		if(freq_index <= 0){
+			freq_intervals[0] ++;
+		}
+		else if(freq_index >= range){
+			freq_intervals[range - 1] ++;
+		}
+		else{
+			freq_intervals[freq_index] ++;
+			sum_intervals[freq_index] += *data_pos;
+		}
+		offset_count += 100;
+		if(offset_count >= r3){
+			n2_count ++;
+			if(n2_count == r2){
+				n1_count ++;
+				n2_count = 1;
+				data_pos += r3;
+			}
+			offset_count_2 = (n1_count + n2_count) % 100;
+			data_pos += (r3 + 100 - offset_count) + (100 - offset_count_2);
+			offset_count = (100 - offset_count_2);
+			if(offset_count == 0) offset_count ++;
+		}
+		else data_pos += 100;
+		sample_count ++;
+	}	
+	*max_freq = freq_count * 1.0/ totalSampleSize;
+	printf("sample_count: %ld\n", sample_count);
+	fflush(stdout);
+	// if(*max_freq < 0.15) *max_freq *= 2;
 	//compute the appropriate number
 	size_t targetCount = totalSampleSize*predThreshold;
 	size_t sum = 0;
@@ -9385,27 +9436,27 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	float dense_pos;
 	float mean_flush_freq;
 	unsigned char use_mean = 0;
-	double elapsed_time = 0.0;
-	clock_t start, end;
-	start = clock();
+	// double elapsed_time = 0.0;
+	// clock_t start, end;
+	// start = clock();
 
 	if(optQuantMode==1)
 	{
 		quantization_intervals = optimize_intervals_float_3D_with_freq_and_dense_pos(oriData, r1, r2, r3, realPrecision, &dense_pos, &sz_sample_correct_freq, &mean_flush_freq);
-		if(mean_flush_freq > sz_sample_correct_freq) use_mean = 1;
+		if(mean_flush_freq > 0.5 || mean_flush_freq > sz_sample_correct_freq) use_mean = 1;
 		printf("number of bins: %d\tcorrect_freq: %.4f\tmean_flush_freq: %.4f\n", quantization_intervals, sz_sample_correct_freq, mean_flush_freq);
 		updateQuantizationInfo(quantization_intervals);
 	}	
 	else{
 		quantization_intervals = intvCapacity;
 	}
-	end = clock();
-	elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
-	printf("Optimize quantization_intervals elapsed time: %.4f\n", elapsed_time);
+	// end = clock();
+	// elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
+	// printf("Optimize quantization_intervals elapsed time: %.4f\n", elapsed_time);
 	// calculate block dims
 	size_t num_x, num_y, num_z;
 	size_t block_size = 6;
-	printf("block_size: %ld\n", block_size);
+	// printf("block_size: %ld\n", block_size);
 	COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
 	COMPUTE_3D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
 	COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z, block_size);
@@ -9439,7 +9490,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	// float * unpredictable_data = result_unpredictable_data;
 	// printf("Block wise compression start: %d %d %d\n", early_blockcount_x, early_blockcount_y, early_blockcount_z);
 	// fflush(stdout);
-	start = clock();
+	// start = clock();
 
 	float * reg_params = (float *) malloc(num_blocks * 4 * sizeof(float));
 	float * reg_params_pos = reg_params;
@@ -9500,9 +9551,9 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 			}
 		}
 	}
-	end = clock();
-	elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
-	printf("Regression elapsed time: %.4f\n", elapsed_time);
+	// end = clock();
+	// elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
+	// printf("Regression elapsed time: %.4f\n", elapsed_time);
 
 	//Compress coefficient arrays
 	float medianValue_a, medianValue_b, medianValue_c, medianValue_d;
@@ -9579,7 +9630,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	float * cur_pb_buf_pos;
 	float * next_pb_buf_pos;
 
-	start = clock();
+	// start = clock();
 	if(use_mean){
 		int intvCapacity_sz = intvCapacity - 2;
 		for(size_t i=0; i<num_x; i++){
@@ -10502,9 +10553,9 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 		}
 		// printf("Estimated correct pred count: %d\tprob: %.4f\n", est_sz_correct_pred_count, est_sz_correct_pred_count * 1.0/num_elements);
 	}
-	end = clock();
-	elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
-	printf("prediction elapsed time: %.4f\n", elapsed_time);
+	// end = clock();
+	// elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
+	// printf("prediction elapsed time: %.4f\n", elapsed_time);
 
 	free(prediction_buffer_1);
 	free(prediction_buffer_2);
@@ -10524,7 +10575,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 
 	//reg_count = num_x * num_y * num_z;
 	// huffman encode
-	start = clock();
+	// start = clock();
 
 	SZ_Reset(allNodes, stateNum);
 	size_t nodeCount = 0;
@@ -10708,9 +10759,9 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	
 	SZ_ReleaseHuffman();
 	*comp_size = totalEncodeSize;
-	end = clock();
-	elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
-	printf("Compression elapsed time: %.4f\n", elapsed_time);
+	// end = clock();
+	// elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
+	// printf("Compression elapsed time: %.4f\n", elapsed_time);
 
 	return result;
 }
