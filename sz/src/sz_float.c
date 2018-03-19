@@ -443,6 +443,9 @@ unsigned int optimize_intervals_float_2D_with_freq_and_dense_pos(float *oriData,
 		else data_pos += sampleDistance;
 		sample_count ++;
 	}
+	*max_freq = freq_count * 1.0/ totalSampleSize;
+	printf("sample_count: %ld\n", sample_count);
+	fflush(stdout);
 	//compute the appropriate number
 	size_t targetCount = totalSampleSize*predThreshold;
 	size_t sum = 0;
