@@ -513,11 +513,9 @@ unsigned int optimize_intervals_float_3D_with_freq_and_dense_pos(float *oriData,
 	}
 	if(mean_count > 0) mean /= mean_count;
 	size_t range = 8192;
-	size_t radius = 4096;
+	size_t radius = range/2;
 	size_t * freq_intervals = (size_t *) malloc(range*sizeof(size_t));
 	memset(freq_intervals, 0, range*sizeof(size_t));
-	float * sum_intervals = (float *) malloc(range*sizeof(float));
-	memset(sum_intervals, 0, range*sizeof(float));
 
 	size_t i,j,k, index;
 	size_t radiusIndex;
@@ -602,7 +600,6 @@ unsigned int optimize_intervals_float_3D_with_freq_and_dense_pos(float *oriData,
 		}
 		else{
 			freq_intervals[freq_index] ++;
-			sum_intervals[freq_index] += *data_pos;
 		}
 		offset_count += sampleDistance;
 		if(offset_count >= r3){
@@ -657,7 +654,6 @@ unsigned int optimize_intervals_float_3D_with_freq_and_dense_pos(float *oriData,
 	*mean_freq = max_sum * 1.0 / totalSampleSize;
 	printf("Max frequency: %.6f index: %ld dense_pos: %.6f\n", *mean_freq, max_index, *dense_pos);
 
-	free(sum_intervals);
 	free(freq_intervals);
 	free(intervals);
 	//printf("targetCount=%d, sum=%d, totalSampleSize=%d, ratio=%f, accIntervals=%d, powerOf2=%d\n", targetCount, sum, totalSampleSize, (double)sum/(double)totalSampleSize, accIntervals, powerOf2);
@@ -9562,6 +9558,7 @@ float SZ_compress_float_3D_MDQ_strip_pred_by_regression_with_freq(float * block_
 
 // 2D
 // modified for higher performance
+#define MIN(a, b) a<b? a : b
 unsigned char * SZ_compress_float_2D_MDQ_nonblocked_with_blocked_regression(float *oriData, size_t r1, size_t r2, double realPrecision, size_t * comp_size){
 
 	unsigned int quantization_intervals;
@@ -9763,24 +9760,26 @@ unsigned char * SZ_compress_float_2D_MDQ_nonblocked_with_blocked_regression(floa
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim0_offset] - cur_data_pos[-dim0_offset - 1];
 						pred_reg = reg_params_pos[0] * i + reg_params_pos[params_offset_b] * i + reg_params_pos[params_offset_c];
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
-						err_sz += fabs(pred_sz - curData);
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*0.81, fabs(mean - curData));
+						// err_sz += fabs(pred_sz - curData);
 						err_reg += fabs(pred_reg - curData);
 
 						cur_data_pos = data_pos + i * dim0_offset + (block_size - i);
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim0_offset] - cur_data_pos[-dim0_offset - 1];
 						pred_reg = reg_params_pos[0] * i + reg_params_pos[params_offset_b] * (block_size - i) + reg_params_pos[params_offset_c];
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
-						err_sz += fabs(pred_sz - curData);
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*0.81, fabs(mean - curData));
+						// err_sz += fabs(pred_sz - curData);
 						err_reg += fabs(pred_reg - curData);
 
 						count += 2;
 					}
-					if(mean_flush_count < count - 1){
-						err_sz += realPrecision * count * 0.81;
-						use_reg = (err_reg < err_sz);
-					}
+					// if(mean_flush_count < count - 1){
+						// err_sz += realPrecision * count * 0.81;
+					use_reg = (err_reg < err_sz);
+					// }
 
 				}
 				if(use_reg)
@@ -10716,16 +10715,16 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 							curData = *cur_data_pos;
 							pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 							pred_reg = reg_params_pos[params_offset_d];
-							if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
-							err_sz += fabs(pred_sz - curData);
+							// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+							err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 							err_reg += fabs(pred_reg - curData);
 							// [0, 0, 5]
 							cur_data_pos = data_pos + 5;
 							curData = *cur_data_pos;
 							pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 							pred_reg = reg_params_pos[params_offset_c] * 5 + reg_params_pos[params_offset_d];
-							if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
-							err_sz += fabs(pred_sz - curData);
+							// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+							err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 							err_reg += fabs(pred_reg - curData);
 
 							// [0, 5, 0]
@@ -10733,8 +10732,8 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 							curData = *cur_data_pos;
 							pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 							pred_reg = reg_params_pos[params_offset_b] * 5 + reg_params_pos[params_offset_d];
-							if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
-							err_sz += fabs(pred_sz - curData);
+							// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+							err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 							err_reg += fabs(pred_reg - curData);
 
 							// [0, 5, 5]
@@ -10742,8 +10741,8 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 							curData = *cur_data_pos;
 							pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 							pred_reg = reg_params_pos[0] * 1 + reg_params_pos[params_offset_b] * 4 + reg_params_pos[params_offset_c] * 4 + reg_params_pos[params_offset_d];
-							if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
-							err_sz += fabs(pred_sz - curData);
+							// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+							err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 							err_reg += fabs(pred_reg - curData);
 
 							// [5, 0, 0]
@@ -10751,8 +10750,8 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 							curData = *cur_data_pos;
 							pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 							pred_reg = reg_params_pos[0] * 5 + reg_params_pos[params_offset_d];
-							if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
-							err_sz += fabs(pred_sz - curData);
+							// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+							err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 							err_reg += fabs(pred_reg - curData);
 
 							// [5, 0, 5]
@@ -10760,8 +10759,8 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 							curData = *cur_data_pos;
 							pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 							pred_reg = reg_params_pos[0] * 5 + reg_params_pos[params_offset_c] * 5 + reg_params_pos[params_offset_d];
-							if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
-							err_sz += fabs(pred_sz - curData);
+							// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+							err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 							err_reg += fabs(pred_reg - curData);
 
 							// [5, 5, 0]
@@ -10769,8 +10768,8 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 							curData = *cur_data_pos;
 							pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 							pred_reg = reg_params_pos[0] * 5 + reg_params_pos[params_offset_b] * 5 + reg_params_pos[params_offset_d];
-							if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
-							err_sz += fabs(pred_sz - curData);
+							// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+							err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 							err_reg += fabs(pred_reg - curData);
 
 							// [5, 5, 5]
@@ -10778,8 +10777,8 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 							curData = *cur_data_pos;
 							pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 							pred_reg = reg_params_pos[0] * 5 + reg_params_pos[params_offset_b] * 5 + reg_params_pos[params_offset_c] * 5 + reg_params_pos[params_offset_d];
-							if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
-							err_sz += fabs(pred_sz - curData);
+							// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+							err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 							err_reg += fabs(pred_reg - curData);
 						}
 						// [1, 1, 1]
@@ -10787,144 +10786,145 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 1 + reg_params_pos[params_offset_b] * 1 + reg_params_pos[params_offset_c] * 1 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 						// [1, 1, 4]
 						cur_data_pos = data_pos + dim0_offset + dim1_offset + 4;
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 1 + reg_params_pos[params_offset_b] * 1 + reg_params_pos[params_offset_c] * 4 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 						// [1, 4, 1]
 						cur_data_pos = data_pos + dim0_offset + 4*dim1_offset + 1;
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 1 + reg_params_pos[params_offset_b] * 4 + reg_params_pos[params_offset_c] * 1 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 						// [1, 4, 4]
 						cur_data_pos = data_pos + dim0_offset + 4*dim1_offset + 4;
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 1 + reg_params_pos[params_offset_b] * 4 + reg_params_pos[params_offset_c] * 4 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 						// [4, 1, 1]
 						cur_data_pos = data_pos + 4*dim0_offset + dim1_offset + 1;
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 4 + reg_params_pos[params_offset_b] * 1 + reg_params_pos[params_offset_c] * 1 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 						// [4, 1, 4]
 						cur_data_pos = data_pos + 4*dim0_offset + dim1_offset + 4;
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 4 + reg_params_pos[params_offset_b] * 1 + reg_params_pos[params_offset_c] * 4 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 						// [4, 4, 1]
 						cur_data_pos = data_pos + 4*dim0_offset + 4*dim1_offset + 1;
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 4 + reg_params_pos[params_offset_b] * 4 + reg_params_pos[params_offset_c] * 1 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 						// [4, 4, 4]
 						cur_data_pos = data_pos + 4*dim0_offset + 4*dim1_offset + 4;
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 4 + reg_params_pos[params_offset_b] * 4 + reg_params_pos[params_offset_c] * 4 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 						// [2, 2, 2]
 						cur_data_pos = data_pos + 2*dim0_offset + 2*dim1_offset + 2;
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 2 + reg_params_pos[params_offset_b] * 2 + reg_params_pos[params_offset_c] * 2 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 						// [2, 2, 3]
 						cur_data_pos = data_pos + 2*dim0_offset + 2*dim1_offset + 3;
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 2 + reg_params_pos[params_offset_b] * 2 + reg_params_pos[params_offset_c] * 3 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 						// [2, 3, 2]
 						cur_data_pos = data_pos + 2*dim0_offset + 3*dim1_offset + 2;
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 2 + reg_params_pos[params_offset_b] * 3 + reg_params_pos[params_offset_c] * 2 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 						// [2, 3, 3]
 						cur_data_pos = data_pos + 2*dim0_offset + 3*dim1_offset + 3;
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 2 + reg_params_pos[params_offset_b] * 3 + reg_params_pos[params_offset_c] * 3 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 						// [3, 2, 2]
 						cur_data_pos = data_pos + 3*dim0_offset + 2*dim1_offset + 2;
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 3 + reg_params_pos[params_offset_b] * 2 + reg_params_pos[params_offset_c] * 2 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 						// [3, 2, 3]
 						cur_data_pos = data_pos + 3*dim0_offset + 2*dim1_offset + 3;
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 3 + reg_params_pos[params_offset_b] * 2 + reg_params_pos[params_offset_c] * 3 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 						// [3, 3, 2]
 						cur_data_pos = data_pos + 3*dim0_offset + 3*dim1_offset + 2;
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 3 + reg_params_pos[params_offset_b] * 3 + reg_params_pos[params_offset_c] * 2 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 						// [3, 3, 3]
 						cur_data_pos = data_pos + 3*dim0_offset + 3*dim1_offset + 3;
 						curData = *cur_data_pos;
 						pred_sz = cur_data_pos[-1] + cur_data_pos[-dim1_offset]+ cur_data_pos[-dim0_offset] - cur_data_pos[-dim1_offset - 1] - cur_data_pos[-dim0_offset - 1] - cur_data_pos[-dim0_offset - dim1_offset] + cur_data_pos[-dim0_offset - dim1_offset - 1];
 						pred_reg = reg_params_pos[0] * 3 + reg_params_pos[params_offset_b] * 3 + reg_params_pos[params_offset_c] * 3 + reg_params_pos[params_offset_d];
-						err_sz += fabs(pred_sz - curData);
+						err_sz += MIN(fabs(pred_sz - curData) + realPrecision*1.2, fabs(mean - curData));
 						err_reg += fabs(pred_reg - curData);
-						if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
+						// if(fabs(mean - curData) <= realPrecision) mean_flush_count ++;
 
-						if(i && j && k){							
-							if(mean_flush_count < 23){
-								err_sz += realPrecision * 24 * 1.2;
-								use_reg = (err_reg < err_sz);
-							}
-						}
-						else {
-							if(mean_flush_count < 15){
-								err_sz += realPrecision * 16 * 1.2;
-								use_reg = (err_reg < err_sz);
-							}
-						}
-						
+						// if(i && j && k){							
+						// 	if(mean_flush_count < 23){
+						// 		err_sz += realPrecision * 24 * 1.2;
+						// 		use_reg = (err_reg < err_sz);
+						// 	}
+						// }
+						// else {
+						// 	if(mean_flush_count < 15){
+						// 		err_sz += realPrecision * 16 * 1.2;
+						// 		use_reg = (err_reg < err_sz);
+						// 	}
+						// }
+						use_reg = (err_reg < err_sz);
 					}
+					// use_reg = 1;
 					if(use_reg)
 					{
 						float curData;
