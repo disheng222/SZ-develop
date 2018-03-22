@@ -76,6 +76,9 @@ int main(int argc, char * argv[])
 	char filename[100];
 	char zip_filename[100];
 	char out_filename[100];
+	size_t inSize, outSize; 
+	size_t nbEle;
+	int status;
 	while (count < rank_folder_num) 
 	{
 		int folder_index = world_rank * rank_folder_num + count;
@@ -85,8 +88,6 @@ int main(int argc, char * argv[])
 			sprintf(out_filename, "%s/%d/%s.sz.out", folder, i, file[i]);
 			// printf("%s\n", filename);
 
-			int nbEle;
-			int status;
 			// Read Input Data
 			start = MPI_Wtime();
 			float *dataIn = readFloatData(filename, &nbEle, &status);
@@ -96,7 +97,6 @@ int main(int argc, char * argv[])
 			
 			// Compress Input Data
 			if (world_rank == 0) printf ("Compressing %s\n", filename);
-			int inSize, outSize; 
 			start = MPI_Wtime();
 			unsigned char *bytesOut = SZ_compress(SZ_FLOAT, dataIn, &outSize, r5, r4, r3, r2, r1);
 			end = MPI_Wtime();
@@ -106,7 +106,7 @@ int main(int argc, char * argv[])
 
 			// Write Compressed Data
 			start = MPI_Wtime();
-			writeByteData(bytesOut, outSize, zipFilePath, &status);
+			writeByteData(bytesOut, outSize, zip_filename, &status);
 			end = MPI_Wtime();
 			costWriteZip += end - start;
 			free(bytesOut);
@@ -114,7 +114,7 @@ int main(int argc, char * argv[])
 
 			// Read Compressed Data
 			start = MPI_Wtime();
-			unsigned char *bytesIn = readByteData(zipFilePath, &inSize, &status);
+			unsigned char *bytesIn = readByteData(zip_filename, &inSize, &status);
 			end = MPI_Wtime();
 			costReadZip += end - start;
 			MPI_Barrier(MPI_COMM_WORLD);
