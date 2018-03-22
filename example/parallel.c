@@ -20,8 +20,6 @@ int main(int argc, char * argv[])
 {
 
 	int r5=0,r4=0,r3=0,r2=0,r1=0;
-	char inFilePath[640], oriFilePath[640], zipFilePath[640], outFilePath[640];
-	char inDir[640], outDir[640];
 	char *cfgFile;
 
 	MPI_Init(NULL, NULL);
@@ -62,12 +60,6 @@ int main(int argc, char * argv[])
 	
 	SZ_Init(cfgFile);
 
-	if (NULL == (FD = opendir (inDir))) 
-	{
-		if (world_rank == 0) printf("Error : Failed to open input directory\n");
-		exit(0);
-	}
-
 	if (world_rank == 0) printf ("Start parallel compressing ... \n");
 
 	double start, end;
@@ -81,21 +73,23 @@ int main(int argc, char * argv[])
 	char file[6][30] ={"dark_matter_density.dat", "temperature.dat", "baryon_density.dat", "velocity_x.dat", "velocity_y.dat", "velocity_z.dat"};
 
 	char folder[30] = "/global/cscratch1/sd/shdi/xin";
-	char filename[80];
-	char out_filename[80];
+	char filename[100];
+	char zip_filename[100];
+	char out_filename[100];
 	while (count < rank_folder_num) 
 	{
 		int folder_index = world_rank * rank_folder_num + count;
 		for(int i=0; i<6; i++){
 			sprintf(filename, "%s/%d/%s", folder, i, file[i]);
 			sprintf(out_filename, "%s/%d/%s.sz", folder, i, file[i]);
+			sprintf(out_filename, "%s/%d/%s.sz.out", folder, i, file[i]);
 			// printf("%s\n", filename);
 
 			int nbEle;
-			
+			int status;
 			// Read Input Data
 			start = MPI_Wtime();
-			float *dataIn = readFloatData(filename, &nbEle);
+			float *dataIn = readFloatData(filename, &nbEle, &status);
 			end = MPI_Wtime();
 			costReadOri += end - start;
 			MPI_Barrier(MPI_COMM_WORLD);
@@ -112,7 +106,7 @@ int main(int argc, char * argv[])
 
 			// Write Compressed Data
 			start = MPI_Wtime();
-			writeByteData(bytesOut, outSize, zipFilePath);
+			writeByteData(bytesOut, outSize, zipFilePath, &status);
 			end = MPI_Wtime();
 			costWriteZip += end - start;
 			free(bytesOut);
@@ -120,7 +114,7 @@ int main(int argc, char * argv[])
 
 			// Read Compressed Data
 			start = MPI_Wtime();
-			unsigned char *bytesIn = readByteData(zipFilePath, &inSize);
+			unsigned char *bytesIn = readByteData(zipFilePath, &inSize, &status);
 			end = MPI_Wtime();
 			costReadZip += end - start;
 			MPI_Barrier(MPI_COMM_WORLD);
@@ -135,7 +129,7 @@ int main(int argc, char * argv[])
 
 			// Write Decompressed Data
 			start = MPI_Wtime();
-			writeFloatData_inBytes(dataOut, nbEle, out_filename);
+			writeFloatData_inBytes(dataOut, nbEle, out_filename, &status);
 			end = MPI_Wtime();
 			costWriteOut += end - start;
 			free(dataOut);
