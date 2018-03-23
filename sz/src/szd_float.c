@@ -4292,7 +4292,7 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 	for(size_t i=0; i<num_blocks; i++){
 		if(!indicator[i]) reg_count ++;
 	}
-	printf("reg_count: %ld\n", reg_count);
+	// printf("reg_count: %ld\n", reg_count);
 	// float * reg_params_buf = (float *) malloc(reg_count * 4 * sizeof(float));
 	float* dec_a = NULL, *dec_b = NULL, *dec_c = NULL, *dec_d = NULL;
 	if(reg_count > 0){
