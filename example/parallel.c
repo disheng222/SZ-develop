@@ -132,7 +132,7 @@ int main(int argc, char * argv[])
 			// free(dataOut);
 			// MPI_Barrier(MPI_COMM_WORLD);
 		}
-
+		count ++;
 	}
 	
 
