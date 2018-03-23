@@ -40,10 +40,6 @@ int main(int argc, char * argv[])
 
 	cfgFile=argv[1];
 	
-	if (world_rank == 0) printf ("Input directory = %s\n", inDir);
-	if (world_rank == 0) printf ("Output directory = %s\n", outDir);
-
-	
 	if(argc>=4)
 	  r1 = atoi(argv[3]); //8
 	if(argc>=5)
