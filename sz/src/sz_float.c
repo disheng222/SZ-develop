@@ -618,8 +618,8 @@ unsigned int optimize_intervals_float_3D_with_freq_and_dense_pos(float *oriData,
 		sample_count ++;
 	}	
 	*max_freq = freq_count * 1.0/ totalSampleSize;
-	printf("sample_count: %ld\n", sample_count);
-	fflush(stdout);
+	// printf("sample_count: %ld\n", sample_count);
+	// fflush(stdout);
 	// if(*max_freq < 0.15) *max_freq *= 2;
 	//compute the appropriate number
 	size_t targetCount = totalSampleSize*predThreshold;
@@ -652,7 +652,7 @@ unsigned int optimize_intervals_float_3D_with_freq_and_dense_pos(float *oriData,
 	}
 	*dense_pos = mean + realPrecision * (ptrdiff_t)(max_index + 1 - radius);
 	*mean_freq = max_sum * 1.0 / totalSampleSize;
-	printf("Max frequency: %.6f index: %ld dense_pos: %.6f\n", *mean_freq, max_index, *dense_pos);
+	// printf("Max frequency: %.6f index: %ld dense_pos: %.6f\n", *mean_freq, max_index, *dense_pos);
 
 	free(freq_intervals);
 	free(intervals);
