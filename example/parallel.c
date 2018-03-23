@@ -81,59 +81,59 @@ int main(int argc, char * argv[])
 			sprintf(filename, "%s/%d/%s", folder, folder_index, file[i]);
 			sprintf(zip_filename, "%s/%d/%s.sz", folder, folder_index, file[i]);
 			// sprintf(out_filename, "%s/%d/%s.sz.out", folder, i, file[i]);
-			printf("%s\n", filename);
+			// printf("%s\n", filename);
 			// printf("%s\n", zip_filename);
 			// printf("%s\n", out_filename);
 
 			// Read Input Data
-			// start = MPI_Wtime();
-			// float *dataIn = readFloatData(filename, &nbEle, &status);
-			// end = MPI_Wtime();
-			// costReadOri += end - start;
-			// MPI_Barrier(MPI_COMM_WORLD);
+			start = MPI_Wtime();
+			float *dataIn = readFloatData(filename, &nbEle, &status);
+			end = MPI_Wtime();
+			costReadOri += end - start;
+			MPI_Barrier(MPI_COMM_WORLD);
 			
-			// // Compress Input Data
-			// stateNum = 65536;
-			// allNodes = stateNum * 2;
-			// // if (world_rank == 0) printf ("Compressing %s\n", filename);
-			// start = MPI_Wtime();
-			// // unsigned char *bytesOut = SZ_compress(SZ_FLOAT, dataIn, &outSize, r5, r4, r3, r2, r1);
-			// unsigned char *bytesOut = SZ_compress_args(SZ_FLOAT, dataIn, &outSize, REL, 0, rel_bound[i], 0, 0, r5, r4, r3, r2, r1);
-			// end = MPI_Wtime();
-			// costComp += end - start;
-			// free (dataIn);
-			// MPI_Barrier(MPI_COMM_WORLD);
+			// Compress Input Data
+			stateNum = 65536;
+			allNodes = stateNum * 2;
+			if (world_rank == 0) printf ("Compressing %s\n", filename);
+			start = MPI_Wtime();
+			// unsigned char *bytesOut = SZ_compress(SZ_FLOAT, dataIn, &outSize, r5, r4, r3, r2, r1);
+			unsigned char *bytesOut = SZ_compress_args(SZ_FLOAT, dataIn, &outSize, REL, 0, rel_bound[i], 0, 0, r5, r4, r3, r2, r1);
+			end = MPI_Wtime();
+			costComp += end - start;
+			free (dataIn);
+			MPI_Barrier(MPI_COMM_WORLD);
 
-			// // Write Compressed Data
-			// start = MPI_Wtime();
-			// writeByteData(bytesOut, outSize, zip_filename, &status);
-			// end = MPI_Wtime();
-			// costWriteZip += end - start;
-			// free(bytesOut);
-			// MPI_Barrier(MPI_COMM_WORLD);
+			// Write Compressed Data
+			start = MPI_Wtime();
+			writeByteData(bytesOut, outSize, zip_filename, &status);
+			end = MPI_Wtime();
+			costWriteZip += end - start;
+			free(bytesOut);
+			MPI_Barrier(MPI_COMM_WORLD);
 
-			// // Read Compressed Data
-			// start = MPI_Wtime();
-			// unsigned char *bytesIn = readByteData(zip_filename, &inSize, &status);
-			// end = MPI_Wtime();
-			// costReadZip += end - start;
-			// MPI_Barrier(MPI_COMM_WORLD);
+			// Read Compressed Data
+			start = MPI_Wtime();
+			unsigned char *bytesIn = readByteData(zip_filename, &inSize, &status);
+			end = MPI_Wtime();
+			costReadZip += end - start;
+			MPI_Barrier(MPI_COMM_WORLD);
 
-			// // Decompress Compressed Data
-			// start = MPI_Wtime();
-			// float *dataOut = SZ_decompress(SZ_FLOAT, bytesIn, inSize, r5, r4, r3, r2, r1);
-			// end = MPI_Wtime();
-			// costDecomp += end - start; 
-			// free(bytesIn);
-			// MPI_Barrier(MPI_COMM_WORLD);
+			// Decompress Compressed Data
+			start = MPI_Wtime();
+			float *dataOut = SZ_decompress(SZ_FLOAT, bytesIn, inSize, r5, r4, r3, r2, r1);
+			end = MPI_Wtime();
+			costDecomp += end - start; 
+			free(bytesIn);
+			MPI_Barrier(MPI_COMM_WORLD);
 
 			// Write Decompressed Data
 			// start = MPI_Wtime();
 			// writeFloatData_inBytes(dataOut, nbEle, out_filename, &status);
 			// end = MPI_Wtime();
 			// costWriteOut += end - start;
-			// free(dataOut);
-			// MPI_Barrier(MPI_COMM_WORLD);
+			free(dataOut);
+			MPI_Barrier(MPI_COMM_WORLD);
 		}
 		count ++;
 	}
