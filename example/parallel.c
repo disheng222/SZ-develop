@@ -66,7 +66,7 @@ int main(int argc, char * argv[])
 	int rank_folder_num = total_folder_num / world_size;
 	int count = 0;
 	char file[6][30] ={"dark_matter_density.dat", "temperature.dat", "baryon_density.dat", "velocity_x.dat", "velocity_y.dat", "velocity_z.dat"};
-	double rel_bound = {0.09, 0.103, 0.2, 0.006, 0.0105, 0.005};
+	double rel_bound[6] = {0.09, 0.103, 0.2, 0.006, 0.0105, 0.005};
 	char folder[30] = "/lcrc/project/ECP-EZ/public/compression/datasets";
 	char filename[100];
 	char zip_filename[100];
@@ -96,7 +96,7 @@ int main(int argc, char * argv[])
 			if (world_rank == 0) printf ("Compressing %s\n", filename);
 			start = MPI_Wtime();
 			// unsigned char *bytesOut = SZ_compress(SZ_FLOAT, dataIn, &outSize, r5, r4, r3, r2, r1);
-			unsigned char *bytesOut = SZ_compress_args(SZ_FLOAT, dataIn, &outSize, REL, 0, x, 0, 0, r5, r4, r3, r2, r1);
+			unsigned char *bytesOut = SZ_compress_args(SZ_FLOAT, dataIn, &outSize, REL, 0, rel_bound[i], 0, 0, r5, r4, r3, r2, r1);
 			end = MPI_Wtime();
 			costComp += end - start;
 			free (dataIn);
