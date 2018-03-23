@@ -53,7 +53,7 @@ int main(int argc, char * argv[])
 
 	if (world_rank == 0) printf("cfgFile=%s\n", cfgFile); 
 	
-	SZ_Init(cfgFile);
+	SZ_Init(NULL);
 
 	if (world_rank == 0) printf ("Start parallel compressing ... \n");
 
@@ -93,6 +93,8 @@ int main(int argc, char * argv[])
 			MPI_Barrier(MPI_COMM_WORLD);
 			
 			// Compress Input Data
+			stateNum = 65536;
+			allNodes = stateNum * 2;
 			if (world_rank == 0) printf ("Compressing %s\n", filename);
 			start = MPI_Wtime();
 			// unsigned char *bytesOut = SZ_compress(SZ_FLOAT, dataIn, &outSize, r5, r4, r3, r2, r1);
