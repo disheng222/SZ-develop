@@ -78,8 +78,8 @@ int main(int argc, char * argv[])
 	{
 		int folder_index = world_rank * rank_folder_num + count;
 		for(int i=0; i<6; i++){
-			sprintf(filename, "%s/%d/%s", folder, i, file[i]);
-			sprintf(zip_filename, "%s/%d/%s.sz", folder, i, file[i]);
+			sprintf(filename, "%s/%d/%s", folder, folder_index, file[i]);
+			sprintf(zip_filename, "%s/%d/%s.sz", folder, folder_index, file[i]);
 			// sprintf(out_filename, "%s/%d/%s.sz.out", folder, i, file[i]);
 			// printf("%s\n", filename);
 			// printf("%s\n", zip_filename);
