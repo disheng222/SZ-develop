@@ -10482,7 +10482,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	{
 		quantization_intervals = optimize_intervals_float_3D_with_freq_and_dense_pos(oriData, r1, r2, r3, realPrecision, &dense_pos, &sz_sample_correct_freq, &mean_flush_freq);
 		if(mean_flush_freq > 0.5 || mean_flush_freq > sz_sample_correct_freq) use_mean = 1;
-		printf("number of bins: %d\tcorrect_freq: %.4f\tmean_flush_freq: %.4f\n", quantization_intervals, sz_sample_correct_freq, mean_flush_freq);
+		// printf("number of bins: %d\tcorrect_freq: %.4f\tmean_flush_freq: %.4f\n", quantization_intervals, sz_sample_correct_freq, mean_flush_freq);
 		updateQuantizationInfo(quantization_intervals);
 	}	
 	else{
@@ -10629,7 +10629,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 			}
 		}
 		if(mean_count > 0) mean = sum / mean_count;
-		printf("%.4f value will be flushed to %.4f\n", mean_count * 1.0/num_elements, mean);
+		// printf("%.4f value will be flushed to %.4f\n", mean_count * 1.0/num_elements, mean);
 	}
 
 	reg_params_pos = reg_pred_params;
@@ -11728,8 +11728,8 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	free(prediction_buffer_2);
 	// free(buffer1);
 	// free(buffer2);
-	printf("Block wise compression end, unpredictable num %d, num_elements %ld, max unpred count %d\n", total_unpred, num_elements, max_unpred_count);
-	printf("sz_count: %ld reg_count: %ld\n", num_blocks - reg_count, reg_count);
+	// printf("Block wise compression end, unpredictable num %d, num_elements %ld, max unpred count %d\n", total_unpred, num_elements, max_unpred_count);
+	// printf("sz_count: %ld reg_count: %ld\n", num_blocks - reg_count, reg_count);
 
 	//debug
 	// size_t flushed_count = 0;
