@@ -1895,9 +1895,9 @@ void SZ_compress_args_float_NoCkRngeNoGzip_2D(unsigned char** newByteData, float
 
 TightDataPointStorageF* SZ_compress_float_3D_MDQ(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, float valueRangeSize, float medianValue_f)
 {
-	double elapsed_time = 0.0;
-	clock_t start, end;
-	start = clock();
+	// double elapsed_time = 0.0;
+	// clock_t start, end;
+	// start = clock();
 
 	unsigned int quantization_intervals;
 	if(optQuantMode==1)
@@ -1907,9 +1907,9 @@ TightDataPointStorageF* SZ_compress_float_3D_MDQ(float *oriData, size_t r1, size
 	}	
 	else
 		quantization_intervals = intvCapacity;
-	end = clock();
-	elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
-	printf("Optimize quantization_intervals elapsed time: %.4f\n", elapsed_time);
+	// end = clock();
+	// elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
+	// printf("Optimize quantization_intervals elapsed time: %.4f\n", elapsed_time);
 
 	//clearHuffmanMem();
 	size_t i,j,k; 
@@ -1919,7 +1919,7 @@ TightDataPointStorageF* SZ_compress_float_3D_MDQ(float *oriData, size_t r1, size
 	double itvNum = 0;
 	float *P0, *P1;
 
-	start = clock();
+	// start = clock();
 	size_t dataLength = r1*r2*r3;
 	size_t r23 = r2*r3;
 	P0 = (float*)malloc(r23*sizeof(float));
@@ -2292,10 +2292,10 @@ TightDataPointStorageF* SZ_compress_float_3D_MDQ(float *oriData, size_t r1, size
 	free(P1);
 	size_t exactDataNum = exactLeadNumArray->size;
 
-	end = clock();
-	elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
-	printf("prediction elapsed time: %.4f\n", elapsed_time);
-	start = clock();
+	// end = clock();
+	// elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
+	// printf("prediction elapsed time: %.4f\n", elapsed_time);
+	// start = clock();
 	TightDataPointStorageF* tdps;
 
 	new_TightDataPointStorageF(&tdps, dataLength, exactDataNum,
@@ -2304,9 +2304,9 @@ TightDataPointStorageF* SZ_compress_float_3D_MDQ(float *oriData, size_t r1, size
 			resiBitArray->array, resiBitArray->size,
 			resiBitsLength, 
 			realPrecision, medianValue, (char)reqLength, quantization_intervals, NULL, 0, 0);
-	end = clock();
-	elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
-	printf("compression elapsed time: %.4f\n", elapsed_time);
+	// end = clock();
+	// elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
+	// printf("compression elapsed time: %.4f\n", elapsed_time);
 
 //sdi:Debug
 /*	int sum =0;
