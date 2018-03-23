@@ -15,7 +15,8 @@
 #include "rw.h"
 #include "mpi.h"
 
-
+// USAGE
+// mpirun -np 16 parallel sz.config NO_USE r3 r2 r1
 int main(int argc, char * argv[])
 {
 
@@ -39,8 +40,6 @@ int main(int argc, char * argv[])
 
 	cfgFile=argv[1];
 	
-	sprintf(inDir, "%s", argv[2]);
-	sprintf(outDir, "%s/out", inDir);
 	if (world_rank == 0) printf ("Input directory = %s\n", inDir);
 	if (world_rank == 0) printf ("Output directory = %s\n", outDir);
 
