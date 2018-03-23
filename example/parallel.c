@@ -67,7 +67,7 @@ int main(int argc, char * argv[])
 	int count = 0;
 	char file[6][30] ={"dark_matter_density.dat", "temperature.dat", "baryon_density.dat", "velocity_x.dat", "velocity_y.dat", "velocity_z.dat"};
 	double rel_bound[6] = {0.09, 0.103, 0.2, 0.006, 0.0105, 0.005};
-	char folder[30] = "/lcrc/project/ECP-EZ/public/compression/datasets";
+	char folder[50] = "/lcrc/project/ECP-EZ/public/compression/datasets";
 	char filename[100];
 	char zip_filename[100];
 	// char out_filename[100];
