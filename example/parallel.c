@@ -62,7 +62,7 @@ int main(int argc, char * argv[])
 
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	int total_folder_num = 8192;
+	int total_folder_num = 1024;
 	int rank_folder_num = total_folder_num / world_size;
 	int count = 0;
 	char file[6][30] ={"dark_matter_density.dat", "temperature.dat", "baryon_density.dat", "velocity_x.dat", "velocity_y.dat", "velocity_z.dat"};
@@ -70,7 +70,7 @@ int main(int argc, char * argv[])
 	char folder[30] = "/global/cscratch1/sd/shdi/xin";
 	char filename[100];
 	char zip_filename[100];
-	char out_filename[100];
+	// char out_filename[100];
 	size_t inSize, outSize; 
 	size_t nbEle;
 	int status;
@@ -80,57 +80,57 @@ int main(int argc, char * argv[])
 		for(int i=0; i<6; i++){
 			sprintf(filename, "%s/%d/%s", folder, i, file[i]);
 			sprintf(zip_filename, "%s/%d/%s.sz", folder, i, file[i]);
-			sprintf(out_filename, "%s/%d/%s.sz.out", folder, i, file[i]);
-			printf("%s\n", filename);
-			printf("%s\n", zip_filename);
-			printf("%s\n", out_filename);
+			// sprintf(out_filename, "%s/%d/%s.sz.out", folder, i, file[i]);
+			// printf("%s\n", filename);
+			// printf("%s\n", zip_filename);
+			// printf("%s\n", out_filename);
 
-			// // Read Input Data
-			// start = MPI_Wtime();
-			// float *dataIn = readFloatData(filename, &nbEle, &status);
-			// end = MPI_Wtime();
-			// costReadOri += end - start;
-			// MPI_Barrier(MPI_COMM_WORLD);
+			// Read Input Data
+			start = MPI_Wtime();
+			float *dataIn = readFloatData(filename, &nbEle, &status);
+			end = MPI_Wtime();
+			costReadOri += end - start;
+			MPI_Barrier(MPI_COMM_WORLD);
 			
-			// // Compress Input Data
-			// if (world_rank == 0) printf ("Compressing %s\n", filename);
-			// start = MPI_Wtime();
-			// unsigned char *bytesOut = SZ_compress(SZ_FLOAT, dataIn, &outSize, r5, r4, r3, r2, r1);
-			// end = MPI_Wtime();
-			// costComp += end - start;
-			// free (dataIn);
-			// MPI_Barrier(MPI_COMM_WORLD);
+			// Compress Input Data
+			if (world_rank == 0) printf ("Compressing %s\n", filename);
+			start = MPI_Wtime();
+			unsigned char *bytesOut = SZ_compress(SZ_FLOAT, dataIn, &outSize, r5, r4, r3, r2, r1);
+			end = MPI_Wtime();
+			costComp += end - start;
+			free (dataIn);
+			MPI_Barrier(MPI_COMM_WORLD);
 
-			// // Write Compressed Data
-			// start = MPI_Wtime();
-			// writeByteData(bytesOut, outSize, zip_filename, &status);
-			// end = MPI_Wtime();
-			// costWriteZip += end - start;
-			// free(bytesOut);
-			// MPI_Barrier(MPI_COMM_WORLD);
+			// Write Compressed Data
+			start = MPI_Wtime();
+			writeByteData(bytesOut, outSize, zip_filename, &status);
+			end = MPI_Wtime();
+			costWriteZip += end - start;
+			free(bytesOut);
+			MPI_Barrier(MPI_COMM_WORLD);
 
-			// // Read Compressed Data
-			// start = MPI_Wtime();
-			// unsigned char *bytesIn = readByteData(zip_filename, &inSize, &status);
-			// end = MPI_Wtime();
-			// costReadZip += end - start;
-			// MPI_Barrier(MPI_COMM_WORLD);
+			// Read Compressed Data
+			start = MPI_Wtime();
+			unsigned char *bytesIn = readByteData(zip_filename, &inSize, &status);
+			end = MPI_Wtime();
+			costReadZip += end - start;
+			MPI_Barrier(MPI_COMM_WORLD);
 
-			// // Decompress Compressed Data
-			// start = MPI_Wtime();
-			// float *dataOut = SZ_decompress(SZ_FLOAT, bytesIn, inSize, r5, r4, r3, r2, r1);
-			// end = MPI_Wtime();
-			// costDecomp += end - start; 
-			// free(bytesIn);
-			// MPI_Barrier(MPI_COMM_WORLD);
+			// Decompress Compressed Data
+			start = MPI_Wtime();
+			float *dataOut = SZ_decompress(SZ_FLOAT, bytesIn, inSize, r5, r4, r3, r2, r1);
+			end = MPI_Wtime();
+			costDecomp += end - start; 
+			free(bytesIn);
+			MPI_Barrier(MPI_COMM_WORLD);
 
-			// // Write Decompressed Data
+			// Write Decompressed Data
 			// start = MPI_Wtime();
 			// writeFloatData_inBytes(dataOut, nbEle, out_filename, &status);
 			// end = MPI_Wtime();
 			// costWriteOut += end - start;
-			// free(dataOut);
-			// MPI_Barrier(MPI_COMM_WORLD);
+			free(dataOut);
+			MPI_Barrier(MPI_COMM_WORLD);
 		}
 		count ++;
 	}
