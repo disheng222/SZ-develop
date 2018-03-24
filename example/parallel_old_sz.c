@@ -50,8 +50,6 @@ int main(int argc, char * argv[])
 	  r4 = atoi(argv[6]);
 	if(argc>=8)
 	  r5 = atoi(argv[7]);
-
-	if (world_rank == 0) printf("cfgFile=%s\n", cfgFile); 
 	
 	SZ_Init(NULL);
 
@@ -167,14 +165,15 @@ int main(int argc, char * argv[])
 
 	if (world_rank == 0)
 	{
-		printf ("Finish parallel compressing.\n");
-		printf ("Timecost of reading original files = %.2f seconds\n", globalcostReadOri/world_size);
-		printf ("Timecost of reading compressed files = %.2f seconds\n", globalcostReadZip/world_size);
-		printf ("Timecost of writing compressed files = %.2f seconds\n", globalcostWriteZip/world_size);
-		printf ("Timecost of writing decompressed files = %.2f seconds\n", globalcostWriteOut/world_size);
-		printf ("Timecost of compressing using %d processes = %.2f seconds\n", world_size, globalcostComp/world_size);
-		printf ("Timecost of decompressing using %d processes = %.2f seconds\n\n", world_size, globalcostDecomp/world_size);
+		printf ("SZ_OLD Finish parallel compressing.\n");
+		printf ("Timecost of reading original files = %.2f seconds\n", costReadOri/world_size);
+		printf ("Timecost of reading compressed files = %.2f seconds\n", costReadZip/world_size);
+		printf ("Timecost of writing compressed files = %.2f seconds\n", costWriteZip/world_size);
+		printf ("Timecost of writing decompressed files = %.2f seconds\n", costWriteOut/world_size);
+		printf ("Timecost of compressing using %d processes = %.2f seconds\n", world_size, costComp/world_size);
+		printf ("Timecost of decompressing using %d processes = %.2f seconds\n\n", world_size, costDecomp/world_size);
 	}
+
 
 	SZ_Finalize();
 
