@@ -165,7 +165,7 @@ int main(int argc, char * argv[])
 		int folder_index = world_rank * rank_folder_num + count;
 		for(int i=0; i<1; i++){
 			sprintf(filename, "%s/%d/%s", folder, folder_index, file[i]);
-			sprintf(zip_filename, "%s/%d/%s.sz", folder, folder_index, file[i]);
+			sprintf(zip_filename, "%s/%d/%s.zfp", folder, folder_index, file[i]);
 			// sprintf(out_filename, "%s/%d/%s.sz.out", folder, i, file[i]);
 			// printf("%s\n", filename);
 			// printf("%s\n", zip_filename);
@@ -182,7 +182,7 @@ int main(int argc, char * argv[])
 			if (world_rank == 0) printf ("Compressing %s\n", filename);
 			start = MPI_Wtime();
 			// unsigned char *bytesOut = SZ_compress_args(SZ_FLOAT, dataIn, &outSize, REL, 0, rel_bound[0], 0, 0, r5, r4, r3, r2, r1);
-			unsigned char * bytesOut = zfp_compress_3D(dataIn, tolerance[0], r1, r2, r3, &out_size);
+			unsigned char * bytesOut = zfp_compress_3D(dataIn, tolerance[0], r1, r2, r3, &outSize);
 
 			end = MPI_Wtime();
 			costComp += end - start;
