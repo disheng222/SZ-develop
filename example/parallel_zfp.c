@@ -158,9 +158,10 @@ int main(int argc, char * argv[])
 	size_t inSize, outSize; 
 	size_t nbEle;
 	int status;
+	size_t offset = total_folder_num;
 	while (count < rank_folder_num) 
 	{
-		int folder_index = world_rank * rank_folder_num + count;
+		int folder_index = world_rank * rank_folder_num + count + offset;
 		for(int i=0; i<1; i++){
 			sprintf(filename, "%s/%d/%s", folder, folder_index, file[i]);
 			sprintf(zip_filename, "%s/%d/%s.zfp", folder, folder_index, file[i]);
