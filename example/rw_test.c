@@ -12,6 +12,7 @@ int main(){
 	size_t nbEle;
 	char zfp_file[100] = "/lcrc/project/ECP-EZ/public/compression/datasets/0/dark_matter_density.log10.dat.zfp";
 	char sz_file[100] = "/lcrc/project/ECP-EZ/public/compression/datasets/0/dark_matter_density.log10.dat.sz_old";
+	char sz_new_file[100] = "/lcrc/project/ECP-EZ/public/compression/datasets/0/dark_matter_density.log10.dat.sz_old";
 	printf("read zfp compressed data\n");
 	start = clock();
 	unsigned char * data = readByteData(zfp_file, &nbEle, &status);
@@ -41,7 +42,23 @@ int main(){
 	elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
 	printf("sz write time: %.4f\n", elapsed_time);
 
+	//
+	printf("read sz_new compressed data\n");
+	start = clock();
+	unsigned char * sz_new_data = readByteData(sz_new_file, &nbEle, &status);
+	end = clock();
+	elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
+	printf("sz read time: %.4f\n", elapsed_time);
+
+	printf("write sz_new compressed data\n");
+	start = clock();
+	writeByteData(sz_new_data, nbEle, "tmp.sz", &status);
+	end = clock();
+	elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
+	printf("sz write time: %.4f\n", elapsed_time);
+
 	free(data);
 	free(sz_data);
+	free(sz_new_data);
 
 }
