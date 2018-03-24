@@ -11,9 +11,97 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "sz.h"
-#include "rw.h"
+#include "zfp.h"
 #include "mpi.h"
+#include "rw.h"
+
+unsigned char * zfp_compress_3D(float * array, double tolerance, size_t r1, size_t r2, size_t r3, size_t *out_size){
+	int status = 0;    /* return value: 0 = success */
+	zfp_type type;     /* array scalar type */
+	zfp_field* field;  /* array meta data */
+	zfp_stream* zfp;   /* compressed stream */
+	void* buffer;      /* storage for compressed stream */
+	size_t bufsize;    /* byte size of compressed buffer */
+	bitstream* stream; /* bit stream to write to or read from */
+	size_t zfpsize;    /* byte size of compressed stream */
+
+	/* allocate meta data for the 3D array a[nz][ny][nx] */
+	type = zfp_type_float;
+	field = zfp_field_3d(array, type, r3, r2, r1);
+
+	/* allocate meta data for a compressed stream */
+	zfp = zfp_stream_open(NULL);
+
+	/* set compression mode and parameters via one of three functions */
+	/*  zfp_stream_set_rate(zfp, rate, type, 3, 0); */
+	/*  zfp_stream_set_precision(zfp, precision); */
+	zfp_stream_set_accuracy(zfp, tolerance);
+
+	/* allocate buffer for compressed data */
+	bufsize = zfp_stream_maximum_size(zfp, field);
+	buffer = malloc(bufsize);
+
+	/* associate bit stream with allocated buffer */
+	stream = stream_open(buffer, bufsize);
+	zfp_stream_set_bit_stream(zfp, stream);
+	zfp_stream_rewind(zfp);
+
+	zfpsize = zfp_compress(zfp, field);
+    if (!zfpsize) {
+      fprintf(stderr, "compression failed\n");
+      status = 1;
+    }	
+
+	zfp_field_free(field);
+	zfp_stream_close(zfp);
+	stream_close(stream);
+	*out_size = zfpsize;
+	return (unsigned char *)buffer;
+}
+
+float * zfp_decompress_3D(unsigned char * comp_data, double tolerance, size_t buffer_size, size_t r1, size_t r2, size_t r3){
+	int status = 0;    /* return value: 0 = success */
+	zfp_type type;     /* array scalar type */
+	zfp_field* field;  /* array meta data */
+	zfp_stream* zfp;   /* compressed stream */
+	void* buffer;      /* storage for compressed stream */
+	size_t bufsize;    /* byte size of compressed buffer */
+	bitstream* stream; /* bit stream to write to or read from */
+	size_t zfpsize;    /* byte size of compressed stream */
+
+	/* allocate meta data for the 3D array a[nz][ny][nx] */
+	float * array = (float *) malloc(r1 * r2 * r3 * sizeof(float));
+	type = zfp_type_float;
+	field = zfp_field_3d(array, type, r3, r2, r1);
+
+	/* allocate meta data for a compressed stream */
+	zfp = zfp_stream_open(NULL);
+
+	/* set compression mode and parameters via one of three functions */
+	/*  zfp_stream_set_rate(zfp, rate, type, 3, 0); */
+	/*  zfp_stream_set_precision(zfp, precision); */
+	zfp_stream_set_accuracy(zfp, tolerance);
+
+	/* allocate buffer for compressed data */
+	bufsize = zfp_stream_maximum_size(zfp, field);
+	// buffer = malloc(bufsize);
+	buffer = (void *) comp_data;
+	bufsize = buffer_size;
+
+	/* associate bit stream with allocated buffer */
+	stream = stream_open(buffer, bufsize);
+	zfp_stream_set_bit_stream(zfp, stream);
+	zfp_stream_rewind(zfp);
+
+    if (!zfp_decompress(zfp, field)) {
+      fprintf(stderr, "decompression failed\n");
+      status = 1;
+    }
+	zfp_field_free(field);
+	zfp_stream_close(zfp);
+	stream_close(stream);
+	return array;
+}
 
 // USAGE
 // mpirun -np 16 parallel sz.config folder_num r3 r2 r1
@@ -53,8 +141,6 @@ int main(int argc, char * argv[])
 
 	if (world_rank == 0) printf("cfgFile=%s\n", cfgFile); 
 	
-	SZ_Init(NULL);
-
 	if (world_rank == 0) printf ("Start parallel compressing ... \n");
 	if (world_rank == 0) printf("size: %d\n", world_size);
 	double start, end;
@@ -67,8 +153,6 @@ int main(int argc, char * argv[])
 	int count = 0;
 	char file[6][30] ={"dark_matter_density.log10.dat", "temperature.dat", "baryon_density.log10.dat", "velocity_x.dat", "velocity_y.dat", "velocity_z.dat"};
 	double rel_bound[6] = {0.09, 0.103, 0.2, 0.006, 0.0105, 0.005};
-	//double rel_bound[6] = {0.055, 0.023, 0.017, 0.0018, 0.0018, 0.0018};
-	//szRandomAccess = SZ_NO_RANDOM_ACCESS;
 	char folder[50] = "/lcrc/project/ECP-EZ/public/compression/datasets";
 	char filename[100];
 	char zip_filename[100];
@@ -95,12 +179,11 @@ int main(int argc, char * argv[])
 			MPI_Barrier(MPI_COMM_WORLD);
 			
 			// Compress Input Data
-			stateNum = 65536;
-			allNodes = stateNum * 2;
 			if (world_rank == 0) printf ("Compressing %s\n", filename);
 			start = MPI_Wtime();
-			// unsigned char *bytesOut = SZ_compress(SZ_FLOAT, dataIn, &outSize, r5, r4, r3, r2, r1);
-			unsigned char *bytesOut = SZ_compress_args(SZ_FLOAT, dataIn, &outSize, REL, 0, rel_bound[0], 0, 0, r5, r4, r3, r2, r1);
+			// unsigned char *bytesOut = SZ_compress_args(SZ_FLOAT, dataIn, &outSize, REL, 0, rel_bound[0], 0, 0, r5, r4, r3, r2, r1);
+			unsigned char * bytesOut = zfp_compress_3D(dataIn, tolerance[0], r1, r2, r3, &out_size);
+
 			end = MPI_Wtime();
 			costComp += end - start;
 			free (dataIn);
@@ -123,7 +206,8 @@ int main(int argc, char * argv[])
 
 			// Decompress Compressed Data
 			start = MPI_Wtime();
-			float *dataOut = SZ_decompress(SZ_FLOAT, bytesIn, inSize, r5, r4, r3, r2, r1);
+			// float *dataOut = SZ_decompress(SZ_FLOAT, bytesIn, inSize, r5, r4, r3, r2, r1);
+			float * dataOut = zfp_decompress_3D(bytesIn, tolerance[0], out_size, r1, r2, r3);
 			end = MPI_Wtime();
 			costDecomp += end - start; 
 			free(bytesIn);
@@ -160,8 +244,6 @@ int main(int argc, char * argv[])
 		printf ("Timecost of compressing using %d processes = %.2f seconds\n", world_size, globalcostComp/world_size);
 		printf ("Timecost of decompressing using %d processes = %.2f seconds\n\n", world_size, globalcostDecomp/world_size);
 	}
-
-	SZ_Finalize();
 
 	MPI_Finalize();
 

@@ -66,9 +66,9 @@ int main(int argc, char * argv[])
 	int rank_folder_num = total_folder_num / world_size;
 	int count = 0;
 	char file[6][30] ={"dark_matter_density.log10.dat", "temperature.dat", "baryon_density.log10.dat", "velocity_x.dat", "velocity_y.dat", "velocity_z.dat"};
-	double rel_bound[6] = {0.09, 0.103, 0.2, 0.006, 0.0105, 0.005};
-	//double rel_bound[6] = {0.055, 0.023, 0.017, 0.0018, 0.0018, 0.0018};
-	//szRandomAccess = SZ_NO_RANDOM_ACCESS;
+	//double rel_bound[6] = {0.09, 0.103, 0.2, 0.006, 0.0105, 0.005};
+	double rel_bound[6] = {0.055, 0.023, 0.017, 0.0018, 0.0018, 0.0018};
+	szRandomAccess = SZ_NO_RANDOM_ACCESS;
 	char folder[50] = "/lcrc/project/ECP-EZ/public/compression/datasets";
 	char filename[100];
 	char zip_filename[100];
@@ -81,7 +81,7 @@ int main(int argc, char * argv[])
 		int folder_index = world_rank * rank_folder_num + count;
 		for(int i=0; i<1; i++){
 			sprintf(filename, "%s/%d/%s", folder, folder_index, file[i]);
-			sprintf(zip_filename, "%s/%d/%s.sz", folder, folder_index, file[i]);
+			sprintf(zip_filename, "%s/%d/%s.sz_old", folder, folder_index, file[i]);
 			// sprintf(out_filename, "%s/%d/%s.sz.out", folder, i, file[i]);
 			// printf("%s\n", filename);
 			// printf("%s\n", zip_filename);
