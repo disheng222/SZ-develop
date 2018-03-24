@@ -152,7 +152,7 @@ int main(int argc, char * argv[])
 	int rank_folder_num = total_folder_num / world_size;
 	int count = 0;
 	char file[6][30] ={"dark_matter_density.log10.dat", "temperature.dat", "baryon_density.log10.dat", "velocity_x.dat", "velocity_y.dat", "velocity_z.dat"};
-	double rel_bound[6] = {0.09, 0.103, 0.2, 0.006, 0.0105, 0.005};
+	double tolerance[6] = {20, 1150000, 7, 8500000, 8500000, 8500000};
 	char folder[50] = "/lcrc/project/ECP-EZ/public/compression/datasets";
 	char filename[100];
 	char zip_filename[100];
@@ -207,7 +207,7 @@ int main(int argc, char * argv[])
 			// Decompress Compressed Data
 			start = MPI_Wtime();
 			// float *dataOut = SZ_decompress(SZ_FLOAT, bytesIn, inSize, r5, r4, r3, r2, r1);
-			float * dataOut = zfp_decompress_3D(bytesIn, tolerance[0], out_size, r1, r2, r3);
+			float * dataOut = zfp_decompress_3D(bytesIn, tolerance[0], inSize, r1, r2, r3);
 			end = MPI_Wtime();
 			costDecomp += end - start; 
 			free(bytesIn);
