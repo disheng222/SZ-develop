@@ -88,52 +88,60 @@ int main(int argc, char * argv[])
 			// printf("%s\n", out_filename);
 
 			// Read Input Data
-			start = MPI_Wtime();
-			float *dataIn = readFloatData(filename, &nbEle, &status);
-			end = MPI_Wtime();
-			costReadOri += end - start;
 			MPI_Barrier(MPI_COMM_WORLD);
+			if(world_rank == 0) start = MPI_Wtime();
+			float *dataIn = readFloatData(filename, &nbEle, &status);
+			MPI_Barrier(MPI_COMM_WORLD);
+			if(world_rank == 0){
+				end = MPI_Wtime();
+				costReadOri += end - start;
+			}
 			
 			// Compress Input Data
 			stateNum = 65536;
 			allNodes = stateNum * 2;
 			if (world_rank == 0) printf ("Compressing %s\n", filename);
-			start = MPI_Wtime();
-			// unsigned char *bytesOut = SZ_compress(SZ_FLOAT, dataIn, &outSize, r5, r4, r3, r2, r1);
-			unsigned char *bytesOut = SZ_compress_args(SZ_FLOAT, dataIn, &outSize, REL, 0, rel_bound[0], 0, 0, r5, r4, r3, r2, r1);
-			end = MPI_Wtime();
-			costComp += end - start;
-			free (dataIn);
 			MPI_Barrier(MPI_COMM_WORLD);
+			if(world_rank == 0) start = MPI_Wtime();
+			unsigned char *bytesOut = SZ_compress_args(SZ_FLOAT, dataIn, &outSize, REL, 0, rel_bound[0], 0, 0, r5, r4, r3, r2, r1);
+			MPI_Barrier(MPI_COMM_WORLD);
+			if(world_rank == 0){
+				end = MPI_Wtime();
+				costComp += end - start;
+			}
+			free (dataIn);
 
 			// Write Compressed Data
-			start = MPI_Wtime();
-			writeByteData(bytesOut, outSize, zip_filename, &status);
-			end = MPI_Wtime();
-			costWriteZip += end - start;
-			free(bytesOut);
 			MPI_Barrier(MPI_COMM_WORLD);
+			if(world_rank == 0) start = MPI_Wtime();
+			writeByteData(bytesOut, outSize, zip_filename, &status);
+			MPI_Barrier(MPI_COMM_WORLD);
+			if(world_rank == 0){
+				end = MPI_Wtime();
+				costWriteZip += end - start;
+			}
+			free(bytesOut);
 
 			// Read Compressed Data
-			start = MPI_Wtime();
+			MPI_Barrier(MPI_COMM_WORLD);
+			if(world_rank == 0) start = MPI_Wtime();
 			unsigned char *bytesIn = readByteData(zip_filename, &inSize, &status);
-			end = MPI_Wtime();
-			costReadZip += end - start;
 			MPI_Barrier(MPI_COMM_WORLD);
-
+			if(world_rank == 0){
+				end = MPI_Wtime();
+				costReadZip += end - start;
+			}
 			// Decompress Compressed Data
-			start = MPI_Wtime();
-			float *dataOut = SZ_decompress(SZ_FLOAT, bytesIn, inSize, r5, r4, r3, r2, r1);
-			end = MPI_Wtime();
-			costDecomp += end - start; 
-			free(bytesIn);
 			MPI_Barrier(MPI_COMM_WORLD);
+			if(world_rank == 0) start = MPI_Wtime();
+			float *dataOut = SZ_decompress(SZ_FLOAT, bytesIn, inSize, r5, r4, r3, r2, r1);
+			MPI_Barrier(MPI_COMM_WORLD);
+			if(world_rank == 0){
+				end = MPI_Wtime();
+				costDecomp += end - start; 
+			}
+			free(bytesIn);
 
-			// Write Decompressed Data
-			// start = MPI_Wtime();
-			// writeFloatData_inBytes(dataOut, nbEle, out_filename, &status);
-			// end = MPI_Wtime();
-			// costWriteOut += end - start;
 			free(dataOut);
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
@@ -141,14 +149,14 @@ int main(int argc, char * argv[])
 	}
 	
 
-	double globalcostReadOri, globalcostReadZip, globalcostWriteZip, globalcostWriteOut, globalcostComp, globalcostDecomp;
+	// double globalcostReadOri, globalcostReadZip, globalcostWriteZip, globalcostWriteOut, globalcostComp, globalcostDecomp;
 
-	MPI_Reduce(&costReadOri, &globalcostReadOri, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	MPI_Reduce(&costReadZip, &globalcostReadZip, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	MPI_Reduce(&costWriteZip, &globalcostWriteZip, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	MPI_Reduce(&costWriteOut, &globalcostWriteOut, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	MPI_Reduce(&costComp, &globalcostComp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	MPI_Reduce(&costDecomp, &globalcostDecomp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	// MPI_Reduce(&costReadOri, &globalcostReadOri, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	// MPI_Reduce(&costReadZip, &globalcostReadZip, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	// MPI_Reduce(&costWriteZip, &globalcostWriteZip, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	// MPI_Reduce(&costWriteOut, &globalcostWriteOut, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	// MPI_Reduce(&costComp, &globalcostComp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	// MPI_Reduce(&costDecomp, &globalcostDecomp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
 	if (world_rank == 0)
 	{
