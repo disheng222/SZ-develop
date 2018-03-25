@@ -159,6 +159,7 @@ int main(int argc, char * argv[])
 	size_t nbEle;
 	int status;
 	size_t offset = total_folder_num;
+	if(offset > 2048) offset = 0; 
 	int var_num = 1;
 	while (count < rank_folder_num) 
 	{
