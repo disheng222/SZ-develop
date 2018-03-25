@@ -65,7 +65,7 @@ int main(int argc, char * argv[])
 	int count = 0;
 	char file[6][30] ={"dark_matter_density.log10.dat", "temperature.dat", "baryon_density.log10.dat", "velocity_x.dat", "velocity_y.dat", "velocity_z.dat"};
 	//double rel_bound[6] = {0.09, 0.103, 0.2, 0.006, 0.0105, 0.005};
-	double rel_bound[6] = {0.055, 0.023, 0.017, 0.0018, 0.0018, 0.0018};
+	double rel_bound[6] = {0.055, 0.0023, 0.017, 0.0018, 0.0018, 0.0018};
 	szRandomAccess = SZ_NO_RANDOM_ACCESS;
 	char folder[50] = "/lcrc/project/ECP-EZ/public/compression/datasets";
 	char filename[100];
