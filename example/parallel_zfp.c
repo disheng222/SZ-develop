@@ -160,7 +160,7 @@ int main(int argc, char * argv[])
 	int status;
 	size_t offset = total_folder_num;
 	if(offset > 2048) offset = 0; 
-	int var_num = 1;
+	int var_num = 3;
 	while (count < rank_folder_num) 
 	{
 		int folder_index = world_rank * rank_folder_num + count + offset;
