@@ -76,7 +76,8 @@ int main(int argc, char * argv[])
 	int status;
 	size_t offset = total_folder_num;
 	if(offset > 2048) offset = 0; 
-	int var_num = 5;
+	int var_num = 2;
+	float * dataIn;
 	while (count < rank_folder_num) 
 	{
 		int folder_index = world_rank * rank_folder_num + count + offset;
@@ -90,8 +91,23 @@ int main(int argc, char * argv[])
 
 			// Read Input Data
 			MPI_Barrier(MPI_COMM_WORLD);
-			if(world_rank == 0) start = MPI_Wtime();
-			float *dataIn = readFloatData(filename, &nbEle, &status);
+			if(world_rank == 0){
+				start = MPI_Wtime();
+				dataIn = readFloatData(filename, &nbEle, &status);
+				end = MPI_Wtime();
+				printf("data read time: %.2f\n", end - start);
+				MPI_Barrier(MPI_COMM_WORLD);
+				start = MPI_Wtime();
+				MPI_Bcast(dataIn, nbEle, MPI_FLOAT, 0, MPI_COMM_WORLD);
+				MPI_Barrier(MPI_COMM_WORLD);
+				end = MPI_Wtime();
+				printf("broadcast time: %.2f\n", end - start);
+			}
+			else{
+				nbEle = 512 * 512 * 512;
+				dataIn = (float *) malloc(nbEle * sizeof(float));
+				MPI_Bcast(dataIn, nbEle, MPI_FLOAT, 0, MPI_COMM_WORLD);
+			}
 			MPI_Barrier(MPI_COMM_WORLD);
 			if(world_rank == 0){
 				end = MPI_Wtime();
