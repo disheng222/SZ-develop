@@ -229,7 +229,7 @@ int main(int argc, char * argv[])
 			MPI_Barrier(MPI_COMM_WORLD);
 			if(world_rank == 0) start = MPI_Wtime();
 			// float *dataOut = SZ_decompress(SZ_FLOAT, bytesIn, inSize, r5, r4, r3, r2, r1);
-			float * dataOut = zfp_decompress_3D(bytesIn, tolerance[0], inSize, r1, r2, r3);
+			float * dataOut = zfp_decompress_3D(bytesIn, tolerance[i], inSize, r1, r2, r3);
 			MPI_Barrier(MPI_COMM_WORLD);
 			if(world_rank == 0){
 				end = MPI_Wtime();
