@@ -76,14 +76,14 @@ int main(int argc, char * argv[])
 	int status;
 	size_t offset = total_folder_num;
 	if(offset > 2048) offset = 0; 
-	int var_num = 2;
+
 	float * dataIn;
 	while (count < rank_folder_num) 
 	{
 		int folder_index = world_rank * rank_folder_num + count + offset;
-		for(int i=0; i<1; i++){
-			sprintf(filename, "%s/%d/%s", folder, folder_index, file[var_num]);
-			sprintf(zip_filename, "%s/%d/%s.sz", folder, folder_index, file[var_num]);
+		for(int i=0; i<6; i++){
+			sprintf(filename, "%s/%d/%s", folder, folder_index, file[i]);
+			sprintf(zip_filename, "%s/%d/%s.sz", folder, folder_index, file[i]);
 			// sprintf(out_filename, "%s/%d/%s.sz.out", folder, i, file[i]);
 			// printf("%s\n", filename);
 			// printf("%s\n", zip_filename);
@@ -117,7 +117,7 @@ int main(int argc, char * argv[])
 			if (world_rank == 0) printf ("Compressing %s\n", filename);
 			MPI_Barrier(MPI_COMM_WORLD);
 			if(world_rank == 0) start = MPI_Wtime();
-			unsigned char *bytesOut = SZ_compress_args(SZ_FLOAT, dataIn, &outSize, REL, 0, rel_bound[var_num], 0, 0, r5, r4, r3, r2, r1);
+			unsigned char *bytesOut = SZ_compress_args(SZ_FLOAT, dataIn, &outSize, REL, 0, rel_bound[i], 0, 0, r5, r4, r3, r2, r1);
 			MPI_Barrier(MPI_COMM_WORLD);
 			if(world_rank == 0){
 				end = MPI_Wtime();
