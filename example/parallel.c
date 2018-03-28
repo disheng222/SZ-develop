@@ -90,16 +90,13 @@ int main(int argc, char * argv[])
 			// printf("%s\n", out_filename);
 
 			// Read Input Data
-			MPI_Barrier(MPI_COMM_WORLD);
 			if(world_rank == 0){
 				start = MPI_Wtime();
 				dataIn = readFloatData(filename, &nbEle, &status);
 				end = MPI_Wtime();
 				printf("data read time: %.2f\n", end - start);
-				MPI_Barrier(MPI_COMM_WORLD);
 				start = MPI_Wtime();
 				MPI_Bcast(dataIn, nbEle, MPI_FLOAT, 0, MPI_COMM_WORLD);
-				MPI_Barrier(MPI_COMM_WORLD);
 				end = MPI_Wtime();
 				printf("broadcast time: %.2f\n", end - start);
 			}
