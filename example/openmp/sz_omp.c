@@ -88,7 +88,7 @@ unsigned char * SZ_compress_float_3D_MDQ_openmp(float *oriData, size_t r1, size_
 	for(int t=0; t<thread_num; t++){
 		int id = omp_get_thread_num();
 		int i = id/(num_yz);
-		int j = (id % num_yz) / num_y;
+		int j = (id % num_yz) / num_z;
 		int k = id % num_z;
 		// printf("%d: %d %d %d\n", omp_get_thread_num(), i, j, k);
 		size_t offset_x = (i < split_index_x) ? i * early_blockcount_x : i * late_blockcount_x + split_index_x;
@@ -376,7 +376,7 @@ void decompressDataSeries_float_3D_openmp(float** data, size_t r1, size_t r2, si
 	for(int t=0; t<thread_num; t++){
 		int id = omp_get_thread_num();
 		int i = id/(num_yz);
-		int j = (id % num_yz) / num_y;
+		int j = (id % num_yz) / num_z;
 		int k = id % num_z;
 		// printf("%d: %d %d %d\n", omp_get_thread_num(), i, j, k);
 		size_t offset_x = (i < split_index_x) ? i * early_blockcount_x : i * late_blockcount_x + split_index_x;
