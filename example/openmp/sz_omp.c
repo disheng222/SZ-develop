@@ -27,6 +27,7 @@ unsigned char * SZ_compress_float_3D_MDQ_openmp(float *oriData, size_t r1, size_
 
 	elapsed_time = -omp_get_wtime();
 	int thread_num = omp_get_max_threads();
+	thread_num = 4;
 	int thread_order = (int)log2(thread_num);
 	size_t num_x, num_y, num_z;
 	{
@@ -106,12 +107,6 @@ unsigned char * SZ_compress_float_3D_MDQ_openmp(float *oriData, size_t r1, size_
 		P0 = (float *) malloc(buffer_size);
 		P1 = (float *) malloc(buffer_size);
 		unpredictable_count[id] = SZ_compress_float_3D_MDQ_RA_block(data_pos, mean + id, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, P0, P1, type, unpredictable_data);
-		// printf("\n%d\ndata_offset: %ld\n", t, offset_x * dim0_offset + offset_y * dim1_offset + offset_z);
-		// printf("mean: %.2f\n", mean[id]);
-		// for(int tmp=0; tmp<10; tmp++){
-		// 	printf("%.2f ", unpredictable_data[tmp]);
-		// }
-		// printf("\n\n");
 		free(P0);
 		free(P1);
 	}
@@ -189,7 +184,7 @@ unsigned char * SZ_compress_float_3D_MDQ_openmp(float *oriData, size_t r1, size_
 	for(int t=0; t<thread_num; t++){
 		int id = omp_get_thread_num();
 		int i = id/(num_yz);
-		int j = (id % num_yz) / num_y;
+		int j = (id % num_yz) / num_z;
 		int k = id % num_z;
 		unsigned char * encoding_buffer_pos = encoding_buffer + id * max_num_block_elements * sizeof(int);
 		size_t enCodeSize = 0;
@@ -223,7 +218,7 @@ unsigned char * SZ_compress_float_3D_MDQ_openmp(float *oriData, size_t r1, size_
 
 	// int status;
 	// writeIntData_inBytes(result_type, num_elements, "/Users/LiangXin/github/SZ-develop/example/openmp/omp_type.dat", &status);
-	printf("type array size: %ld\n", enCodeSize);
+	// printf("type array size: %ld\n", enCodeSize);
 	result_pos += enCodeSize;
 	size_t totalEncodeSize = 0;
 	totalEncodeSize = result_pos - result;
@@ -281,6 +276,7 @@ void decompressDataSeries_float_3D_openmp(float** data, size_t r1, size_t r2, si
 			}
 		}
 	}
+	printf("number of blocks: %d %d %d, thread_num %d\n", num_x, num_y, num_z, thread_num);
 	omp_set_num_threads(thread_num);
 	size_t split_index_x, split_index_y, split_index_z;
 	size_t early_blockcount_x, early_blockcount_y, early_blockcount_z;
@@ -360,7 +356,7 @@ void decompressDataSeries_float_3D_openmp(float** data, size_t r1, size_t r2, si
 	for(int t=0; t<thread_num; t++){
 		int id = omp_get_thread_num();
 		int i = id/(num_yz);
-		int j = (id % num_yz) / num_y;
+		int j = (id % num_yz) / num_z;
 		int k = id % num_z;
 		size_t offset_x = (i < split_index_x) ? i * early_blockcount_x : i * late_blockcount_x + split_index_x;
 		size_t offset_y = (j < split_index_y) ? j * early_blockcount_y : j * late_blockcount_y + split_index_y;
@@ -406,7 +402,6 @@ void decompressDataSeries_float_3D_openmp(float** data, size_t r1, size_t r2, si
 	}	
 	elapsed_time += omp_get_wtime();
 	printf("Parallel decompress elapsed time: %.4f\n", elapsed_time);
-	elapsed_time = -omp_get_wtime();
 
 	free(result_type);
 	free(unpred_offset);
