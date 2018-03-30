@@ -6627,6 +6627,9 @@ void decompressDataSeries_float_3D_RA_blocked_with_regression(float** data, size
 void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data){
 	// printf("num_block_elements %d num_blocks %d\n", max_num_block_elements, num_blocks);
 	// fflush(stdout);
+	double elapsed_time = 0.0;
+	clock_t start, end;
+	start = clock();
 
 	size_t dim0_offset = r2 * r3;
 	size_t dim1_offset = r3;
@@ -6675,9 +6678,9 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 	node root = reconstruct_HuffTree_from_bytes_anyStates(comp_data_pos+4, allNodes);
 
 	comp_data_pos += 4 + tree_size;
-	unsigned short * block_pos = (unsigned short *) comp_data_pos;
+	unsigned int * block_pos = (unsigned int *) comp_data_pos;
 	// skip block index here
-	comp_data_pos += num_blocks * sizeof(unsigned short);
+	comp_data_pos += num_blocks * sizeof(unsigned int);
 	unsigned short * unpred_count = (unsigned short *) comp_data_pos;
 	comp_data_pos += num_blocks * sizeof(unsigned short);
 	float * mean_pos = (float *) comp_data_pos;
@@ -6700,6 +6703,10 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 	size_t cur_unpred_count;
 	// printf("decompress offset to start: %ld\n", comp_data_pos - tdps->data);
 	// fflush(stdout);
+	end = clock();
+	elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
+	printf("Read info time: %.4f\n", elapsed_time);
+	start = clock();
 	for(size_t i=0; i<num_x; i++){
 		for(size_t j=0; j<num_y; j++){
 			for(size_t k=0; k<num_z; k++){
@@ -6726,17 +6733,23 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 				size_t current_block_elements = current_blockcount_x * current_blockcount_y * current_blockcount_z;
 				decode(tmp, current_block_elements, root, type);
 
-				// int cur_unpred_count = decompressDataSeries_float_3D_RA_block(data_pos, mean, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, type, unpredictable_data);
-				cur_unpred_count = decompressDataSeries_float_3D_RA_block_3D_pred(data_pos, mean, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, type, unpredictable_data);
+				int cur_unpred_count = decompressDataSeries_float_3D_RA_block(data_pos, mean, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, type, unpredictable_data);
+				// cur_unpred_count = decompressDataSeries_float_3D_RA_block_3D_pred(data_pos, mean, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, type, unpredictable_data);
 				//int cur_unpred_count = decompressDataSeries_float_3D_RA_block_1D_pred(data_pos, mean, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, realPrecision, type, unpredictable_data);
+				// if(i==0 && j==0 && k==1){
+				// 	int status;
+				// 	writeIntData_inBytes(type, current_block_elements, "/Users/LiangXin/github/SZ-develop/example/openmp/decomp001_type.dat", &status);
+				// }
 
 				if(cur_unpred_count != unpredictable_count){
 					printf("Check bugs, unpredictable_count is not the same: %d %d\n", unpredictable_count, cur_unpred_count);
 					printf("Current index: %d %d %d\n\n", i, j, k);
+					size_t count = 0;
 					for(int i=0; i<current_block_elements; i++){
-						printf("%d ", type[i]);
+						// printf("%d ", type[i]);
+						if(type[i] == 0) count ++;
 					}
-					printf("\n");
+					printf("%ld\n", count);
 					exit(0);
 				}
 
@@ -6751,6 +6764,10 @@ void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t
 			}
 		}
 	}
+	end = clock();
+	elapsed_time = ((double)(end - start)) /CLOCKS_PER_SEC;
+	printf("Decode & decompress elapsed time: %.4f\n", elapsed_time);
+
 	free(type);
 	free(unpredictable_data);
 
