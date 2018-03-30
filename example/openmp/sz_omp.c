@@ -27,7 +27,6 @@ unsigned char * SZ_compress_float_3D_MDQ_openmp(float *oriData, size_t r1, size_
 
 	elapsed_time = -omp_get_wtime();
 	int thread_num = omp_get_max_threads();
-	thread_num = 4;
 	int thread_order = (int)log2(thread_num);
 	size_t num_x, num_y, num_z;
 	{
@@ -166,13 +165,27 @@ unsigned char * SZ_compress_float_3D_MDQ_openmp(float *oriData, size_t r1, size_
 	memcpy(result_pos, mean, num_blocks * sizeof(float));
 	result_pos += num_blocks * sizeof(float);	
 	// printf("unpred offset: %ld\n", result_pos - result);
-	// storage unpredicable data
-	float * unpred_pos = (float *) result_pos;
-	for(int t=0; t<thread_num; t++){
-		float * unpredictable_data = result_unpredictable_data + t * unpred_data_max_size;
-		memcpy(result_pos, unpredictable_data, unpredictable_count[t] * sizeof(float));		
-		result_pos += unpredictable_count[t]*sizeof(float);
+	// store unpredicable data
+	// float * unpred_pos = (float *) result_pos;
+	// for(int t=0; t<thread_num; t++){
+	// 	float * unpredictable_data = result_unpredictable_data + t * unpred_data_max_size;
+	// 	memcpy(result_pos, unpredictable_data, unpredictable_count[t] * sizeof(float));		
+	// 	result_pos += unpredictable_count[t]*sizeof(float);
+	// }
+	size_t * unpred_offset = (size_t *) malloc(num_blocks * sizeof(size_t));
+	unpred_offset[0] = 0;
+	for(int t=1; t<thread_num; t++){
+		unpred_offset[t] = unpredictable_count[t-1] + unpred_offset[t-1];
 	}
+	#pragma omp parallel for
+	for(int t=0; t<thread_num; t++){
+		int id = omp_get_thread_num();
+		float * unpredictable_data = result_unpredictable_data + id * unpred_data_max_size;
+		memcpy(result_pos + unpred_offset[id] * sizeof(float), unpredictable_data, unpredictable_count[id] * sizeof(float));		
+	}
+	free(unpred_offset);
+	result_pos += total_unpred * sizeof(float);
+
 	elapsed_time += omp_get_wtime();
 	printf("write misc time: %.4f\n", elapsed_time);
 	elapsed_time = -omp_get_wtime();
@@ -204,10 +217,23 @@ unsigned char * SZ_compress_float_3D_MDQ_openmp(float *oriData, size_t r1, size_
 	elapsed_time += omp_get_wtime();
 	printf("Parallel Huffman encoding elapsed time: %.4f\n", elapsed_time);
 	elapsed_time = -omp_get_wtime();
-	for(int t=0; t<thread_num; t++){
-		memcpy(result_pos, encoding_buffer + t * max_num_block_elements * sizeof(int), block_pos[t]);
-		result_pos += block_pos[t];
+	// for(int t=0; t<thread_num; t++){
+	// 	memcpy(result_pos, encoding_buffer + t * max_num_block_elements * sizeof(int), block_pos[t]);
+	// 	result_pos += block_pos[t];
+	// }
+	size_t * block_offset = (size_t *) malloc(num_blocks * sizeof(size_t));
+	block_offset[0] = 0;
+	for(int t=1; t<thread_num; t++){
+		block_offset[t] = block_pos[t-1] + block_offset[t-1];
 	}
+	#pragma omp parallel for
+	for(int t=0; t<thread_num; t++){
+		int id = omp_get_thread_num();
+		memcpy(result_pos + block_offset[id], encoding_buffer + t * max_num_block_elements * sizeof(int), block_pos[t]);		
+	}
+	result_pos += block_offset[thread_num - 1] + block_pos[thread_num - 1];
+	free(block_offset);
+
 	elapsed_time += omp_get_wtime();
 	printf("Final copy elapsed time: %.4f\n", elapsed_time);
 	free(encoding_buffer);
