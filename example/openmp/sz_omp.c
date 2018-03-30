@@ -8,14 +8,11 @@ unsigned char * SZ_compress_float_3D_MDQ_openmp(float *oriData, size_t r1, size_
 
 	elapsed_time = -omp_get_wtime();
 	unsigned int quantization_intervals;
-	float dense_pos;
-	float mean_flush_freq;
-	float sz_sample_correct_freq;
 	if(optQuantMode==1)
 	{
 		// quantization_intervals = optimize_intervals_float_3D(oriData, r1, realPrecision);
-		quantization_intervals = optimize_intervals_float_3D_with_freq_and_dense_pos(oriData, r1, r2, r3, realPrecision, &dense_pos, &sz_sample_correct_freq, &mean_flush_freq);
-		printf("3D number of bins: %d\nerror bound %.20f dense position %.20f\n", quantization_intervals, realPrecision, dense_pos);
+		quantization_intervals = optimize_intervals_float_3D_opt(oriData, r1, r2, r3, realPrecision);
+		printf("3D number of bins: %d\nerror bound %.20f\n", quantization_intervals, realPrecision);
 		// exit(0);		
 		updateQuantizationInfo(quantization_intervals);
 	}	
