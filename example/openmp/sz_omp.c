@@ -119,7 +119,7 @@ unsigned char * SZ_compress_float_3D_MDQ_openmp(float *oriData, size_t r1, size_
 	// huffman encode
 	SZ_Reset(allNodes, stateNum);
 	size_t nodeCount = 0;
-	init(result_type, num_elements);
+	init_openmp(result_type, num_elements, thread_num);
 	elapsed_time += omp_get_wtime();
 	printf("Build Huffman: %.4f\n", elapsed_time);
 	elapsed_time = -omp_get_wtime();
@@ -431,7 +431,55 @@ void decompressDataSeries_float_3D_openmp(float** data, size_t r1, size_t r2, si
 
 }
 
+void init_openmp(int *s, size_t length, int thread_num){
 
+	size_t i;
+	size_t *freq = (size_t *)malloc(thread_num*allNodes*sizeof(size_t));
+	memset(freq, 0, thread_num*allNodes*sizeof(size_t));
+	// for(i = 0;i < length;i++) 
+	// {
+	// 	//index = 0;
+	// 	//index = (index | s[i])<<8;
+	// 	//index = index | s[i+1];
+	// 	index = s[i];
+	// 	freq[index]++;
+	// }
+	size_t block_size = (length - 1)/ thread_num + 1;
+	size_t block_residue = length - (thread_num - 1) * block_size;
+	#pragma omp parallel for
+	for(int t=0; t<thread_num; t++){
+		int id = omp_get_thread_num();
+		int * s_pos = s + id * block_size;
+		size_t * freq_pos = freq + id * allNodes;
+		if(id < thread_num - 1){
+			for(size_t i=0; i<block_size; i++){
+				freq_pos[s_pos[i]] ++;
+			}
+		}
+		else{
+			for(size_t i=0; i<block_residue; i++){
+				freq_pos[s_pos[i]] ++;
+			}
+		}
+	}
+	size_t * freq_pos = freq + allNodes;
+	for(int t=1; t<thread_num; t++){
+		for(i = 0; i<allNodes; i++){
+			freq[i] += freq_pos[i];
+		}
+		freq_pos += allNodes;
+	}
+
+	for (i = 0; i < allNodes; i++)
+		if (freq[i]) 
+			qinsert(new_node(freq[i], i, 0, 0));
+ 
+	while (qend > 2) 
+		qinsert(new_node(0, 0, qremove(), qremove()));
+ 
+	build_code(qq[1], 0, 0, 0);
+	free(freq);
+}
 
 
 
