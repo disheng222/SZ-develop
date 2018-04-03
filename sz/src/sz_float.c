@@ -486,6 +486,106 @@ unsigned int optimize_intervals_float_2D_with_freq_and_dense_pos(float *oriData,
 	return powerOf2;
 }
 
+unsigned int optimize_intervals_float_1D_opt(float *oriData, size_t dataLength, double realPrecision)
+{	
+	size_t i = 0, radiusIndex;
+	float pred_value = 0, pred_err;
+	size_t *intervals = (size_t*)malloc(maxRangeRadius*sizeof(size_t));
+	memset(intervals, 0, maxRangeRadius*sizeof(size_t));
+	size_t totalSampleSize = dataLength/sampleDistance;
+
+	float * data_pos = oriData + 2;
+	while(data_pos - oriData < dataLength){
+		//pred_value = 2*data_pos[-1] - data_pos[-2];
+		pred_value = data_pos[-1];
+		pred_err = fabs(pred_value - *data_pos);
+		radiusIndex = (unsigned long)((pred_err/realPrecision+1)/2);
+		if(radiusIndex>=maxRangeRadius)
+			radiusIndex = maxRangeRadius - 1;			
+		intervals[radiusIndex]++;
+
+		data_pos += sampleDistance;
+	}
+	//compute the appropriate number
+	size_t targetCount = totalSampleSize*predThreshold;
+	size_t sum = 0;
+	for(i=0;i<maxRangeRadius;i++)
+	{
+		sum += intervals[i];
+		if(sum>targetCount)
+			break;
+	}
+	if(i>=maxRangeRadius)
+		i = maxRangeRadius-1;
+		
+	unsigned int accIntervals = 2*(i+1);
+	unsigned int powerOf2 = roundUpToPowerOf2(accIntervals);
+	
+	if(powerOf2<32)
+		powerOf2 = 32;
+	
+	free(intervals);
+	//printf("accIntervals=%d, powerOf2=%d\n", accIntervals, powerOf2);
+	return powerOf2;
+}
+
+unsigned int optimize_intervals_float_2D_opt(float *oriData, size_t r1, size_t r2, double realPrecision)
+{	
+	size_t i,j, index;
+	size_t radiusIndex;
+	float pred_value = 0, pred_err;
+	size_t *intervals = (size_t*)malloc(maxRangeRadius*sizeof(size_t));
+	memset(intervals, 0, maxRangeRadius*sizeof(size_t));
+	size_t totalSampleSize = (r1-1)*(r2-1)/sampleDistance;
+
+	//float max = oriData[0];
+	//float min = oriData[0];
+
+	size_t offset_count = sampleDistance - 1; // count r2 offset
+	size_t offset_count_2;
+	float * data_pos = oriData + r2 + offset_count;
+	size_t n1_count = 1; // count i sum
+	size_t len = r1 * r2;
+	while(data_pos - oriData < len){
+		pred_value = data_pos[-1] + data_pos[-r2] - data_pos[-r2-1];
+		pred_err = fabs(pred_value - *data_pos);
+		radiusIndex = (unsigned long)((pred_err/realPrecision+1)/2);
+		if(radiusIndex>=maxRangeRadius)
+			radiusIndex = maxRangeRadius - 1;
+		intervals[radiusIndex]++;
+
+		offset_count += sampleDistance;
+		if(offset_count >= r2){
+			n1_count ++;
+			offset_count_2 = n1_count % sampleDistance;
+			data_pos += (r2 + sampleDistance - offset_count) + (sampleDistance - offset_count_2);
+			offset_count = (sampleDistance - offset_count_2);
+			if(offset_count == 0) offset_count ++;
+		}
+		else data_pos += sampleDistance;
+	}
+
+	//compute the appropriate number
+	size_t targetCount = totalSampleSize*predThreshold;
+	size_t sum = 0;
+	for(i=0;i<maxRangeRadius;i++)
+	{
+		sum += intervals[i];
+		if(sum>targetCount)
+			break;
+	}
+	if(i>=maxRangeRadius)
+		i = maxRangeRadius-1;
+	unsigned int accIntervals = 2*(i+1);
+	unsigned int powerOf2 = roundUpToPowerOf2(accIntervals);
+
+	if(powerOf2<32)
+		powerOf2 = 32;
+
+	free(intervals);
+	return powerOf2;
+}
+
 unsigned int optimize_intervals_float_3D_opt(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision){	
 	size_t i,j,k, index;
 	size_t radiusIndex;
@@ -499,7 +599,6 @@ unsigned int optimize_intervals_float_3D_opt(float *oriData, size_t r1, size_t r
 	size_t offset_count_2;
 	float * data_pos = oriData + r23 + r3 + offset_count;
 	size_t n1_count = 1, n2_count = 1; // count i,j sum
-	float * last_pos = data_pos;
 	size_t len = r1 * r2 * r3;
 	while(data_pos - oriData < len){
 
@@ -4361,8 +4460,43 @@ size_t r1, size_t r2, size_t r3, size_t r4, size_t s1, size_t s2, size_t s3, siz
 	return tdps;
 }
 
-size_t SZ_compress_float_1D_MDQ_RA_block_1D_pred(float * block_ori_data, float * mean, float dense_pos, size_t dim_0, size_t block_dim_0, double realPrecision, int * type, DynamicFloatArray * unpredictable_data){
+size_t SZ_compress_float_1D_MDQ_RA_block(float * block_ori_data, float * mean, size_t dim_0, size_t block_dim_0, double realPrecision, int * type, float * unpredictable_data){
 
+	mean[0] = block_ori_data[0];
+	unsigned short unpredictable_count = 0;
+
+	float * cur_data_pos = block_ori_data;
+	float curData;
+	double itvNum;
+	double diff;
+	float last_over_thres = mean[0];
+	float pred1D;
+	size_t type_index = 0;
+	float * data_pos = block_ori_data;
+	for(size_t i=0; i<block_dim_0; i++){
+		curData = *data_pos;
+
+		pred1D = last_over_thres;
+		diff = curData - pred1D;
+		itvNum = fabs(diff)/realPrecision + 1;
+		if (itvNum < intvCapacity){
+			if (diff < 0) itvNum = -itvNum;
+			type[type_index] = (int) (itvNum/2) + intvRadius;	
+			last_over_thres = pred1D + 2 * (type[type_index] - intvRadius) * realPrecision;
+		}
+		else{
+			type[type_index] = 0;
+			unpredictable_data[unpredictable_count ++] = curData;
+			last_over_thres = curData;
+		}
+		type_index ++;
+		data_pos ++;
+	}
+	return unpredictable_count;
+
+}
+
+size_t SZ_compress_float_1D_MDQ_RA_block_1D_pred(float * block_ori_data, float * mean, float dense_pos, size_t dim_0, size_t block_dim_0, double realPrecision, int * type, DynamicFloatArray * unpredictable_data){
 
 	float sum = 0.0;
 	float * data_pos;
@@ -4418,6 +4552,158 @@ size_t SZ_compress_float_1D_MDQ_RA_block_1D_pred(float * block_ori_data, float *
 	return unpredictable_count;
 
 }
+
+size_t SZ_compress_float_2D_MDQ_RA_block(float * block_ori_data, float * mean, size_t dim_0, size_t dim_1, size_t block_dim_0, size_t block_dim_1, double realPrecision, float * P0, float * P1, int * type, float * unpredictable_data){
+
+	size_t dim0_offset = dim_1;
+	mean[0] = block_ori_data[0];
+
+	size_t unpredictable_count = 0;
+	size_t r1, r2;
+	r1 = block_dim_0;
+	r2 = block_dim_1;
+
+	float * cur_data_pos = block_ori_data;
+	float curData;
+	float pred1D, pred2D;
+	double itvNum;
+	double diff;
+	size_t i, j;
+	/* Process Row-0 data 0*/
+	curData = *cur_data_pos;
+	pred1D = mean[0];
+	diff = curData - pred1D;
+	itvNum = fabs(diff)/realPrecision + 1;
+	if (itvNum < intvCapacity){
+		if (diff < 0) itvNum = -itvNum;
+		type[0] = (int) (itvNum/2) + intvRadius;
+		P1[0] = pred1D + 2 * (type[0] - intvRadius) * realPrecision;
+		//ganrantee comporession error against the case of machine-epsilon
+		if(fabs(curData-P1[0])>realPrecision){	
+			type[0] = 0;
+			P1[0] = curData;
+			unpredictable_data[unpredictable_count ++] = curData;
+		}		
+	}
+	else{
+		type[0] = 0;
+		P1[0] = curData;
+		unpredictable_data[unpredictable_count ++] = curData;
+	}
+
+	/* Process Row-0 data 1*/
+	curData = cur_data_pos[1];
+	pred1D = P1[0];
+	diff = curData - pred1D;
+	itvNum = fabs(diff)/realPrecision + 1;
+	if (itvNum < intvCapacity){
+		if (diff < 0) itvNum = -itvNum;
+		type[1] = (int) (itvNum/2) + intvRadius;
+		P1[1] = pred1D + 2 * (type[1] - intvRadius) * realPrecision;
+		//ganrantee comporession error against the case of machine-epsilon
+		if(fabs(curData-P1[1])>realPrecision){	
+			type[1] = 0;
+			P1[1] = curData;	
+			unpredictable_data[unpredictable_count ++] = curData;
+		}		
+	}
+	else{
+		type[1] = 0;
+		P1[1] = curData;
+		unpredictable_data[unpredictable_count ++] = curData;
+	}
+
+    /* Process Row-0 data 2 --> data r2-1 */
+	for (j = 2; j < r2; j++)
+	{
+		curData = cur_data_pos[j];
+		pred1D = 2*P1[j-1] - P1[j-2];
+		diff = curData - pred1D;
+		itvNum = fabs(diff)/realPrecision + 1;
+		if (itvNum < intvCapacity){
+			if (diff < 0) itvNum = -itvNum;
+			type[j] = (int) (itvNum/2) + intvRadius;
+			P1[j] = pred1D + 2 * (type[j] - intvRadius) * realPrecision;
+			//ganrantee comporession error against the case of machine-epsilon
+			if(fabs(curData-P1[j])>realPrecision){	
+				type[j] = 0;
+				P1[j] = curData;	
+				unpredictable_data[unpredictable_count ++] = curData;
+			}			
+		}
+		else{
+			type[j] = 0;
+			P1[j] = curData;
+			unpredictable_data[unpredictable_count ++] = curData;
+		}
+	}
+	cur_data_pos += dim0_offset;
+	/* Process Row-1 --> Row-r1-1 */
+	size_t index;
+	for (i = 1; i < r1; i++)
+	{	
+		/* Process row-i data 0 */
+		index = i*r2;
+		curData = *cur_data_pos;
+		pred1D = P1[0];
+		diff = curData - pred1D;
+		itvNum = fabs(diff)/realPrecision + 1;
+		if (itvNum < intvCapacity){
+			if (diff < 0) itvNum = -itvNum;
+			type[index] = (int) (itvNum/2) + intvRadius;
+			P0[0] = pred1D + 2 * (type[j] - intvRadius) * realPrecision;
+			//ganrantee comporession error against the case of machine-epsilon
+			if(fabs(curData-P0[0])>realPrecision){	
+				type[index] = 0;
+				P0[0] = curData;	
+				unpredictable_data[unpredictable_count ++] = curData;
+			}			
+		}
+		else{
+			type[index] = 0;
+			P0[0] = curData;
+			unpredictable_data[unpredictable_count ++] = curData;
+		}
+									
+		/* Process row-i data 1 --> r2-1*/
+		for (j = 1; j < r2; j++)
+		{
+			index = i*r2+j;
+			curData = cur_data_pos[j];
+			pred2D = P0[j-1] + P1[j] - P1[j-1];
+			diff = curData - pred2D;
+			itvNum = fabs(diff)/realPrecision + 1;
+			if (itvNum < intvCapacity)
+			{
+				if (diff < 0) itvNum = -itvNum;
+				type[index] = (int) (itvNum/2) + intvRadius;
+				P0[j] = pred2D + 2 * (type[index] - intvRadius) * realPrecision;
+				
+				//ganrantee comporession error against the case of machine-epsilon
+				if(fabs(curData-P0[j])>realPrecision)
+				{	
+					type[index] = 0;
+					P0[j] = curData;	
+					unpredictable_data[unpredictable_count ++] = curData;
+				}				
+			}
+			else
+			{
+				type[index] = 0;
+				P0[j] = curData;
+				unpredictable_data[unpredictable_count ++] = curData;
+			}
+		}
+		cur_data_pos += dim0_offset;
+
+		float *Pt;
+		Pt = P1;
+		P1 = P0;
+		P0 = Pt;
+	}
+	return unpredictable_count;
+}
+
 
 size_t SZ_compress_float_2D_MDQ_RA_block_2D_pred(float * block_ori_data, float * mean, float dense_pos, size_t dim_0, size_t dim_1, size_t block_dim_0, size_t block_dim_1, double realPrecision, float * P0, float * P1, int * type, float * unpredictable_data){
 
@@ -4757,14 +5043,14 @@ unsigned char * SZ_compress_float_2D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	// calculate block dims
 	size_t num_x, num_y;
 	size_t block_size = 128;
-	COMPUTE_2D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
-	COMPUTE_2D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
+	SZ_COMPUTE_2D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
+	SZ_COMPUTE_2D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
 
 	size_t split_index_x, split_index_y;
 	size_t early_blockcount_x, early_blockcount_y;
 	size_t late_blockcount_x, late_blockcount_y;
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
+	SZ_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
+	SZ_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
 
 	size_t max_num_block_elements = early_blockcount_x * early_blockcount_y;
 	size_t num_blocks = num_x * num_y;
@@ -7463,8 +7749,8 @@ unsigned char * SZ_compress_float_1D_MDQ_RA(float *oriData, size_t r1, double re
 	size_t split_index_x;
 
 	size_t block_size = 512;
-	COMPUTE_1D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
+	SZ_COMPUTE_1D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
+	SZ_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
 
 
 	size_t num_elements = r1;
@@ -8452,16 +8738,16 @@ float SZ_compress_float_3D_MDQ_strip_pred_by_regression_with_freq(float * block_
 // 	size_t num_x, num_y, num_z;
 // 	size_t block_size = 6;
 // 	printf("block_size: %ld\n", block_size);
-// 	COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
-// 	COMPUTE_3D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
-// 	COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z, block_size);
+// 	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
+// 	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
+// 	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z, block_size);
 
 // 	size_t split_index_x, split_index_y, split_index_z;
 // 	size_t early_blockcount_x, early_blockcount_y, early_blockcount_z;
 // 	size_t late_blockcount_x, late_blockcount_y, late_blockcount_z;
-// 	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
-// 	COLL_BASE_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
-// 	COLL_BASE_COMPUTE_BLOCKCOUNT(r3, num_z, split_index_z, early_blockcount_z, late_blockcount_z);
+// 	SZ_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
+// 	SZ_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
+// 	SZ_COMPUTE_BLOCKCOUNT(r3, num_z, split_index_z, early_blockcount_z, late_blockcount_z);
 
 // 	size_t max_num_block_elements = early_blockcount_x * early_blockcount_y * early_blockcount_z;
 // 	size_t num_blocks = num_x * num_y * num_z;
@@ -9617,14 +9903,14 @@ unsigned char * SZ_compress_float_2D_MDQ_nonblocked_with_blocked_regression(floa
 	size_t num_x, num_y, num_z;
 	size_t block_size = 16;
 	printf("block_size: %ld\n", block_size);
-	COMPUTE_2D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
-	COMPUTE_2D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
+	SZ_COMPUTE_2D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
+	SZ_COMPUTE_2D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
 
 	size_t split_index_x, split_index_y;
 	size_t early_blockcount_x, early_blockcount_y;
 	size_t late_blockcount_x, late_blockcount_y;
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
+	SZ_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
+	SZ_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
 
 	size_t max_num_block_elements = early_blockcount_x * early_blockcount_y;
 	size_t num_blocks = num_x * num_y;
@@ -10522,16 +10808,16 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	size_t num_x, num_y, num_z;
 	size_t block_size = 6;
 	// printf("block_size: %ld\n", block_size);
-	COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
-	COMPUTE_3D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
-	COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z, block_size);
+	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
+	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
+	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z, block_size);
 
 	size_t split_index_x, split_index_y, split_index_z;
 	size_t early_blockcount_x, early_blockcount_y, early_blockcount_z;
 	size_t late_blockcount_x, late_blockcount_y, late_blockcount_z;
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r3, num_z, split_index_z, early_blockcount_z, late_blockcount_z);
+	SZ_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
+	SZ_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
+	SZ_COMPUTE_BLOCKCOUNT(r3, num_z, split_index_z, early_blockcount_z, late_blockcount_z);
 
 	size_t max_num_block_elements = early_blockcount_x * early_blockcount_y * early_blockcount_z;
 	size_t num_blocks = num_x * num_y * num_z;
@@ -11584,16 +11870,16 @@ unsigned char * SZ_compress_float_3D_MDQ_RA_all_by_regression(float *oriData, si
 	size_t num_x, num_y, num_z;
 	size_t block_size = 8;
 	printf("block_size: %ld\n", block_size);
-	COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
-	COMPUTE_3D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
-	COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z, block_size);
+	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
+	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
+	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z, block_size);
 
 	size_t split_index_x, split_index_y, split_index_z;
 	size_t early_blockcount_x, early_blockcount_y, early_blockcount_z;
 	size_t late_blockcount_x, late_blockcount_y, late_blockcount_z;
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r3, num_z, split_index_z, early_blockcount_z, late_blockcount_z);
+	SZ_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
+	SZ_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
+	SZ_COMPUTE_BLOCKCOUNT(r3, num_z, split_index_z, early_blockcount_z, late_blockcount_z);
 
 	size_t max_num_block_elements = early_blockcount_x * early_blockcount_y * early_blockcount_z;
 	size_t num_blocks = num_x * num_y * num_z;
@@ -11751,16 +12037,16 @@ unsigned char * SZ_compress_float_3D_MDQ_RA_blocked_with_regression(float *oriDa
 	size_t num_x, num_y, num_z;
 	size_t block_size = 8;
 	printf("block_size: %ld\n", block_size);
-	COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
-	COMPUTE_3D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
-	COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z, block_size);
+	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
+	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
+	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z, block_size);
 
 	size_t split_index_x, split_index_y, split_index_z;
 	size_t early_blockcount_x, early_blockcount_y, early_blockcount_z;
 	size_t late_blockcount_x, late_blockcount_y, late_blockcount_z;
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r3, num_z, split_index_z, early_blockcount_z, late_blockcount_z);
+	SZ_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
+	SZ_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
+	SZ_COMPUTE_BLOCKCOUNT(r3, num_z, split_index_z, early_blockcount_z, late_blockcount_z);
 
 	size_t max_num_block_elements = early_blockcount_x * early_blockcount_y * early_blockcount_z;
 	size_t num_blocks = num_x * num_y * num_z;
@@ -11953,16 +12239,16 @@ unsigned char * SZ_compress_float_3D_MDQ_RA(float *oriData, size_t r1, size_t r2
 	size_t num_x, num_y, num_z;
 	size_t block_size = 256;
 	printf("block_size: %ld\n", block_size);
-	COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
-	COMPUTE_3D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
-	COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z, block_size);
+	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
+	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
+	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z, block_size);
 
 	size_t split_index_x, split_index_y, split_index_z;
 	size_t early_blockcount_x, early_blockcount_y, early_blockcount_z;
 	size_t late_blockcount_x, late_blockcount_y, late_blockcount_z;
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r3, num_z, split_index_z, early_blockcount_z, late_blockcount_z);
+	SZ_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
+	SZ_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
+	SZ_COMPUTE_BLOCKCOUNT(r3, num_z, split_index_z, early_blockcount_z, late_blockcount_z);
 
 	// printf("nums: %d %d %d\n", num_x, num_y, num_z);
 	// printf("splits: %d %d %d\n", split_index_x, split_index_y, split_index_z);
@@ -12204,16 +12490,16 @@ unsigned char * SZ_compress_float_3D_MDQ_RA_multi_means(float *oriData, size_t r
 	// calculate block dims
 	size_t num_x, num_y, num_z;
 	size_t block_size = 12;
-	COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
-	COMPUTE_3D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
-	COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z, block_size);
+	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r1, num_x, block_size);
+	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r2, num_y, block_size);
+	SZ_COMPUTE_3D_NUMBER_OF_BLOCKS(r3, num_z, block_size);
 
 	size_t split_index_x, split_index_y, split_index_z;
 	size_t early_blockcount_x, early_blockcount_y, early_blockcount_z;
 	size_t late_blockcount_x, late_blockcount_y, late_blockcount_z;
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
-	COLL_BASE_COMPUTE_BLOCKCOUNT(r3, num_z, split_index_z, early_blockcount_z, late_blockcount_z);
+	SZ_COMPUTE_BLOCKCOUNT(r1, num_x, split_index_x, early_blockcount_x, late_blockcount_x);
+	SZ_COMPUTE_BLOCKCOUNT(r2, num_y, split_index_y, early_blockcount_y, late_blockcount_y);
+	SZ_COMPUTE_BLOCKCOUNT(r3, num_z, split_index_z, early_blockcount_z, late_blockcount_z);
 
 	size_t max_num_block_elements = early_blockcount_x * early_blockcount_y * early_blockcount_z;
 	size_t num_blocks = num_x * num_y * num_z;
