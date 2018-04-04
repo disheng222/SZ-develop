@@ -4483,6 +4483,11 @@ size_t SZ_compress_float_1D_MDQ_RA_block(float * block_ori_data, float * mean, s
 			if (diff < 0) itvNum = -itvNum;
 			type[type_index] = (int) (itvNum/2) + intvRadius;	
 			last_over_thres = pred1D + 2 * (type[type_index] - intvRadius) * realPrecision;
+			if(fabs(curData-last_over_thres)>realPrecision){	
+				type[type_index] = 0;
+				last_over_thres = curData;	
+				unpredictable_data[unpredictable_count ++] = curData;
+			}		
 		}
 		else{
 			type[type_index] = 0;
