@@ -10949,7 +10949,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 		if(mean_count > 0) mean = sum / mean_count;
 		printf("%.4f value will be flushed to %.4f\n", mean_count * 1.0/num_elements, mean);
 	}
-	use_mean = 0;
+	// use_mean = 0;
 
 	reg_params_pos = reg_pred_params;
 	ptrdiff_t reg_pred_diff = reg_params - reg_pred_params;
@@ -11022,6 +11022,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 					// reg_correct_freq = SZ_compress_float_3D_MDQ_strip_pred_by_regression_with_freq(data_pos, r1, r2, r3, strip_dim_0, strip_dim_1, strip_dim_2, current_blockcount_x, current_blockcount_y, current_blockcount_z, tmp_realPrecision, reg_params_pos, pb_pos, type, &unpredictable_count, unpredictable_data);
 
 					int use_reg = 0;
+					if((reg_params_pos + reg_pred_diff)[0] || (reg_params_pos + reg_pred_diff)[params_offset_b] || (reg_params_pos + reg_pred_diff)[params_offset_c])
 					{
 						// sample point [1, 1, 1] [1, 1, 4] [1, 4, 1] [1, 4, 4] [4, 1, 1] [4, 1, 4] [4, 4, 1] [4, 4, 4]
 						int mean_flush_count = 0;
@@ -11355,6 +11356,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 					// SZ_blocked_regression(data_pos, r1, r2, r3, current_blockcount_x, current_blockcount_y, current_blockcount_z, reg_params_pos);
 					// reg_correct_freq = SZ_compress_float_3D_MDQ_strip_pred_by_regression_with_freq(data_pos, r1, r2, r3, strip_dim_0, strip_dim_1, strip_dim_2, current_blockcount_x, current_blockcount_y, current_blockcount_z, tmp_realPrecision, reg_params_pos, pb_pos, type, &unpredictable_count, unpredictable_data);
 					int use_reg = 0;
+					if((reg_params_pos + reg_pred_diff)[0] || (reg_params_pos + reg_pred_diff)[params_offset_b] || (reg_params_pos + reg_pred_diff)[params_offset_c])
 					{
 						// sample point [1, 1, 1] [1, 1, 4] [1, 4, 1] [1, 4, 4] [4, 1, 1] [4, 1, 4] [4, 4, 1] [4, 4, 4]
 						float * cur_data_pos;
