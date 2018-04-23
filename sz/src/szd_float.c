@@ -1648,7 +1648,8 @@ void getSnapshotData_float_1D(float** data, size_t dataSeriesLength, TightDataPo
 		else 
 		{
 			//decompressDataSeries_float_1D_pwr(data, dataSeriesLength, tdps);
-			decompressDataSeries_float_1D_pwrgroup(data, dataSeriesLength, tdps);
+			// decompressDataSeries_float_1D_pwrgroup(data, dataSeriesLength, tdps);
+			decompressDataSeries_float_1D_pwr_pre_log(data, dataSeriesLength, tdps);
 		}
 		return;
 	} else {
@@ -1693,7 +1694,8 @@ void getSnapshotData_float_2D(float** data, size_t r1, size_t r2, TightDataPoint
 		if(errBoundMode < PW_REL)
 			decompressDataSeries_float_2D(data, r1, r2, tdps);
 		else 
-			decompressDataSeries_float_2D_pwr(data, r1, r2, tdps);
+			// decompressDataSeries_float_2D_pwr(data, r1, r2, tdps);
+			decompressDataSeries_float_2D_pwr_pre_log(data, r1, r2, tdps);
 		return;
 	} else {
 		*data = (float*)malloc(sizeof(float)*dataSeriesLength);
@@ -1737,7 +1739,8 @@ void getSnapshotData_float_3D(float** data, size_t r1, size_t r2, size_t r3, Tig
 		if(errBoundMode < PW_REL)
 			decompressDataSeries_float_3D(data, r1, r2, r3, tdps);
 		else 
-			decompressDataSeries_float_3D_pwr(data, r1, r2, r3, tdps);
+			// decompressDataSeries_float_3D_pwr(data, r1, r2, r3, tdps);
+			decompressDataSeries_float_3D_pwr_pre_log(data, r1, r2, r3, tdps);
 		return;
 	} else {
 		*data = (float*)malloc(sizeof(float)*dataSeriesLength);
@@ -3756,8 +3759,84 @@ void decompressDataSeries_float_3D_nonblocked(float** data, size_t r1, size_t r2
 
 }
 
-// float * tmp_dec_data;
-// extern float * tmp_data;
+void decompressDataSeries_float_1D_RA_all_by_regression(float** data, size_t r1, unsigned char* comp_data){
+	// printf("num_block_elements %d num_blocks %d\n", max_num_block_elements, num_blocks);
+	// fflush(stdout);
+
+	size_t num_elements = r1;
+
+	*data = (float*)malloc(sizeof(float)*num_elements);
+	
+	unsigned char * comp_data_pos = comp_data;
+	//int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	//comp_data_pos += meta_data_offset;
+
+	size_t block_size = bytesToInt_bigEndian(comp_data_pos);
+	comp_data_pos += 4;
+	// calculate block dims
+	size_t num_x = r1 / block_size;
+	size_t num_blocks = num_x;
+
+	double realPrecision = bytesToDouble(comp_data_pos);
+	comp_data_pos += 8;
+	unsigned int intervals = bytesToInt_bigEndian(comp_data_pos);
+	comp_data_pos += 4;
+
+	updateQuantizationInfo(intervals);
+	intvCapacity = intervals - 2;
+	// intvRadius = (int)((tdps->intervals - 1)/ 2);
+
+	unsigned int tree_size = bytesToInt_bigEndian(comp_data_pos);
+	comp_data_pos += 4;
+	allNodes = bytesToInt_bigEndian(comp_data_pos);
+	stateNum = allNodes/2;
+	SZ_Reset(allNodes, stateNum);
+	// printf("Reconstruct huffman tree with node count %ld\n", nodeCount);
+	// fflush(stdout);
+	node root = reconstruct_HuffTree_from_bytes_anyStates(comp_data_pos+4, allNodes);
+
+	comp_data_pos += 4 + tree_size;
+	size_t unpredictable_count;
+	memcpy(&unpredictable_count, comp_data_pos, sizeof(size_t));
+	comp_data_pos += sizeof(size_t);
+	float * unpred_data = (float *) comp_data_pos;
+	comp_data_pos += unpredictable_count * sizeof(float);
+	float * reg_params = (float *) comp_data_pos;
+	comp_data_pos += num_blocks * 2 * sizeof(float);
+	int * result_type = (int *) malloc(num_elements * sizeof(int));
+	decode(comp_data_pos, num_elements, root, result_type);
+
+	// printf("decompress offset to start: %ld\n", comp_data_pos - tdps->data);
+	// fflush(stdout);
+	int type_;
+	float pred;
+	int * type = result_type;
+	float * unpredictable_data = unpred_data;
+	size_t dec_unpred_count = 0;
+	float * data_pos = *data;
+	for(size_t i=0; i<num_x; i++){
+		for(size_t ii=0; ii<block_size; ii++){
+			type_ = type[0];
+			if (type_ != 0){
+				pred = reg_params[0] * ii + reg_params[num_blocks];
+				*data_pos = pred + 2 * (type_ - intvRadius) * realPrecision;
+			}
+			else{
+				*data_pos = unpredictable_data[dec_unpred_count ++];
+			}
+			data_pos ++;
+			type ++;
+		}
+	}
+	// residue
+	for(size_t i=0; i<r1 - num_x*block_size; i++){
+		*data_pos = unpredictable_data[dec_unpred_count ++];
+		data_pos ++;
+	}
+
+	free(result_type);
+}
+
 size_t decompressDataSeries_float_3D_RA_block_all_by_regression(float * block_ori_data, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, float * reg_params, int * type, float * unpredictable_data){
 
 	float * data_pos;

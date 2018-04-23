@@ -1356,3 +1356,62 @@ void decompressDataSeries_float_1D_pwrgroup(float** data, size_t dataSeriesLengt
 	free(negFlags);
 	free(groupErrorBounds);
 }
+
+void decompressDataSeries_float_1D_pwr_pre_log(float** data, size_t dataSeriesLength, TightDataPointStorageF* tdps) {
+
+	printf("pre log decompression start\n");
+	fflush(stdout);
+	decompressDataSeries_float_1D(data, dataSeriesLength, tdps);
+	printf("pre log decompression done\n");
+	fflush(stdout);
+	unsigned char * signs;// = (unsigned char *) malloc(dataSeriesLength);
+	unsigned long tmpSize = zlib_uncompress5(tdps->pwrErrBoundBytes, tdps->pwrErrBoundBytes_size, &signs, dataSeriesLength);
+	printf("change log data to origin data\n");
+	fflush(stdout);
+	for(size_t i=0; i<dataSeriesLength; i++){
+		(*data)[i] = pow(2, (*data)[i]);
+		if(signs[i]) (*data)[i] = -((*data)[i]);
+	}
+
+}
+
+void decompressDataSeries_float_2D_pwr_pre_log(float** data, size_t r1, size_t r2, TightDataPointStorageF* tdps) {
+
+	size_t dataSeriesLength = r1 * r2;
+	printf("pre log decompression start\n");
+	fflush(stdout);
+	decompressDataSeries_float_2D(data, r1, r2, tdps);
+	printf("pre log decompression done\n");
+	fflush(stdout);
+	unsigned char * signs;// = (unsigned char *) malloc(dataSeriesLength);
+	unsigned long tmpSize = zlib_uncompress5(tdps->pwrErrBoundBytes, tdps->pwrErrBoundBytes_size, &signs, dataSeriesLength);
+	printf("change log data to origin data\n");
+	fflush(stdout);
+	for(size_t i=0; i<dataSeriesLength; i++){
+		(*data)[i] = pow(2, (*data)[i]);
+		if(signs[i]) (*data)[i] = -((*data)[i]);
+	}
+
+}
+
+void decompressDataSeries_float_3D_pwr_pre_log(float** data, size_t r1, size_t r2, size_t r3, TightDataPointStorageF* tdps) {
+
+	size_t dataSeriesLength = r1 * r2 * r3;
+	printf("pre log decompression start\n");
+	fflush(stdout);
+	// decompressDataSeries_float_3D(data, r1, r2, r3, tdps);
+    printf("Compressed size: %ld\n", tdps->typeArray_size);
+    fflush(stdout);
+	decompressDataSeries_float_3D_nonblocked_with_blocked_regression(data, r1, r2, r3, tdps->typeArray + 24);
+	printf("pre log decompression done\n");
+	fflush(stdout);
+	unsigned char * signs;// = (unsigned char *) malloc(dataSeriesLength);
+	unsigned long tmpSize = zlib_uncompress5(tdps->pwrErrBoundBytes, tdps->pwrErrBoundBytes_size, &signs, dataSeriesLength);
+	printf("change log data to origin data\n");
+	fflush(stdout);
+	for(size_t i=0; i<dataSeriesLength; i++){
+		(*data)[i] = pow(2, (*data)[i]);
+		if(signs[i]) (*data)[i] = -((*data)[i]);
+	}
+
+}

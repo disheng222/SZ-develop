@@ -2940,7 +2940,9 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwRelBoundRa
 			if(errorBoundMode>=PW_REL)
 			{
 				//SZ_compress_args_float_NoCkRngeNoGzip_1D_pwr(&tmpByteData, oriData, realPrecision, r1, &tmpOutSize, min, max);
-				SZ_compress_args_float_NoCkRngeNoGzip_1D_pwrgroup(&tmpByteData, oriData, r1, absErr_Bound, relBoundRatio, pwRelBoundRatio, 
+				// SZ_compress_args_float_NoCkRngeNoGzip_1D_pwrgroup(&tmpByteData, oriData, r1, absErr_Bound, relBoundRatio, pwRelBoundRatio, 
+				// valueRangeSize, medianValue, &tmpOutSize);
+				SZ_compress_args_float_NoCkRngeNoGzip_1D_pwr_pre_log(&tmpByteData, oriData, r1, absErr_Bound, relBoundRatio, pwRelBoundRatio, 
 				valueRangeSize, medianValue, &tmpOutSize);
 			}
 			else
@@ -2955,7 +2957,8 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwRelBoundRa
 		if (r3==0) //2d data
 		{
 			if(errorBoundMode>=PW_REL)
-				SZ_compress_args_float_NoCkRngeNoGzip_2D_pwr(&tmpByteData, oriData, realPrecision, r2, r1, &tmpOutSize, min, max);
+				// SZ_compress_args_float_NoCkRngeNoGzip_2D_pwr(&tmpByteData, oriData, realPrecision, r2, r1, &tmpOutSize, min, max);
+				SZ_compress_args_float_NoCkRngeNoGzip_2D_pwr_pre_log(&tmpByteData, oriData, pwRelBoundRatio, r2, r1, valueRangeSize, medianValue, &tmpOutSize);
 			else{
 				if(szRandomAccess == SZ_NO_RANDOM_ACCESS)
 					SZ_compress_args_float_NoCkRngeNoGzip_2D(&tmpByteData, oriData, r2, r1, realPrecision, &tmpOutSize, valueRangeSize, medianValue);
@@ -2967,7 +2970,8 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwRelBoundRa
 		if (r4==0) //3d data
 		{
 			if(errorBoundMode>=PW_REL)
-				SZ_compress_args_float_NoCkRngeNoGzip_3D_pwr(&tmpByteData, oriData, realPrecision, r3, r2, r1, &tmpOutSize, min, max);
+				// SZ_compress_args_float_NoCkRngeNoGzip_3D_pwr(&tmpByteData, oriData, realPrecision, r3, r2, r1, &tmpOutSize, min, max);
+				SZ_compress_args_float_NoCkRngeNoGzip_3D_pwr_pre_log(&tmpByteData, oriData, pwRelBoundRatio, r3, r2, r1, valueRangeSize, medianValue, &tmpOutSize);			
 			else
 			{
 				if(szRandomAccess == SZ_NO_RANDOM_ACCESS)
@@ -11852,6 +11856,153 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 
 	return result;
 }
+
+unsigned char * SZ_compress_float_1D_MDQ_RA_all_by_regression(float *oriData, size_t r1, double realPrecision, size_t * comp_size){
+
+	unsigned int quantization_intervals;
+	if(optQuantMode==1)
+	{
+		quantization_intervals = optimize_intervals_float_1D_opt(oriData, r1, realPrecision);
+		printf("number of bins: %d\n", quantization_intervals);
+		updateQuantizationInfo(quantization_intervals);
+	}	
+	else{
+		quantization_intervals = intvCapacity;
+	}
+
+	// calculate block dims
+	size_t block_size = 8;
+	printf("block_size: %ld\n", block_size);
+	size_t num_x = r1 / block_size;
+
+	size_t num_elements = r1;
+	size_t num_blocks = num_x;
+
+	// unsigned short * unpredictable_count = (unsigned short *) malloc(num_blocks * sizeof(int));
+	float * data_pos = oriData;
+	float * reg_params = (float *) malloc(num_blocks * 2 * sizeof(float));
+	float * reg_params_pos = reg_params;
+	float coeff = 1.0 / block_size;
+	for(size_t i=0; i<num_x; i++){
+		// compute reg_params
+		{
+			float * cur_data_pos = data_pos;
+			float fx = 0.0;
+			float f = 0.0;
+			float curData;
+			for(size_t i=0; i<block_size; i++){
+				curData = *data_pos;
+				fx += curData * i;
+				f += curData;
+				cur_data_pos ++;
+			}
+			reg_params_pos[0] = (2 * fx / (block_size - 1) - f) * 6 * coeff / (block_size + 1);
+			reg_params_pos[num_blocks] = f / block_size - (block_size-1) * reg_params_pos[0]/2;
+		}
+		data_pos += block_size;
+		reg_params_pos ++;
+	}
+
+	// compression
+	int * result_type = (int *) malloc(num_elements * sizeof(int));
+	float * result_unpredictable_data = (float *) malloc(num_elements * sizeof(float));
+	float * unpredictable_data = result_unpredictable_data;
+	int * type = result_type;
+	size_t unpredictable_count = 0;
+	data_pos = oriData;
+	reg_params_pos = reg_params;
+	float curData;
+	float pred;
+	double diff;
+	double itvNum;
+	for(size_t i=0; i<num_x; i++){
+		for(int ii=0; ii<block_size; ii++){
+			curData = *data_pos;
+			pred = reg_params_pos[0] * ii + reg_params_pos[num_blocks];
+			diff = curData - pred;
+			itvNum = fabs(diff)/realPrecision + 1;
+			if (itvNum < intvCapacity){
+				if (diff < 0) itvNum = -itvNum;
+				type[0] = (int) (itvNum/2) + intvRadius;
+				pred = pred + 2 * (type[0] - intvRadius) * realPrecision;
+				//ganrantee comporession error against the case of machine-epsilon
+				if(fabs(curData-pred)>realPrecision){	
+					type[0] = 0;
+					unpredictable_data[unpredictable_count ++] = curData;
+				}		
+			}
+			else{
+				type[0] = 0;
+				unpredictable_data[unpredictable_count ++] = curData;
+			}
+			data_pos ++;
+			type ++;
+		}
+	}
+	// deal with residue
+	for(size_t i=0; i<r1 - block_size * num_x; i++){
+		type[i] = 0;
+		unpredictable_data[unpredictable_count ++];
+	}
+	
+	printf("1D regression block wise compression end, unpredictable num %d, num_elements %ld\n", unpredictable_count, num_elements);
+
+	// huffman encode
+	SZ_Reset(allNodes, stateNum);
+	size_t nodeCount = 0;
+	init(result_type, num_elements);
+	for (size_t i = 0; i < stateNum; i++)
+		if (code[i]) nodeCount++;
+	nodeCount = nodeCount*2-1;
+	unsigned char *treeBytes;
+	unsigned int treeByteSize = convert_HuffTree_to_bytes_anyStates(nodeCount, &treeBytes);
+
+	unsigned int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	// total size 										metadata		real precision		intervals	nodeCount		huffman 	 	block index 						unpredicatable count						mean 					 	unpred size 				elements
+	unsigned char * result = (unsigned char *) malloc(meta_data_offset + sizeof(double) + sizeof(int) + sizeof(int) + treeByteSize + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(unsigned short) + num_blocks * sizeof(float) + unpredictable_count * sizeof(float) + num_elements * sizeof(int));
+	unsigned char * result_pos = result;
+	initRandomAccessBytes(result_pos);
+	result_pos += meta_data_offset;
+
+	size_t enCodeSize = 0;
+
+	intToBytes_bigEndian(result_pos, block_size);
+	result_pos += 4;
+	doubleToBytes(result_pos, realPrecision);
+	result_pos += 8;
+	intToBytes_bigEndian(result_pos, quantization_intervals);
+	result_pos += 4;
+	intToBytes_bigEndian(result_pos, treeByteSize);
+	result_pos += 4;
+	intToBytes_bigEndian(result_pos, nodeCount);
+	result_pos += 4;
+	memcpy(result_pos, treeBytes, treeByteSize);
+	result_pos += treeByteSize;
+	free(treeBytes);
+
+	size_t totalEncodeSize = 0;
+	memcpy(result_pos, &unpredictable_count, sizeof(size_t));
+	result_pos += sizeof(size_t);
+	memcpy(result_pos, result_unpredictable_data, unpredictable_count * sizeof(float));
+	result_pos += unpredictable_count * sizeof(float);
+	memcpy(result_pos, reg_params, num_blocks * 2 * sizeof(float));
+	result_pos += num_blocks * 2 * sizeof(float);
+
+	size_t typeArray_size = 0;
+	encode(result_type, num_elements, result_pos, &typeArray_size);
+	result_pos += typeArray_size;
+	printf("type array size: %ld\n", typeArray_size);
+	printf("--------- True bitrate %.4f ------------\n", typeArray_size * 32.0 / (num_elements * sizeof(float)));
+	totalEncodeSize = result_pos - result;
+	// printf("Total size %ld\n", totalEncodeSize);
+	free(result_unpredictable_data);
+	free(result_type);
+	free(reg_params);
+	SZ_ReleaseHuffman();
+	*comp_size = totalEncodeSize;
+	return result;
+}
+
 
 unsigned char * SZ_compress_float_3D_MDQ_RA_all_by_regression(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
 

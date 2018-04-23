@@ -1723,3 +1723,310 @@ size_t dataLength, double absErrBound, double relBoundRatio, double pwrErrRatio,
 
         free_TightDataPointStorageF(tdps);
 }
+
+void SZ_compress_args_float_NoCkRngeNoGzip_1D_pwr_pre_log(unsigned char** newByteData, float *oriData,
+size_t dataLength, double absErrBound, double relBoundRatio, double pwrErrRatio, float valueRangeSize, float medianValue_f, size_t *outSize)
+{
+    SZ_Reset(allNodes, stateNum);
+	float * log_data = (float *) malloc(dataLength * sizeof(float));
+	float threshold = 0.000001;
+	float min_log_data = log2(threshold);
+	// sample for min_log_data
+	{
+		float * data_pos = oriData;
+		size_t * log_count = (size_t *) malloc(10 * sizeof(size_t));
+		memset(log_count, 0, 10 * sizeof(size_t));
+		size_t sample_dis = sqrt(dataLength);
+		float log_index;
+		while(data_pos - oriData < dataLength){
+			log_index = log10(fabs(*data_pos));
+			if(log_index >= 0) log_count[0] ++;
+			else if(log_index <-9) log_count[9] ++;
+			else{
+				log_count[(int)(-log_index)] ++;
+			}
+			data_pos += sample_dis;
+		}
+		size_t acc_log_count = 0;
+		size_t target_count = dataLength / (sample_dis * 100);
+		int i;
+		for(i=9; i>=0; i--){
+			acc_log_count += log_count[i];
+			if(acc_log_count >= target_count) break;
+		}
+		min_log_data = log2(pow(0.1, i+1));
+		printf("target count %ld, i %d, data %.14f log data %.14f\n", target_count, i, pow(0.1, i), min_log_data);
+	}
+
+	unsigned char * signs = (unsigned char *) malloc(dataLength);
+	memset(signs, 0, dataLength);
+	// preprocess
+	float max_abs_log_data = fabs(min_log_data);
+	for(size_t i=0; i<dataLength; i++){
+		if(oriData[i] < 0){
+			signs[i] = 1;
+			log_data[i] = -oriData[i];
+		}
+		else
+			log_data[i] = oriData[i];
+		if(log_data[i] > threshold){
+			log_data[i] = log2(log_data[i]);
+			if(log_data[i] > max_abs_log_data) max_abs_log_data = log_data[i];
+		}
+		else
+			log_data[i] = min_log_data;
+	}
+
+	// partial sorting after get log data
+	// size_t block_size = 7;
+	// size_t num_blocks = dataLength / block_size; // ignore the last a few elements
+	// float * data_pos = log_data;
+	// for(size_t i=0; i<num_blocks; i++){
+	// 	qsort(data_pos, block_size, sizeof(float), cmp);
+	// 	data_pos += block_size;
+	// }
+	// for(int i=0; i<2*block_size; i++){
+	// 	printf("%.4f ", log_data[i]);
+	// }
+	// printf("\n");
+
+	// partial sorting
+	// printf("partial sorting start\n");
+	// size_t block_size = 7;
+	// size_t num_blocks = dataLength / block_size; // ignore the last a few elements
+	// memcpy(log_data, oriData, dataLength * sizeof(float));
+	// float * data_pos = log_data;
+	// float * tmp_pos;
+	// int count;
+	// size_t block_bytes = block_size * sizeof(float);
+	// unsigned char * signs = (unsigned char *) malloc(num_blocks);
+	// for(size_t i=0; i<num_blocks; i++){
+	// 	qsort(data_pos, block_size, sizeof(float), cmp);
+	// 	// sort(data_pos, data_pos + block_size, block_bytes);
+	// 	tmp_pos = data_pos;
+	// 	count = 0;
+	// 	while(*tmp_pos < 0 && count <= block_size){
+	// 		*tmp_pos = - (*tmp_pos);
+	// 		count ++;
+	// 		tmp_pos ++;
+	// 	}
+	// 	signs[i] = count;
+	// 	data_pos += block_size;
+	// }
+	// printf("partial soring done\n");
+	// for(size_t i=0; i<dataLength; i++){
+	// 	if(log_data[i] > 0.001){
+	// 		log_data[i] = log2(log_data[i]);
+	// 	}
+	// 	else
+	// 		log_data[i] = min_log_data;
+	// }
+
+	printf("max_abs_log_data: %.4f\n", max_abs_log_data);
+	double realPrecision = log2(1.0 + pwrErrRatio) - max_abs_log_data * 1.2e-7;
+	printf("Origin bound: %.6f\nAbs bound for log data: %.14f\n", pw_relBoundRatio, realPrecision);
+
+    TightDataPointStorageF* tdps = SZ_compress_float_1D_MDQ(log_data, dataLength, realPrecision, valueRangeSize, medianValue_f);
+    printf("Compressed size: %ld\n", tdps->typeArray_size);
+	// {
+	// 	int status;
+	// 	printf("write log data, length: %ld\n", dataLength);
+	// 	writeFloatData_inBytes(log_data, dataLength, "vx_log_data.dat", &status);
+	// }
+    free(log_data);
+    unsigned char * comp_signs;
+	// compress signs
+	unsigned long signSize = zlib_compress5(signs, dataLength, &comp_signs, 1);
+	// unsigned long signSize = zlib_compress5(signs, num_blocks, &comp_signs, 1);
+	tdps->pwrErrBoundBytes = comp_signs;
+	tdps->pwrErrBoundBytes_size = signSize;
+	free(signs);
+
+    convertTDPStoFlatBytes_float(tdps, newByteData, outSize);
+    printf("Sign size: %ld\nTDPS size: %ld\n", signSize, *outSize);
+
+    if(*outSize>dataLength*sizeof(float))
+            SZ_compress_args_float_StoreOriData(oriData, dataLength+2, tdps, newByteData, outSize);
+
+    free_TightDataPointStorageF(tdps);
+}
+
+void SZ_compress_args_float_NoCkRngeNoGzip_2D_pwr_pre_log(unsigned char** newByteData, float *oriData, double pwrErrRatio, 
+size_t r1, size_t r2, float valueRangeSize, float medianValue_f, size_t *outSize)
+{
+	SZ_Reset(allNodes, stateNum);	
+	size_t dataLength=r1*r2;
+	float * log_data = (float *) malloc(dataLength * sizeof(float));
+	float threshold = 0.000001;
+	float min_log_data = log2(threshold);
+	// sample for min_log_data
+	// {
+	// 	float * data_pos = oriData;
+	// 	size_t * log_count = (size_t *) malloc(10 * sizeof(size_t));
+	// 	memset(log_count, 0, 10 * sizeof(size_t));
+	// 	size_t sample_dis = sqrt(dataLength);
+	// 	float log_index;
+	// 	while(data_pos - oriData < dataLength){
+	// 		log_index = log10(fabs(*data_pos));
+	// 		if(log_index >= 0) log_count[0] ++;
+	// 		else if(log_index <-9) log_count[9] ++;
+	// 		else{
+	// 			log_count[(int)(-log_index)] ++;
+	// 		}
+	// 		data_pos += sample_dis;
+	// 	}
+	// 	size_t acc_log_count = 0;
+	// 	size_t target_count = dataLength / (sample_dis * 100);
+	// 	int i;
+	// 	for(i=9; i>=0; i--){
+	// 		acc_log_count += log_count[i];
+	// 		if(acc_log_count >= target_count) break;
+	// 	}
+	// 	min_log_data = log2(pow(0.1, i+1));
+	// 	printf("target count %ld, i %d, data %.14f log data %.14f\n", target_count, i, pow(0.1, i), min_log_data);
+	// 	printf("percentage: ");
+	// 	for(int i=0; i<10; i++){
+	// 		printf("%.4f ", log_count[i] * 1.0 / (dataLength/sample_dis));
+	// 	}
+	// 	printf("\n");
+	// }
+
+	unsigned char * signs = (unsigned char *) malloc(dataLength);
+	memset(signs, 0, dataLength);
+	// preprocess
+	float max_abs_log_data = fabs(min_log_data);
+	for(size_t i=0; i<dataLength; i++){
+		if(oriData[i] < 0){
+			signs[i] = 1;
+			log_data[i] = -oriData[i];
+		}
+		else
+			log_data[i] = oriData[i];
+		if(log_data[i] > threshold){
+			log_data[i] = log2(log_data[i]);
+			if(log_data[i] > max_abs_log_data) max_abs_log_data = log_data[i];
+		}
+		else
+			log_data[i] = min_log_data;
+	}
+
+	printf("max_abs_log_data: %.4f\n", max_abs_log_data);
+	double realPrecision = log2(1.0 + pwrErrRatio) - max_abs_log_data * 1.2e-7;
+	printf("Origin bound: %.6f\nAbs bound for log data: %.14f\n", pw_relBoundRatio, realPrecision);
+
+    TightDataPointStorageF* tdps = SZ_compress_float_2D_MDQ(log_data, r1, r2, realPrecision, valueRangeSize, medianValue_f);
+    printf("Compressed size: %ld\n", tdps->typeArray_size);
+	// {
+	// 	int status;
+	// 	printf("write log data, length: %ld\n", dataLength);
+	// 	writeFloatData_inBytes(log_data, dataLength, "vx_log_data.dat", &status);
+	// }
+    free(log_data);
+    unsigned char * comp_signs;
+	// compress signs
+	unsigned long signSize = zlib_compress5(signs, dataLength, &comp_signs, 1);
+	// unsigned long signSize = zlib_compress5(signs, num_blocks, &comp_signs, 1);
+	tdps->pwrErrBoundBytes = comp_signs;
+	tdps->pwrErrBoundBytes_size = signSize;
+	free(signs);
+
+    convertTDPStoFlatBytes_float(tdps, newByteData, outSize);
+    printf("Sign size: %ld\nTDPS size: %ld\n", signSize, *outSize);
+
+    if(*outSize>dataLength*sizeof(float))
+            SZ_compress_args_float_StoreOriData(oriData, dataLength+2, tdps, newByteData, outSize);
+
+    free_TightDataPointStorageF(tdps);
+}
+
+void SZ_compress_args_float_NoCkRngeNoGzip_3D_pwr_pre_log(unsigned char** newByteData, float *oriData, double pwrErrRatio, 
+size_t r1, size_t r2, size_t r3, float valueRangeSize, float medianValue_f, size_t *outSize)
+{
+	SZ_Reset(allNodes, stateNum);
+	size_t dataLength=r1*r2*r3;
+	float * log_data = (float *) malloc(dataLength * sizeof(float));
+	float threshold = 0.000001;
+	float min_log_data = log2(threshold);
+	// sample for min_log_data
+	// {
+	// 	float * data_pos = oriData;
+	// 	size_t * log_count = (size_t *) malloc(10 * sizeof(size_t));
+	// 	memset(log_count, 0, 10 * sizeof(size_t));
+	// 	size_t sample_dis = sqrt(dataLength);
+	// 	float log_index;
+	// 	while(data_pos - oriData < dataLength){
+	// 		log_index = log10(fabs(*data_pos));
+	// 		if(log_index >= 0) log_count[0] ++;
+	// 		else if(log_index <-9) log_count[9] ++;
+	// 		else{
+	// 			log_count[(int)(-log_index)] ++;
+	// 		}
+	// 		data_pos += sample_dis;
+	// 	}
+	// 	size_t acc_log_count = 0;
+	// 	size_t target_count = dataLength / (sample_dis * 100);
+	// 	int i;
+	// 	for(i=9; i>=0; i--){
+	// 		acc_log_count += log_count[i];
+	// 		if(acc_log_count >= target_count) break;
+	// 	}
+	// 	min_log_data = log2(pow(0.1, i+1));
+	// 	printf("target count %ld, i %d, data %.14f log data %.14f\n", target_count, i, pow(0.1, i), min_log_data);
+	// }
+	// exit(0);
+
+	unsigned char * signs = (unsigned char *) malloc(dataLength);
+	memset(signs, 0, dataLength);
+	// preprocess
+	float max_abs_log_data = fabs(min_log_data);
+	for(size_t i=0; i<dataLength; i++){
+		if(oriData[i] < 0){
+			signs[i] = 1;
+			log_data[i] = -oriData[i];
+		}
+		else
+			log_data[i] = oriData[i];
+		if(log_data[i] > threshold){
+			log_data[i] = log2(log_data[i]);
+			if(log_data[i] > max_abs_log_data) max_abs_log_data = log_data[i];
+		}
+		else
+			log_data[i] = min_log_data;
+	}
+
+	printf("max_abs_log_data: %.4f\n", max_abs_log_data);
+	double realPrecision = log2(1.0 + pwrErrRatio) - max_abs_log_data * 1.2e-7;
+	printf("Origin bound: %.6f\nAbs bound for log data: %.14f\n", pw_relBoundRatio, realPrecision);
+
+	// new_TightDataPointStorageF_Empty()
+
+    TightDataPointStorageF* tdps = SZ_compress_float_3D_MDQ(log_data, 1, 1, 1, realPrecision, valueRangeSize, medianValue_f);
+	free(tdps->typeArray);
+    printf("Compressed size: %ld\n", tdps->typeArray_size);
+	tdps->typeArray = SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(log_data, r1, r2, r3, realPrecision, &(tdps->typeArray_size));
+
+    // TightDataPointStorageF* tdps = SZ_compress_float_3D_MDQ(log_data, r1, r2, r3, realPrecision, valueRangeSize, medianValue_f);
+    printf("Compressed size: %ld\n", tdps->typeArray_size);
+
+	// {
+	// 	int status;
+	// 	printf("write log data, length: %ld\n", dataLength);
+	// 	writeFloatData_inBytes(log_data, dataLength, "vx_log_data.dat", &status);
+	// }
+    free(log_data);
+    unsigned char * comp_signs;
+	// compress signs
+	unsigned long signSize = zlib_compress5(signs, dataLength, &comp_signs, 1);
+	// unsigned long signSize = zlib_compress5(signs, num_blocks, &comp_signs, 1);
+	tdps->pwrErrBoundBytes = comp_signs;
+	tdps->pwrErrBoundBytes_size = signSize;
+	free(signs);
+
+    convertTDPStoFlatBytes_float(tdps, newByteData, outSize);
+    printf("Sign size: %ld\nTDPS size: %ld\n", signSize, *outSize);
+
+    if(*outSize>dataLength*sizeof(float))
+            SZ_compress_args_float_StoreOriData(oriData, dataLength+2, tdps, newByteData, outSize);
+
+    free_TightDataPointStorageF(tdps);
+}

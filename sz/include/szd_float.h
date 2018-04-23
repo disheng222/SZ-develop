@@ -29,6 +29,7 @@ void decompressDataSeries_float_3D_nonblocked_adaptive(float** data, size_t r1, 
 void decompressDataSeries_float_3D_RA(float** data, size_t r1, size_t r2, size_t r3, unsigned char * comp_data);
 void decompressDataSeries_float_1D_RA(float** data, size_t r1, unsigned char * comp_data);
 void decompressDataSeries_float_2D_RA(float** data, size_t r1, size_t r2, unsigned char* comp_data);
+void decompressDataSeries_float_1D_RA_all_by_regression(float** data, size_t r1, unsigned char* comp_data);
 void decompressDataSeries_float_3D_RA_all_by_regression(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data);
 size_t decompressDataSeries_float_1D_RA_block_1D_pred(float * data, float mean, size_t dim_0, size_t block_dim_0, double realPrecision, int * type, float * unpredictable_data);
 size_t decompressDataSeries_float_3D_RA_block_all_by_regression(float * block_ori_data, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, float * reg_params, int * type, float * unpredictable_data);
