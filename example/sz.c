@@ -752,7 +752,27 @@ int main(int argc, char* argv[])
 		int status;
 		if(bytes==NULL)
 			bytes = readByteData(cmpPath, &byteLength, &status);
-		sz_metadata* metadata = SZ_getMetadata(bytes);
+			
+		unsigned char* bytes2 = NULL;
+		long bytes2Len = 0;	
+		int isZlib = isZlibFormat(bytes[0], bytes[1]);
+		if(isZlib)
+		{
+			szMode = SZ_BEST_COMPRESSION;
+			size_t targetUncompressSize = 65536;
+			bytes2Len = zlib_uncompress65536bytes(bytes, (unsigned long)byteLength, &bytes2);	
+			
+			//printf("bytes2Len = %d\n", bytes2Len); 
+		}
+		else
+		{
+			szMode = SZ_BEST_SPEED;	
+			bytes2 = bytes;
+		}				
+			
+		sz_metadata* metadata = SZ_getMetadata(bytes2);
+		metadata->conf_params->szMode = szMode;
+
 		if(metadata->versionNumber[0]==0 || metadata->conf_params->max_quant_intervals<0)
 		{
 			printf("Error: the compressed data file is likely wrong.\n");
@@ -764,6 +784,9 @@ int main(int argc, char* argv[])
 		SZ_printMetadata(metadata);
 		free(metadata->conf_params);
 		free(metadata);
+		
+		if(isZlib)
+			free(bytes2);
 	}
 	else 
 	{
