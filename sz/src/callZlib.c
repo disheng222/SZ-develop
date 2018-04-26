@@ -426,6 +426,42 @@ unsigned long zlib_uncompress4(unsigned char* compressBytes, unsigned long cmpSi
     return strm.total_out;	
 }
 
+unsigned long zlib_uncompress65536bytes(unsigned char* compressBytes, unsigned long cmpSize, unsigned char** oriData)
+{
+	int err;
+	unsigned long targetOriSize = 65536;
+	z_stream d_stream = {0}; /* decompression stream */
+
+	*oriData = (unsigned char*)malloc(sizeof(unsigned char)*targetOriSize);
+
+    d_stream.zalloc = (alloc_func)0;
+    d_stream.zfree = (free_func)0;
+    d_stream.opaque = (voidpf)0;
+
+	d_stream.next_in  = compressBytes;
+	d_stream.avail_in = 0;
+	d_stream.next_out = *oriData;
+
+	err = inflateInit(&d_stream);
+	CHECK_ERR(err, "inflateInit");
+
+	while (d_stream.total_out < targetOriSize && d_stream.total_in < cmpSize) {
+		d_stream.avail_in = d_stream.avail_out = SZ_ZLIB_BUFFER_SIZE; /* force small buffers */
+		//err = inflate(&d_stream, Z_NO_FLUSH);
+		err = inflate(&d_stream, Z_SYNC_FLUSH);
+		if (err == Z_STREAM_END) break;
+		if(err<0)
+			break;
+	}
+	
+	if(err<0)
+		return d_stream.total_out;
+	err = inflateEnd(&d_stream);
+	
+	CHECK_ERR(err, "inflateEnd");
+
+	return d_stream.total_out;
+}
 
 unsigned long zlib_uncompress5(unsigned char* compressBytes, unsigned long cmpSize, unsigned char** oriData, unsigned long targetOriSize)
 {
@@ -452,8 +488,9 @@ unsigned long zlib_uncompress5(unsigned char* compressBytes, unsigned long cmpSi
 		if (err == Z_STREAM_END) break;
 		CHECK_ERR(err, "inflate");
 	}
-
+	
 	err = inflateEnd(&d_stream);
+	
 	CHECK_ERR(err, "inflateEnd");
 
 	return d_stream.total_out;

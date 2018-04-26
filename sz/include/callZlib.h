@@ -32,6 +32,8 @@ unsigned long zlib_uncompress(unsigned char* compressBytes, unsigned long cmpSiz
 unsigned long zlib_uncompress2(unsigned char* compressBytes, unsigned long cmpSize, unsigned char** oriData, unsigned long targetOriSize);
 unsigned long zlib_uncompress3(unsigned char* compressBytes, unsigned long cmpSize, unsigned char** oriData, unsigned long targetOriSize);
 
+unsigned long zlib_uncompress65536bytes(unsigned char* compressBytes, unsigned long cmpSize, unsigned char** oriData);
+
 #ifdef __cplusplus
 }
 #endif
