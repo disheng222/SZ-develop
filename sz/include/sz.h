@@ -299,6 +299,7 @@ typedef struct sz_metadata
 	int isLossless; //only used for checking if the data compression was lossless, used only by calling SZ_GetMetaData()
 	int sizeType; //only used for checking whether the size type is "int" or "long" in the compression, used only by calling SZ_GetMetaData()
 	size_t dataSeriesLength;
+	int defactoNBBins;
 	struct sz_params* conf_params;
 } sz_metadata;
 
