@@ -62,7 +62,9 @@ char optQuantMode = 0; //opt Quantization (0: fixed ; 1: optimized)
 
 int szMode = SZ_BEST_COMPRESSION;
 
-int szRandomAccess = SZ_YES_RANDOM_ACCESS;
+int szRandomAccess;
+
+int sz_with_regression = SZ_WITH_LINEAR_REGRESSION;
 
 int SZ_SIZE_TYPE = 8;
 
@@ -666,18 +668,26 @@ sz_metadata* SZ_getMetadata(unsigned char* bytes)
 	int defactoNBBins = 0; //real # bins
 	if(isConstant==0 && isLossless==0)
 	{
-		int radExpoL = 0, segmentL = 0, pwrErrBoundBytesL = 0;
-		if(metadata->conf_params->errorBoundMode >= PW_REL)
+		if(sz_with_regression == SZ_NO_REGRESSION)
 		{
-			radExpoL = 1;
-			segmentL = SZ_SIZE_TYPE;
-			pwrErrBoundBytesL = 4;
+			int radExpoL = 0, segmentL = 0, pwrErrBoundBytesL = 0;
+			if(metadata->conf_params->errorBoundMode >= PW_REL)
+			{
+				radExpoL = 1;
+				segmentL = SZ_SIZE_TYPE;
+				pwrErrBoundBytesL = 4;
+			}
+			
+			int offset_typearray = 3 + 1 + MetaDataByteLength + SZ_SIZE_TYPE + 4 + radExpoL + segmentL + pwrErrBoundBytesL + 4 + 4 + 1 + 8 
+					+ SZ_SIZE_TYPE + SZ_SIZE_TYPE + SZ_SIZE_TYPE;
+			size_t nodeCount = bytesToInt_bigEndian(bytes+offset_typearray);
+			defactoNBBins = (nodeCount+1)/2;			
 		}
-		
-		int offset_typearray = 3 + 1 + MetaDataByteLength + SZ_SIZE_TYPE + 4 + radExpoL + segmentL + pwrErrBoundBytesL + 4 + 4 + 1 + 8 
-				+ SZ_SIZE_TYPE + SZ_SIZE_TYPE + SZ_SIZE_TYPE;
-		size_t nodeCount = bytesToInt_bigEndian(bytes+offset_typearray);
-		defactoNBBins = (nodeCount+1)/2;
+		else //regression version
+		{
+			int offset = 3 + 1 + MetaDataByteLength + 4 + 8;
+			defactoNBBins = bytesToInt_bigEndian(bytes+offset);
+		}
 	}
 	
 	metadata->defactoNBBins = defactoNBBins;

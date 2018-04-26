@@ -2947,9 +2947,9 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwRelBoundRa
 			}
 			else
 			{
-				if(szRandomAccess == SZ_NO_RANDOM_ACCESS)
+				if(sz_with_regression == SZ_NO_REGRESSION)
 					SZ_compress_args_float_NoCkRngeNoGzip_1D(&tmpByteData, oriData, r1, realPrecision, &tmpOutSize, valueRangeSize, medianValue);
-				else //if(szRandomAccess == SZ_YES_RANDOM_ACCESS)
+				else //if(sz_with_gression == SZ_WITH_LINEAR_REGRESSION)
 					tmpByteData = SZ_compress_float_1D_MDQ_RA(oriData, r1, realPrecision, &tmpOutSize); 
 			}
 		}
@@ -2960,7 +2960,7 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwRelBoundRa
 				// SZ_compress_args_float_NoCkRngeNoGzip_2D_pwr(&tmpByteData, oriData, realPrecision, r2, r1, &tmpOutSize, min, max);
 				SZ_compress_args_float_NoCkRngeNoGzip_2D_pwr_pre_log(&tmpByteData, oriData, pwRelBoundRatio, r2, r1, valueRangeSize, medianValue, &tmpOutSize);
 			else{
-				if(szRandomAccess == SZ_NO_RANDOM_ACCESS)
+				if(sz_with_regression == SZ_NO_REGRESSION)
 					SZ_compress_args_float_NoCkRngeNoGzip_2D(&tmpByteData, oriData, r2, r1, realPrecision, &tmpOutSize, valueRangeSize, medianValue);
 				else 
 					tmpByteData = SZ_compress_float_2D_MDQ_nonblocked_with_blocked_regression(oriData, r2, r1, realPrecision, &tmpOutSize);
@@ -2974,7 +2974,7 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwRelBoundRa
 				SZ_compress_args_float_NoCkRngeNoGzip_3D_pwr_pre_log(&tmpByteData, oriData, pwRelBoundRatio, r3, r2, r1, valueRangeSize, medianValue, &tmpOutSize);			
 			else
 			{
-				if(szRandomAccess == SZ_NO_RANDOM_ACCESS)
+				if(sz_with_regression == SZ_NO_REGRESSION)
 					SZ_compress_args_float_NoCkRngeNoGzip_3D(&tmpByteData, oriData, r3, r2, r1, realPrecision, &tmpOutSize, valueRangeSize, medianValue);
 				else 
 					//tmpByteData = SZ_compress_float_3D_MDQ_RA(oriData, r3, r2, r1, realPrecision, &tmpOutSize);

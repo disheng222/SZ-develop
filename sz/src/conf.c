@@ -244,12 +244,12 @@ int SZ_ReadConf() {
 		}
 		conf_params->szMode = szMode;
 		
-		modeBuf = iniparser_getstring(ini, "PARAMETER:randomAccess", "YES");
+		modeBuf = iniparser_getstring(ini, "PARAMETER:withLinearRegression", "YES");
 		if(strcmp(modeBuf, "YES")==0 || strcmp(modeBuf, "yes")==0)
-			szRandomAccess = SZ_YES_RANDOM_ACCESS;
+			sz_with_regression = SZ_WITH_LINEAR_REGRESSION;
 		else
-			szRandomAccess = SZ_NO_RANDOM_ACCESS;
-		conf_params->szRandomAccess = szRandomAccess;
+			sz_with_regression = SZ_NO_REGRESSION;
+		conf_params->sz_with_regression = sz_with_regression;
 		
 		modeBuf = iniparser_getstring(ini, "PARAMETER:gzipMode", NULL);
 		if(modeBuf==NULL)
