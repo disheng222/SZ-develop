@@ -1369,7 +1369,8 @@ void decompressDataSeries_float_1D_pwr_pre_log(float** data, size_t dataSeriesLe
 	printf("change log data to origin data\n");
 	fflush(stdout);
 	for(size_t i=0; i<dataSeriesLength; i++){
-		(*data)[i] = pow(2, (*data)[i]);
+		if((*data)[i] < -126.5) (*data)[i] = 0;
+		else (*data)[i] = pow(2, (*data)[i]);
 		if(signs[i]) (*data)[i] = -((*data)[i]);
 	}
 
@@ -1388,7 +1389,8 @@ void decompressDataSeries_float_2D_pwr_pre_log(float** data, size_t r1, size_t r
 	printf("change log data to origin data\n");
 	fflush(stdout);
 	for(size_t i=0; i<dataSeriesLength; i++){
-		(*data)[i] = pow(2, (*data)[i]);
+		if((*data)[i] < -126.5) (*data)[i] = 0;
+		else (*data)[i] = pow(2, (*data)[i]);
 		if(signs[i]) (*data)[i] = -((*data)[i]);
 	}
 
