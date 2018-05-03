@@ -685,7 +685,7 @@ sz_metadata* SZ_getMetadata(unsigned char* bytes)
 		}
 		else //regression version
 		{
-			int offset = 3 + 1 + MetaDataByteLength + 4 + 8;
+			int offset = 3 + 1 + MetaDataByteLength + SZ_SIZE_TYPE + 4 + 8;
 			defactoNBBins = bytesToInt_bigEndian(bytes+offset);
 		}
 	}
