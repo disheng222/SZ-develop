@@ -1822,12 +1822,13 @@ size_t dataLength, double absErrBound, double relBoundRatio, double pwrErrRatio,
 	// 		log_data[i] = min_log_data;
 	// }
 
-	printf("max_abs_log_data: %.4f\n", max_abs_log_data);
+	computeRangeSize_float(log_data, dataLength, &valueRangeSize, &medianValue_f);	
+	// printf("max_abs_log_data: %.4f\n", max_abs_log_data);
 	double realPrecision = log2(1.0 + pwrErrRatio) - max_abs_log_data * 1.2e-7;
-	printf("Origin bound: %.6f\nAbs bound for log data: %.14f\n", pw_relBoundRatio, realPrecision);
+	// printf("Origin bound: %.6f\nAbs bound for log data: %.14f\n", pw_relBoundRatio, realPrecision);
 
     TightDataPointStorageF* tdps = SZ_compress_float_1D_MDQ(log_data, dataLength, realPrecision, valueRangeSize, medianValue_f);
-    printf("Compressed size: %ld\n", tdps->typeArray_size);
+    // printf("Compressed size: %ld\n", tdps->typeArray_size);
 	// {
 	// 	int status;
 	// 	printf("write log data, length: %ld\n", dataLength);
@@ -1843,7 +1844,7 @@ size_t dataLength, double absErrBound, double relBoundRatio, double pwrErrRatio,
 	free(signs);
 
     convertTDPStoFlatBytes_float(tdps, newByteData, outSize);
-    printf("Sign size: %ld\nTDPS size: %ld\n", signSize, *outSize);
+    // printf("Sign size: %ld\nTDPS size: %ld\n", signSize, *outSize);
 
     if(*outSize>dataLength*sizeof(float))
             SZ_compress_args_float_StoreOriData(oriData, dataLength+2, tdps, newByteData, outSize);
@@ -1910,12 +1911,13 @@ size_t r1, size_t r2, float valueRangeSize, float medianValue_f, size_t *outSize
 			log_data[i] = min_log_data - 1;
 	}
 
-	printf("max_abs_log_data: %.4f\n", max_abs_log_data);
+	computeRangeSize_float(log_data, dataLength, &valueRangeSize, &medianValue_f);	
+	// printf("max_abs_log_data: %.4f\n", max_abs_log_data);
 	double realPrecision = log2(1.0 + pwrErrRatio) - max_abs_log_data * 1.2e-7;
-	printf("Origin bound: %.6f\nAbs bound for log data: %.14f\n", pw_relBoundRatio, realPrecision);
+	// printf("Origin bound: %.6f\nAbs bound for log data: %.14f\n", pw_relBoundRatio, realPrecision);
 
     TightDataPointStorageF* tdps = SZ_compress_float_2D_MDQ(log_data, r1, r2, realPrecision, valueRangeSize, medianValue_f);
-    printf("Compressed size: %ld\n", tdps->typeArray_size);
+    // printf("Compressed size: %ld\n", tdps->typeArray_size);
 	// {
 	// 	int status;
 	// 	printf("write log data, length: %ld\n", dataLength);
@@ -1931,7 +1933,7 @@ size_t r1, size_t r2, float valueRangeSize, float medianValue_f, size_t *outSize
 	free(signs);
 
     convertTDPStoFlatBytes_float(tdps, newByteData, outSize);
-    printf("Sign size: %ld\nTDPS size: %ld\n", signSize, *outSize);
+    // printf("Sign size: %ld\nTDPS size: %ld\n", signSize, *outSize);
 
     if(*outSize>dataLength*sizeof(float))
             SZ_compress_args_float_StoreOriData(oriData, dataLength+2, tdps, newByteData, outSize);
