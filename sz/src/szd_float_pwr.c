@@ -1399,19 +1399,20 @@ void decompressDataSeries_float_2D_pwr_pre_log(float** data, size_t r1, size_t r
 void decompressDataSeries_float_3D_pwr_pre_log(float** data, size_t r1, size_t r2, size_t r3, TightDataPointStorageF* tdps) {
 
 	size_t dataSeriesLength = r1 * r2 * r3;
-	printf("pre log decompression start\n");
-	fflush(stdout);
+	// printf("pre log decompression start\n");
+	// fflush(stdout);
 	decompressDataSeries_float_3D(data, r1, r2, r3, tdps);
 	// printf("Compressed size: %ld\n", tdps->typeArray_size);
 	// fflush(stdout);
 	// use reg-base abs
 	// decompressDataSeries_float_3D_nonblocked_with_blocked_regression(data, r1, r2, r3, tdps->typeArray + 24);
-	printf("pre log decompression done\n");
-	fflush(stdout);
+	// printf("dims: %ld %ld %ld\n", r1, r2, r3);
+	// printf("pre log decompression done\n");
+	// fflush(stdout);
 	unsigned char * signs;// = (unsigned char *) malloc(dataSeriesLength);
 	unsigned long tmpSize = zlib_uncompress5(tdps->pwrErrBoundBytes, tdps->pwrErrBoundBytes_size, &signs, dataSeriesLength);
-	printf("change log data to origin data\n");
-	fflush(stdout);
+	// printf("change log data to origin data\n");
+	// fflush(stdout);
 	for(size_t i=0; i<dataSeriesLength; i++){
 		if((*data)[i] < -126.5) (*data)[i] = 0;
 		else (*data)[i] = pow(2, (*data)[i]);

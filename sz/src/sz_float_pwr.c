@@ -1994,11 +1994,11 @@ size_t r1, size_t r2, size_t r3, float valueRangeSize, float medianValue_f, size
 			log_data[i] = min_log_data - 1;
 	}
 
-	printf("max_abs_log_data: %.4f, min_log_data: %.4f\n", max_abs_log_data, min_log_data);
+	// printf("max_abs_log_data: %.4f, min_log_data: %.4f\n", max_abs_log_data, min_log_data);
 	double realPrecision = log2(1.0 + pwrErrRatio) - max_abs_log_data * 1.2e-7;
-	printf("Origin bound: %.6f\nAbs bound for log data: %.14f\n", pw_relBoundRatio, realPrecision);
+	// printf("Origin bound: %.6f\nAbs bound for log data: %.14f\n", pw_relBoundRatio, realPrecision);
 
-
+	computeRangeSize_float(log_data, dataLength, &valueRangeSize, &medianValue_f);	
 	// use reg-based absolute error
 	// TightDataPointStorageF* tdps = SZ_compress_float_3D_MDQ(log_data, 1, 1, 1, realPrecision, valueRangeSize, medianValue_f);
 	// free(tdps->typeArray);
@@ -2006,7 +2006,7 @@ size_t r1, size_t r2, size_t r3, float valueRangeSize, float medianValue_f, size
 	// tdps->typeArray = SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(log_data, r1, r2, r3, realPrecision, &(tdps->typeArray_size));
 
     TightDataPointStorageF* tdps = SZ_compress_float_3D_MDQ(log_data, r1, r2, r3, realPrecision, valueRangeSize, medianValue_f);
-    printf("Compressed size: %ld\n", tdps->typeArray_size);
+    // printf("Compressed size: %ld\n", tdps->typeArray_size);
 
 	// {
 	// 	int status;
@@ -2023,7 +2023,7 @@ size_t r1, size_t r2, size_t r3, float valueRangeSize, float medianValue_f, size
 	free(signs);
 
     convertTDPStoFlatBytes_float(tdps, newByteData, outSize);
-    printf("Sign size: %ld\nTDPS size: %ld\n", signSize, *outSize);
+    // printf("Sign size: %ld\nTDPS size: %ld\n", signSize, *outSize);
 
     if(*outSize>dataLength*sizeof(float))
             SZ_compress_args_float_StoreOriData(oriData, dataLength+2, tdps, newByteData, outSize);
