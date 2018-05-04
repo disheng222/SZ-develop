@@ -1535,7 +1535,7 @@ size_t dataLength, double realPrecision, float valueRangeSize, float medianValue
 {
 	unsigned int quantization_intervals;
 	if(optQuantMode==1)
-		quantization_intervals = optimize_intervals_float_1D(oriData, dataLength, realPrecision);
+		quantization_intervals = optimize_intervals_float_1D_opt(oriData, dataLength, realPrecision);
 	else
 		quantization_intervals = intvCapacity;
 	updateQuantizationInfo(quantization_intervals);	
@@ -1752,7 +1752,7 @@ TightDataPointStorageF* SZ_compress_float_2D_MDQ(float *oriData, size_t r1, size
 	unsigned int quantization_intervals;
 	if(optQuantMode==1)
 	{
-		quantization_intervals = optimize_intervals_float_2D(oriData, r1, r2, realPrecision);
+		quantization_intervals = optimize_intervals_float_2D_opt(oriData, r1, r2, realPrecision);
 		updateQuantizationInfo(quantization_intervals);
 	}	
 	else
@@ -2028,7 +2028,7 @@ TightDataPointStorageF* SZ_compress_float_3D_MDQ(float *oriData, size_t r1, size
 	unsigned int quantization_intervals;
 	if(optQuantMode==1)
 	{
-		quantization_intervals = optimize_intervals_float_3D(oriData, r1, r2, r3, realPrecision);
+		quantization_intervals = optimize_intervals_float_3D_opt(oriData, r1, r2, r3, realPrecision);
 		updateQuantizationInfo(quantization_intervals);
 	}	
 	else
