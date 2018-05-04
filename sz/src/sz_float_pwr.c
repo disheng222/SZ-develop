@@ -1724,6 +1724,8 @@ size_t dataLength, double absErrBound, double relBoundRatio, double pwrErrRatio,
         free_TightDataPointStorageF(tdps);
 }
 
+#include <stdbool.h>
+
 void SZ_compress_args_float_NoCkRngeNoGzip_1D_pwr_pre_log(unsigned char** newByteData, float *oriData,
 size_t dataLength, double absErrBound, double relBoundRatio, double pwrErrRatio, float valueRangeSize, float medianValue_f, size_t *outSize)
 {
@@ -1762,10 +1764,12 @@ size_t dataLength, double absErrBound, double relBoundRatio, double pwrErrRatio,
 	memset(signs, 0, dataLength);
 	// preprocess
 	float max_abs_log_data = fabs(min_log_data);
+	bool positive = true;
 	for(size_t i=0; i<dataLength; i++){
 		if(oriData[i] < 0){
 			signs[i] = 1;
 			log_data[i] = -oriData[i];
+			positive = false;
 		}
 		else
 			log_data[i] = oriData[i];
@@ -1835,12 +1839,18 @@ size_t dataLength, double absErrBound, double relBoundRatio, double pwrErrRatio,
 	// 	writeFloatData_inBytes(log_data, dataLength, "vx_log_data.dat", &status);
 	// }
     free(log_data);
-    unsigned char * comp_signs;
-	// compress signs
-	unsigned long signSize = zlib_compress5(signs, dataLength, &comp_signs, 1);
-	// unsigned long signSize = zlib_compress5(signs, num_blocks, &comp_signs, 1);
-	tdps->pwrErrBoundBytes = comp_signs;
-	tdps->pwrErrBoundBytes_size = signSize;
+    if(!positive){
+	    unsigned char * comp_signs;
+		// compress signs
+		unsigned long signSize = zlib_compress5(signs, dataLength, &comp_signs, 1);
+		// unsigned long signSize = zlib_compress5(signs, num_blocks, &comp_signs, 1);
+		tdps->pwrErrBoundBytes = comp_signs;
+		tdps->pwrErrBoundBytes_size = signSize;
+	}
+	else{
+		tdps->pwrErrBoundBytes = NULL;
+		tdps->pwrErrBoundBytes_size = 0;
+	}
 	free(signs);
 
     convertTDPStoFlatBytes_float(tdps, newByteData, outSize);
@@ -1895,11 +1905,13 @@ size_t r1, size_t r2, float valueRangeSize, float medianValue_f, size_t *outSize
 	unsigned char * signs = (unsigned char *) malloc(dataLength);
 	memset(signs, 0, dataLength);
 	// preprocess
+	bool positive = true;
 	float max_abs_log_data = fabs(min_log_data);
 	for(size_t i=0; i<dataLength; i++){
 		if(oriData[i] < 0){
 			signs[i] = 1;
 			log_data[i] = -oriData[i];
+			positive = false;
 		}
 		else
 			log_data[i] = oriData[i];
@@ -1924,12 +1936,18 @@ size_t r1, size_t r2, float valueRangeSize, float medianValue_f, size_t *outSize
 	// 	writeFloatData_inBytes(log_data, dataLength, "vx_log_data.dat", &status);
 	// }
     free(log_data);
-    unsigned char * comp_signs;
-	// compress signs
-	unsigned long signSize = zlib_compress5(signs, dataLength, &comp_signs, 1);
-	// unsigned long signSize = zlib_compress5(signs, num_blocks, &comp_signs, 1);
-	tdps->pwrErrBoundBytes = comp_signs;
-	tdps->pwrErrBoundBytes_size = signSize;
+    if(!positive){
+	    unsigned char * comp_signs;
+		// compress signs
+		unsigned long signSize = zlib_compress5(signs, dataLength, &comp_signs, 1);
+		// unsigned long signSize = zlib_compress5(signs, num_blocks, &comp_signs, 1);
+		tdps->pwrErrBoundBytes = comp_signs;
+		tdps->pwrErrBoundBytes_size = signSize;
+	}
+	else{
+		tdps->pwrErrBoundBytes = NULL;
+		tdps->pwrErrBoundBytes_size = 0;
+	}
 	free(signs);
 
     convertTDPStoFlatBytes_float(tdps, newByteData, outSize);
@@ -1981,10 +1999,12 @@ size_t r1, size_t r2, size_t r3, float valueRangeSize, float medianValue_f, size
 	memset(signs, 0, dataLength);
 	// preprocess
 	float max_abs_log_data = fabs(min_log_data - 1);
+	bool positive = true;
 	for(size_t i=0; i<dataLength; i++){
 		if(oriData[i] < 0){
 			signs[i] = 1;
 			log_data[i] = -oriData[i];
+			positive = false;
 		}
 		else
 			log_data[i] = oriData[i];
@@ -2016,16 +2036,22 @@ size_t r1, size_t r2, size_t r3, float valueRangeSize, float medianValue_f, size
 	// 	writeFloatData_inBytes(log_data, dataLength, "vx_log_data.dat", &status);
 	// }
     free(log_data);
-    unsigned char * comp_signs;
-	// compress signs
-	unsigned long signSize = zlib_compress5(signs, dataLength, &comp_signs, 1);
-	// unsigned long signSize = zlib_compress5(signs, num_blocks, &comp_signs, 1);
-	tdps->pwrErrBoundBytes = comp_signs;
-	tdps->pwrErrBoundBytes_size = signSize;
+    if(!positive){
+	    unsigned char * comp_signs;
+		// compress signs
+		unsigned long signSize = zlib_compress5(signs, dataLength, &comp_signs, 1);
+		// unsigned long signSize = zlib_compress5(signs, num_blocks, &comp_signs, 1);
+		tdps->pwrErrBoundBytes = comp_signs;
+		tdps->pwrErrBoundBytes_size = signSize;
+	}
+	else{
+		tdps->pwrErrBoundBytes = NULL;
+		tdps->pwrErrBoundBytes_size = 0;		
+	}
 	free(signs);
 
     convertTDPStoFlatBytes_float(tdps, newByteData, outSize);
-    // printf("Sign size: %ld\nTDPS size: %ld\n", signSize, *outSize);
+    printf("Sign size: %ld\nTDPS size: %ld\n", tdps->pwrErrBoundBytes_size, *outSize);
 
     if(*outSize>dataLength*sizeof(float))
             SZ_compress_args_float_StoreOriData(oriData, dataLength+2, tdps, newByteData, outSize);

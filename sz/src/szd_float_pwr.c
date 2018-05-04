@@ -1359,19 +1359,22 @@ void decompressDataSeries_float_1D_pwrgroup(float** data, size_t dataSeriesLengt
 
 void decompressDataSeries_float_1D_pwr_pre_log(float** data, size_t dataSeriesLength, TightDataPointStorageF* tdps) {
 
-	printf("pre log decompression start\n");
-	fflush(stdout);
 	decompressDataSeries_float_1D(data, dataSeriesLength, tdps);
-	printf("pre log decompression done\n");
-	fflush(stdout);
-	unsigned char * signs;// = (unsigned char *) malloc(dataSeriesLength);
-	unsigned long tmpSize = zlib_uncompress5(tdps->pwrErrBoundBytes, tdps->pwrErrBoundBytes_size, &signs, dataSeriesLength);
-	printf("change log data to origin data\n");
-	fflush(stdout);
-	for(size_t i=0; i<dataSeriesLength; i++){
-		if((*data)[i] < -126.5) (*data)[i] = 0;
-		else (*data)[i] = pow(2, (*data)[i]);
-		if(signs[i]) (*data)[i] = -((*data)[i]);
+	if(tdps->pwrErrBoundBytes_size > 0){
+		unsigned char * signs;// = (unsigned char *) malloc(dataSeriesLength);
+		unsigned long tmpSize = zlib_uncompress5(tdps->pwrErrBoundBytes, tdps->pwrErrBoundBytes_size, &signs, dataSeriesLength);
+		for(size_t i=0; i<dataSeriesLength; i++){
+			if((*data)[i] < -126.5) (*data)[i] = 0;
+			else (*data)[i] = exp2((*data)[i]);
+			if(signs[i]) (*data)[i] = -((*data)[i]);
+		}
+		free(signs);
+	}
+	else{
+		for(size_t i=0; i<dataSeriesLength; i++){
+			if((*data)[i] < -126.5) (*data)[i] = 0;
+			else (*data)[i] = exp2((*data)[i]);
+		}
 	}
 
 }
@@ -1379,19 +1382,22 @@ void decompressDataSeries_float_1D_pwr_pre_log(float** data, size_t dataSeriesLe
 void decompressDataSeries_float_2D_pwr_pre_log(float** data, size_t r1, size_t r2, TightDataPointStorageF* tdps) {
 
 	size_t dataSeriesLength = r1 * r2;
-	printf("pre log decompression start\n");
-	fflush(stdout);
 	decompressDataSeries_float_2D(data, r1, r2, tdps);
-	printf("pre log decompression done\n");
-	fflush(stdout);
-	unsigned char * signs;// = (unsigned char *) malloc(dataSeriesLength);
-	unsigned long tmpSize = zlib_uncompress5(tdps->pwrErrBoundBytes, tdps->pwrErrBoundBytes_size, &signs, dataSeriesLength);
-	printf("change log data to origin data\n");
-	fflush(stdout);
-	for(size_t i=0; i<dataSeriesLength; i++){
-		if((*data)[i] < -126.5) (*data)[i] = 0;
-		else (*data)[i] = pow(2, (*data)[i]);
-		if(signs[i]) (*data)[i] = -((*data)[i]);
+	if(tdps->pwrErrBoundBytes_size > 0){
+		unsigned char * signs;// = (unsigned char *) malloc(dataSeriesLength);
+		unsigned long tmpSize = zlib_uncompress5(tdps->pwrErrBoundBytes, tdps->pwrErrBoundBytes_size, &signs, dataSeriesLength);
+		for(size_t i=0; i<dataSeriesLength; i++){
+			if((*data)[i] < -126.5) (*data)[i] = 0;
+			else (*data)[i] = exp2((*data)[i]);
+			if(signs[i]) (*data)[i] = -((*data)[i]);
+		}
+		free(signs);
+	}
+	else{
+		for(size_t i=0; i<dataSeriesLength; i++){
+			if((*data)[i] < -126.5) (*data)[i] = 0;
+			else (*data)[i] = exp2((*data)[i]);
+		}
 	}
 
 }
@@ -1409,14 +1415,20 @@ void decompressDataSeries_float_3D_pwr_pre_log(float** data, size_t r1, size_t r
 	// printf("dims: %ld %ld %ld\n", r1, r2, r3);
 	// printf("pre log decompression done\n");
 	// fflush(stdout);
-	unsigned char * signs;// = (unsigned char *) malloc(dataSeriesLength);
-	unsigned long tmpSize = zlib_uncompress5(tdps->pwrErrBoundBytes, tdps->pwrErrBoundBytes_size, &signs, dataSeriesLength);
-	// printf("change log data to origin data\n");
-	// fflush(stdout);
-	for(size_t i=0; i<dataSeriesLength; i++){
-		if((*data)[i] < -126.5) (*data)[i] = 0;
-		else (*data)[i] = pow(2, (*data)[i]);
-		if(signs[i]) (*data)[i] = -((*data)[i]);
+	if(tdps->pwrErrBoundBytes_size > 0){
+		unsigned char * signs;// = (unsigned char *) malloc(dataSeriesLength);
+		unsigned long tmpSize = zlib_uncompress5(tdps->pwrErrBoundBytes, tdps->pwrErrBoundBytes_size, &signs, dataSeriesLength);
+		for(size_t i=0; i<dataSeriesLength; i++){
+			if((*data)[i] < -126.5) (*data)[i] = 0;
+			else (*data)[i] = exp2((*data)[i]);
+			if(signs[i]) (*data)[i] = -((*data)[i]);
+		}
+		free(signs);
 	}
-
+	else{
+		for(size_t i=0; i<dataSeriesLength; i++){
+			if((*data)[i] < -126.5) (*data)[i] = 0;
+			else (*data)[i] = exp2((*data)[i]);
+		}
+	}
 }
