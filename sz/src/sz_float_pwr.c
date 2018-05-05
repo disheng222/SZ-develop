@@ -2051,7 +2051,7 @@ size_t r1, size_t r2, size_t r3, float valueRangeSize, float medianValue_f, size
 	free(signs);
 
     convertTDPStoFlatBytes_float(tdps, newByteData, outSize);
-    printf("Sign size: %ld\nTDPS size: %ld\n", tdps->pwrErrBoundBytes_size, *outSize);
+    // printf("Sign size: %ld\nTDPS size: %ld\n", tdps->pwrErrBoundBytes_size, *outSize);
 
     if(*outSize>dataLength*sizeof(float))
             SZ_compress_args_float_StoreOriData(oriData, dataLength+2, tdps, newByteData, outSize);

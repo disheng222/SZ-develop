@@ -1416,7 +1416,7 @@ void decompressDataSeries_float_3D_pwr_pre_log(float** data, size_t r1, size_t r
 	// printf("pre log decompression done\n");
 	// fflush(stdout);
 	if(tdps->pwrErrBoundBytes_size > 0){
-		unsigned char * signs;// = (unsigned char *) malloc(dataSeriesLength);
+		unsigned char * signs;
 		unsigned long tmpSize = zlib_uncompress5(tdps->pwrErrBoundBytes, tdps->pwrErrBoundBytes_size, &signs, dataSeriesLength);
 		for(size_t i=0; i<dataSeriesLength; i++){
 			if((*data)[i] < -126.5) (*data)[i] = 0;
