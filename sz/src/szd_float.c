@@ -1785,7 +1785,7 @@ void getSnapshotData_float_4D(float** data, size_t r1, size_t r2, size_t r3, siz
 		if(errBoundMode < PW_REL)
 			decompressDataSeries_float_4D(data, r1, r2, r3, r4, tdps);
 		else
-			decompressDataSeries_float_3D_pwr(data, r1*r2, r3, r4, tdps);
+			decompressDataSeries_float_3D_pwr_pre_log(data, r1*r2, r3, r4, tdps);
 			//ToDO
 			//decompressDataSeries_float_4D_pwr(data, r1, r2, r3, r4, tdps);
 		return;
@@ -1806,7 +1806,7 @@ void getSnapshotData_float_4D(float** data, size_t r1, size_t r2, size_t r3, siz
 		if(errBoundMode < PW_REL)
 			decompressDataSeries_float_4D(&decmpData, r1, r2, r3, r4, tdps);
 		else
-			decompressDataSeries_float_3D_pwr(&decmpData, r1*r2, r3, r4, tdps);
+			decompressDataSeries_float_3D_pwr_pre_log(&decmpData, r1*r2, r3, r4, tdps);
 			//ToDO
 			//decompressDataSeries_float_4D_pwr(&decompData, r1, r2, r3, r4, tdps);
 		// insert the decompressed data

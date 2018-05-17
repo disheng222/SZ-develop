@@ -230,11 +230,15 @@ int new_TightDataPointStorageF_fromFlatBytes(TightDataPointStorageF **this, unsi
 		(*this)->exactMidBytes = (unsigned char*)malloc(sizeof(unsigned char)*(*this)->exactMidBytes_size);
 	else
 		(*this)->exactMidBytes = NULL;
+
+	int minLogValueSize = 0;
+	if(errorBoundMode>=PW_REL)
+		minLogValueSize = 4;
 	if ((*this)->rtypeArray != NULL) 
 	{
 		(*this)->residualMidBits_size = flatBytesLength - 3 - 1 - MetaDataByteLength - SZ_SIZE_TYPE - 4 - radExpoL - segmentL - pwrErrBoundBytesL - 4 - 4 - 1 - 8 
 				- SZ_SIZE_TYPE - SZ_SIZE_TYPE - SZ_SIZE_TYPE - SZ_SIZE_TYPE - 4 - (*this)->rtypeArray_size
-				- (*this)->typeArray_size - (*this)->leadNumArray_size
+				- minLogValueSize - (*this)->typeArray_size - (*this)->leadNumArray_size
 				- (*this)->exactMidBytes_size - pwrErrBoundBytes_size;
 		for (i = 0; i < (*this)->rtypeArray_size; i++)
 			(*this)->rtypeArray[i] = flatBytes[index++];
@@ -242,13 +246,19 @@ int new_TightDataPointStorageF_fromFlatBytes(TightDataPointStorageF **this, unsi
 	else
 	{
 		(*this)->residualMidBits_size = flatBytesLength - 3 - 1 - MetaDataByteLength - SZ_SIZE_TYPE - 4 - radExpoL - segmentL - pwrErrBoundBytesL - 4 - 4 - 1 - 8 
-				- SZ_SIZE_TYPE - SZ_SIZE_TYPE - SZ_SIZE_TYPE - (*this)->typeArray_size
+				- SZ_SIZE_TYPE - SZ_SIZE_TYPE - SZ_SIZE_TYPE - minLogValueSize - (*this)->typeArray_size
 				- (*this)->leadNumArray_size - (*this)->exactMidBytes_size - pwrErrBoundBytes_size;
 	}	
 	if((*this)->residualMidBits_size>0)
 		(*this)->residualMidBits = (unsigned char*)malloc(sizeof(unsigned char)*(*this)->residualMidBits_size);
 	else
 		(*this)->residualMidBits = NULL;
+
+	if(errorBoundMode>=PW_REL)
+	{
+		(*this)->minLogValue = bytesToFloat(&flatBytes[index]);
+		index+=4;
+	}
 	memcpy((*this)->typeArray, &flatBytes[index], (*this)->typeArray_size*sizeof(char));
 	index+=(*this)->typeArray_size*sizeof(char);
 	memcpy((*this)->pwrErrBoundBytes, &flatBytes[index], pwrErrBoundBytes_size*sizeof(char));
@@ -420,6 +430,13 @@ void convertTDPStoBytes_float(TightDataPointStorageF* tdps, unsigned char* bytes
 	for(i = 0;i<SZ_SIZE_TYPE;i++)//ST
 		bytes[k++] = exactMidBytesLength[i];
 
+	if(errorBoundMode>=PW_REL)
+	{
+		floatToBytes(exactMidBytesLength, tdps->minLogValue);
+		for(i=0;i<4;i++)
+			bytes[k++] = exactMidBytesLength[i];
+	}
+
 	memcpy(&(bytes[k]), tdps->typeArray, tdps->typeArray_size);
 	k += tdps->typeArray_size;
 	if(errorBoundMode>=PW_REL)
@@ -521,6 +538,13 @@ void convertTDPStoBytes_float_reserve(TightDataPointStorageF* tdps, unsigned cha
 
 	memcpy(&(bytes[k]), tdps->rtypeArray, tdps->rtypeArray_size);
 	k += tdps->rtypeArray_size;
+
+	if(errorBoundMode>=PW_REL)
+	{
+		floatToBytes(exactMidBytesLength, tdps->minLogValue);
+		for(i=0;i<4;i++)
+			bytes[k++] = exactMidBytesLength[i];
+	}
 	memcpy(&(bytes[k]), tdps->typeArray, tdps->typeArray_size);
 	k += tdps->typeArray_size;
 	if(errorBoundMode>=PW_REL)
@@ -583,15 +607,17 @@ void convertTDPStoFlatBytes_float(TightDataPointStorageF *tdps, unsigned char** 
 	{
 		size_t residualMidBitsLength = tdps->residualMidBits == NULL ? 0 : tdps->residualMidBits_size;
 		size_t segmentL = 0, radExpoL = 0, pwrBoundArrayL = 0;
+		int minLogValueSize = 0;
 		if(errorBoundMode>=PW_REL)
 		{			
 			segmentL = SZ_SIZE_TYPE;
 			radExpoL = 1;
 			pwrBoundArrayL = 4;
+			minLogValueSize = 4;
 		}
 
 		size_t totalByteLength = 3 + 1 + MetaDataByteLength + SZ_SIZE_TYPE + 4 + radExpoL + segmentL + pwrBoundArrayL + 4 + 4 + 1 + 8 
-				+ SZ_SIZE_TYPE + SZ_SIZE_TYPE + SZ_SIZE_TYPE  
+				+ SZ_SIZE_TYPE + SZ_SIZE_TYPE + SZ_SIZE_TYPE + minLogValueSize  
 				+ tdps->typeArray_size + tdps->leadNumArray_size 
 				+ tdps->exactMidBytes_size + residualMidBitsLength + tdps->pwrErrBoundBytes_size;
 
@@ -605,16 +631,18 @@ void convertTDPStoFlatBytes_float(TightDataPointStorageF *tdps, unsigned char** 
 	{
 		size_t residualMidBitsLength = tdps->residualMidBits == NULL ? 0 : tdps->residualMidBits_size;		
 		size_t segmentL = 0, radExpoL = 0, pwrBoundArrayL = 0;
+		int minLogValueSize = 0;
 		if(errorBoundMode>=PW_REL)
 		{
 			segmentL = SZ_SIZE_TYPE;
 			radExpoL = 1;
 			pwrBoundArrayL = 4;
+			minLogValueSize = 4;
 		}
 
 		size_t totalByteLength = 3 + 1 + MetaDataByteLength + SZ_SIZE_TYPE + 4 + radExpoL + segmentL + pwrBoundArrayL + 4 + 4 + 1 + 8 
 				+ SZ_SIZE_TYPE + SZ_SIZE_TYPE + SZ_SIZE_TYPE + SZ_SIZE_TYPE + 4 + tdps->rtypeArray_size
-				+ tdps->typeArray_size + tdps->leadNumArray_size
+				+ minLogValueSize + tdps->typeArray_size + tdps->leadNumArray_size
 				+ tdps->exactMidBytes_size + residualMidBitsLength + tdps->pwrErrBoundBytes_size;
 
 		sameByte = (unsigned char) (sameByte | 0x08); // 00001000, the 4th bit

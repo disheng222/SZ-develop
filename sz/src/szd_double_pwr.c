@@ -1360,7 +1360,7 @@ void decompressDataSeries_double_1D_pwrgroup(double** data, size_t dataSeriesLen
 void decompressDataSeries_double_1D_pwr_pre_log(double** data, size_t dataSeriesLength, TightDataPointStorageD* tdps) {
 
 	decompressDataSeries_double_1D(data, dataSeriesLength, tdps);
-	double threshold = tdps->maxABSLogValue;
+	double threshold = tdps->minLogValue;
 	if(tdps->pwrErrBoundBytes_size > 0){
 		unsigned char * signs;// = (unsigned char *) malloc(dataSeriesLength);
 		unsigned long tmpSize = zlib_uncompress5(tdps->pwrErrBoundBytes, tdps->pwrErrBoundBytes_size, &signs, dataSeriesLength);
@@ -1385,7 +1385,7 @@ void decompressDataSeries_double_2D_pwr_pre_log(double** data, size_t r1, size_t
 
 	size_t dataSeriesLength = r1 * r2;
 	decompressDataSeries_double_2D(data, r1, r2, tdps);
-	double threshold = tdps->maxABSLogValue;
+	double threshold = tdps->minLogValue;
 	if(tdps->pwrErrBoundBytes_size > 0){
 		unsigned char * signs;// = (unsigned char *) malloc(dataSeriesLength);
 		unsigned long tmpSize = zlib_uncompress5(tdps->pwrErrBoundBytes, tdps->pwrErrBoundBytes_size, &signs, dataSeriesLength);
@@ -1409,7 +1409,7 @@ void decompressDataSeries_double_3D_pwr_pre_log(double** data, size_t r1, size_t
 
 	size_t dataSeriesLength = r1 * r2 * r3;
 	decompressDataSeries_double_3D(data, r1, r2, r3, tdps);
-	double threshold = tdps->maxABSLogValue;
+	double threshold = tdps->minLogValue;
 	if(tdps->pwrErrBoundBytes_size > 0){
 		unsigned char * signs;// = (unsigned char *) malloc(dataSeriesLength);
 		unsigned long tmpSize = zlib_uncompress5(tdps->pwrErrBoundBytes, tdps->pwrErrBoundBytes_size, &signs, dataSeriesLength);

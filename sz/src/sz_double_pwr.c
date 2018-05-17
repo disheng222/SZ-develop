@@ -1718,6 +1718,7 @@ size_t dataLength, double absErrBound, double relBoundRatio, double pwrErrRatio,
 #include <stdbool.h>
 
 void SZ_compress_args_double_NoCkRngeNoGzip_1D_pwr_pre_log(unsigned char** newByteData, double *oriData, double pwrErrRatio, size_t dataLength, size_t *outSize, double min, double max){
+
     SZ_Reset(allNodes, stateNum);
 	double * log_data = (double *) malloc(dataLength * sizeof(double));
 	double threshold = fabs(min) > fabs(max) ? fabs(min) : fabs(max);
@@ -1747,6 +1748,7 @@ void SZ_compress_args_double_NoCkRngeNoGzip_1D_pwr_pre_log(unsigned char** newBy
 
 	double valueRangeSize, medianValue_f;
 	computeRangeSize_double(log_data, dataLength, &valueRangeSize, &medianValue_f);	
+	if(fabs(min_log_data) > max_abs_log_data) max_abs_log_data = fabs(min_log_data);
 	double realPrecision = log2(1.0 + pwrErrRatio) - max_abs_log_data * 2.23e-16;
 	for(size_t i=0; i<dataLength; i++){
 		if(oriData[i] == 0){
@@ -1754,7 +1756,7 @@ void SZ_compress_args_double_NoCkRngeNoGzip_1D_pwr_pre_log(unsigned char** newBy
 		}
 	}
     TightDataPointStorageD* tdps = SZ_compress_double_1D_MDQ(log_data, dataLength, realPrecision, valueRangeSize, medianValue_f);
-    tdps->maxABSLogValue = min_log_data - 1.0001*realPrecision;
+    tdps->minLogValue = min_log_data - 1.0001*realPrecision;
     free(log_data);
     if(!positive){
 	    unsigned char * comp_signs;
@@ -1780,6 +1782,7 @@ void SZ_compress_args_double_NoCkRngeNoGzip_1D_pwr_pre_log(unsigned char** newBy
 }
 
 void SZ_compress_args_double_NoCkRngeNoGzip_2D_pwr_pre_log(unsigned char** newByteData, double *oriData, double pwrErrRatio, size_t r1, size_t r2, size_t *outSize, double min, double max){
+
 	size_t dataLength = r1 * r2;
     SZ_Reset(allNodes, stateNum);
 	double * log_data = (double *) malloc(dataLength * sizeof(double));
@@ -1810,6 +1813,7 @@ void SZ_compress_args_double_NoCkRngeNoGzip_2D_pwr_pre_log(unsigned char** newBy
 
 	double valueRangeSize, medianValue_f;
 	computeRangeSize_double(log_data, dataLength, &valueRangeSize, &medianValue_f);	
+	if(fabs(min_log_data) > max_abs_log_data) max_abs_log_data = fabs(min_log_data);
 	double realPrecision = log2(1.0 + pwrErrRatio) - max_abs_log_data * 2.23e-16;
 	for(size_t i=0; i<dataLength; i++){
 		if(oriData[i] == 0){
@@ -1817,8 +1821,9 @@ void SZ_compress_args_double_NoCkRngeNoGzip_2D_pwr_pre_log(unsigned char** newBy
 		}
 	}
     TightDataPointStorageD* tdps = SZ_compress_double_2D_MDQ(log_data, r1, r2, realPrecision, valueRangeSize, medianValue_f);
-    tdps->maxABSLogValue = min_log_data - 1.0001*realPrecision;
+    tdps->minLogValue = min_log_data - 1.0001*realPrecision;
     free(log_data);
+
     if(!positive){
 	    unsigned char * comp_signs;
 		// compress signs
@@ -1843,6 +1848,7 @@ void SZ_compress_args_double_NoCkRngeNoGzip_2D_pwr_pre_log(unsigned char** newBy
 }
 
 void SZ_compress_args_double_NoCkRngeNoGzip_3D_pwr_pre_log(unsigned char** newByteData, double *oriData, double pwrErrRatio, size_t r1, size_t r2, size_t r3, size_t *outSize, double min, double max){
+
 	size_t dataLength = r1 * r2 * r3;
     SZ_Reset(allNodes, stateNum);
 	double * log_data = (double *) malloc(dataLength * sizeof(double));
@@ -1873,6 +1879,7 @@ void SZ_compress_args_double_NoCkRngeNoGzip_3D_pwr_pre_log(unsigned char** newBy
 
 	double valueRangeSize, medianValue_f;
 	computeRangeSize_double(log_data, dataLength, &valueRangeSize, &medianValue_f);	
+	if(fabs(min_log_data) > max_abs_log_data) max_abs_log_data = fabs(min_log_data);
 	double realPrecision = log2(1.0 + pwrErrRatio) - max_abs_log_data * 2.23e-16;
 	for(size_t i=0; i<dataLength; i++){
 		if(oriData[i] == 0){
@@ -1880,7 +1887,7 @@ void SZ_compress_args_double_NoCkRngeNoGzip_3D_pwr_pre_log(unsigned char** newBy
 		}
 	}
     TightDataPointStorageD* tdps = SZ_compress_double_3D_MDQ(log_data, r1, r2, r3, realPrecision, valueRangeSize, medianValue_f);
-    tdps->maxABSLogValue = min_log_data - 1.0001*realPrecision;
+    tdps->minLogValue = min_log_data - 1.0001*realPrecision;
     free(log_data);
     if(!positive){
 	    unsigned char * comp_signs;
