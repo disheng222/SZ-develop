@@ -1758,7 +1758,7 @@ void getSnapshotData_double_4D(double** data, size_t r1, size_t r2, size_t r3, s
 		if(errBoundMode < PW_REL)
 			decompressDataSeries_double_4D(data, r1, r2, r3, r4, tdps);
 		else
-			decompressDataSeries_double_3D_pwr(data, r1*r2, r3, r4, tdps);
+			decompressDataSeries_double_3D_pwr_pre_log(data, r1*r2, r3, r4, tdps);
 			//ToDo
 			//decompressDataSeries_double_4D_pwr(data, r1, r2, r3, r4, tdps);
 		return;
@@ -1779,7 +1779,7 @@ void getSnapshotData_double_4D(double** data, size_t r1, size_t r2, size_t r3, s
 		if(errBoundMode < PW_REL)
 			decompressDataSeries_double_4D(&decmpData, r1, r2, r3, r4, tdps);
 		else
-			decompressDataSeries_double_3D_pwr(&decmpData, r1*r2, r3, r4, tdps);
+			decompressDataSeries_double_3D_pwr_pre_log(&decmpData, r1*r2, r3, r4, tdps);
 			//ToDo
 			//decompressDataSeries_double_4D_pwr(&decmpData, r1, r2, r3, r4, tdps);
 		// insert the decompressed data
