@@ -1371,7 +1371,8 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwrErrRatio)
 			if(errBoundMode>=PW_REL)
 			{
 				//SZ_compress_args_double_NoCkRngeNoGzip_1D_pwr(newByteData, oriData, realPrecision, r1, outSize, min, max);
-				SZ_compress_args_double_NoCkRngeNoGzip_1D_pwrgroup(newByteData, oriData, r1, absErr_Bound, relBoundRatio, pwrErrRatio, valueRangeSize, medianValue, outSize);				
+				// SZ_compress_args_double_NoCkRngeNoGzip_1D_pwrgroup(newByteData, oriData, r1, absErr_Bound, relBoundRatio, pwrErrRatio, valueRangeSize, medianValue, outSize);				
+				SZ_compress_args_double_NoCkRngeNoGzip_1D_pwr_pre_log(newByteData, oriData, pwrErrRatio, r1, outSize, min, max);				
 			}
 			else
 				SZ_compress_args_double_NoCkRngeNoGzip_1D(newByteData, oriData, r1, realPrecision, outSize, valueRangeSize, medianValue);
@@ -1448,8 +1449,9 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwRelBoundRa
 			if(errorBoundMode>=PW_REL)
 			{
 				//SZ_compress_args_double_NoCkRngeNoGzip_1D_pwr(&tmpByteData, oriData, realPrecision, r1, &tmpOutSize, min, max);
-				SZ_compress_args_double_NoCkRngeNoGzip_1D_pwrgroup(&tmpByteData, oriData, r1, absErr_Bound, relBoundRatio, pwRelBoundRatio, 
-				valueRangeSize, medianValue, &tmpOutSize);
+				// SZ_compress_args_double_NoCkRngeNoGzip_1D_pwrgroup(&tmpByteData, oriData, r1, absErr_Bound, relBoundRatio, pwRelBoundRatio, 
+				// valueRangeSize, medianValue, &tmpOutSize);
+				SZ_compress_args_double_NoCkRngeNoGzip_1D_pwr_pre_log(&tmpByteData, oriData, pwRelBoundRatio, r1, &tmpOutSize, min, max);
 			}
 			else
 				SZ_compress_args_double_NoCkRngeNoGzip_1D(&tmpByteData, oriData, r1, realPrecision, &tmpOutSize, valueRangeSize, medianValue);

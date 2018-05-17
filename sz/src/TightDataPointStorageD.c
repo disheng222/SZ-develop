@@ -236,6 +236,10 @@ int new_TightDataPointStorageD_fromFlatBytes(TightDataPointStorageD **this, unsi
 		(*this)->residualMidBits = NULL;
 	//for (i = 0; i < (*this)->typeArray_size; i++)
 	//	(*this)->typeArray[i] = flatBytes[index++];
+	if(errorBoundMode >= PW_REL){
+		(*this)->maxABSLogValue = bytesToDouble(&flatBytes[index]);
+		index+=8;
+	}
 	memcpy((*this)->typeArray, &flatBytes[index], (*this)->typeArray_size*sizeof(char));
 	index+=(*this)->typeArray_size*sizeof(char);
 	memcpy((*this)->pwrErrBoundBytes, &flatBytes[index], pwrErrBoundBytes_size*sizeof(char));
@@ -386,10 +390,17 @@ void convertTDPStoBytes_double(TightDataPointStorageD* tdps, unsigned char* byte
 	for(i = 0;i<SZ_SIZE_TYPE;i++)//ST
 		bytes[k++] = exactLengthBytes[i];
 
+
 	sizeToBytes(exactMidBytesLength, tdps->exactMidBytes_size);
 	for(i = 0;i<SZ_SIZE_TYPE;i++)//ST
 		bytes[k++] = exactMidBytesLength[i];
 
+	if(errorBoundMode>=PW_REL)
+	{	
+		doubleToBytes(exactMidBytesLength, tdps->maxABSLogValue);
+		for(i = 0;i < 8; i++)
+			bytes[k++] = exactMidBytesLength[i];
+	}
 	memcpy(&(bytes[k]), tdps->typeArray, tdps->typeArray_size);
 	k += tdps->typeArray_size;
 	if(errorBoundMode>=PW_REL)
@@ -560,6 +571,7 @@ void convertTDPStoFlatBytes_double(TightDataPointStorageD *tdps, unsigned char**
 
 		size_t totalByteLength = 3 + 1 + MetaDataByteLength + SZ_SIZE_TYPE + 4 + radExpoL + segmentL + pwrBoundArrayL + 4 + 8 + 1 + 8 
 				+ SZ_SIZE_TYPE + SZ_SIZE_TYPE + SZ_SIZE_TYPE 
+				+ sizeof(double) /*nax absolute log value*/
 				+ tdps->typeArray_size + tdps->leadNumArray_size
 				+ tdps->exactMidBytes_size + residualMidBitsLength + tdps->pwrErrBoundBytes_size;
 

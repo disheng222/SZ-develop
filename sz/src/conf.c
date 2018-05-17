@@ -128,7 +128,7 @@ int SZ_ReadConf() {
 		conf_params->pw_relBoundRatio = pw_relBoundRatio = 1E-3;
 		conf_params->segment_size = segment_size = 36;
 		
-		conf_params->pwr_type = pwr_type = SZ_PWR_AVG_TYPE;
+		conf_params->pwr_type = pwr_type = SZ_PWR_MIN_TYPE;
 		
 		SZ_Reset(allNodes, stateNum);
 		return SZ_SCES;

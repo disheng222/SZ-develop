@@ -22,6 +22,7 @@ typedef struct TightDataPointStorageD
 	double medianValue;
 	char reqLength;	
 	char radExpo; //used to compute reqLength based on segmented precisions in "pw_rel_compression"
+	double maxABSLogValue;
 
 	size_t exactDataNum;
 	double reservedValue;

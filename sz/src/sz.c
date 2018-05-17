@@ -89,9 +89,9 @@ void SZ_Reset(int allNodes, int stateNum)
     if(pool==NULL)
     {
 		pool = (struct node_t*)malloc(allNodes*2*sizeof(struct node_t));
-		qqq = (node*)malloc(allNodes*2*sizeof(node));
-		code = (unsigned long**)malloc(stateNum*sizeof(unsigned long*));
-		cout = (unsigned char *)malloc(stateNum*sizeof(unsigned char));
+		if(qqq==NULL) qqq = (node*)malloc(allNodes*2*sizeof(node));
+		if(code==NULL) code = (unsigned long**)malloc(stateNum*sizeof(unsigned long*));
+		if(cout==NULL) cout = (unsigned char *)malloc(stateNum*sizeof(unsigned char));
 	}
 	
 	memset(pool, 0, allNodes*2*sizeof(struct node_t));

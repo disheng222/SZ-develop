@@ -37,6 +37,10 @@ double absErrBound, double relBoundRatio, double pwrErrRatio, double valueRangeS
 void SZ_compress_args_double_NoCkRngeNoGzip_1D_pwrgroup(unsigned char** newByteData, double *oriData,
 size_t dataLength, double absErrBound, double relBoundRatio, double pwrErrRatio, double valueRangeSize, double medianValue_f, size_t *outSize);
 
+void SZ_compress_args_double_NoCkRngeNoGzip_1D_pwr_pre_log(unsigned char** newByteData, double *oriData, double globalPrecision, size_t dataLength, size_t *outSize, double min, double max);
+void SZ_compress_args_double_NoCkRngeNoGzip_2D_pwr_pre_log(unsigned char** newByteData, double *oriData, double globalPrecision, size_t r1, size_t r2, size_t *outSize, double min, double max);
+void SZ_compress_args_double_NoCkRngeNoGzip_3D_pwr_pre_log(unsigned char** newByteData, double *oriData, double globalPrecision, size_t r1, size_t r2, size_t r3, size_t *outSize, double min, double max);
+
 #ifdef __cplusplus
 }
 #endif

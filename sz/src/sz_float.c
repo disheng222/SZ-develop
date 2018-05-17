@@ -1692,7 +1692,7 @@ size_t dataLength, double realPrecision, float valueRangeSize, float medianValue
 	free(vce);
 	free(lce);	
 	free(exactMidByteArray); //exactMidByteArray->array has been released in free_TightDataPointStorageF(tdps);
-	
+	free_DBA(resiBitLengthArray);
 	return tdps;
 }
 
@@ -10810,6 +10810,85 @@ unsigned char * SZ_compress_float_2D_MDQ_nonblocked_with_blocked_regression(floa
 	return result;
 }
 
+// // Test for Lorenzo with original data
+// unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
+
+// 	unsigned int quantization_intervals;
+// 	// double elapsed_time = 0.0;
+// 	// clock_t start, end;
+// 	// start = clock();
+
+// 	if(optQuantMode==1)
+// 	{
+// 		quantization_intervals = optimize_intervals_float_3D_opt(oriData, r1, r2, r3, realPrecision);
+// 		updateQuantizationInfo(quantization_intervals);
+// 	}	
+// 	else{
+// 		quantization_intervals = intvCapacity;
+// 	}
+// 	printf("\nLorenzo Original Data Test!\n\n");
+
+// 	double err = 0.0;
+// 	double diff, itvNum;
+// 	float pred, curData;
+// 	size_t num_elements = (r1 - 1) * (r2 - 1) * (r3 - 1);
+// 	float * unpredictable_data = (float *) malloc(num_elements * sizeof(float));
+// 	int * type_array = (int *) malloc(num_elements * sizeof(int));
+// 	size_t type_index = 0;
+// 	size_t unpredictable_count = 0;
+// 	size_t index;
+// 	size_t r23 = r2 * r3;
+// 	float * error = (float *) malloc(num_elements * sizeof(float));
+// 	for(size_t i=1;i<r1;i++)
+// 	{
+// 		for(size_t j=1;j<r2;j++)
+// 		{
+// 			for(size_t k=1;k<r3;k++)
+// 			{			
+// 				index = i*r23+j*r3+k;
+// 				pred = oriData[index-1] + oriData[index-r3] + oriData[index-r23] 
+// 				- oriData[index-1-r23] - oriData[index-r3-1] - oriData[index-r3-r23] + oriData[index-r3-r23-1];
+// 				curData = oriData[index];
+// 				diff = curData - pred;
+// 				itvNum = fabs(diff)/realPrecision + 1;
+// 				if (itvNum < intvCapacity){
+// 					if (diff < 0) itvNum = -itvNum;
+// 					type_array[type_index] = (int) (itvNum/2) + intvRadius;
+// 					pred = pred + 2 * (type_array[type_index] - intvRadius) * realPrecision;
+// 					//ganrantee comporession error against the case of machine-epsilon
+// 					if(fabs(curData - pred)>realPrecision){	
+// 						type_array[type_index] = 0;
+// 						pred = curData;
+// 						unpredictable_data[unpredictable_count ++] = curData;
+// 					}		
+// 				}
+// 				else{
+// 					type_array[type_index] = 0;
+// 					pred = curData;
+// 					unpredictable_data[unpredictable_count ++] = curData;
+// 				}
+// 				error[type_index] = curData - pred;
+// 				err += (curData - pred) * (curData - pred);
+// 				type_index ++;
+// 			}
+// 		}
+// 	}
+// 	printf("Unpredictable count: %zu\n", unpredictable_count);
+// 	printf("NRMSE: %.10f\n", sqrt(err / num_elements));
+// 	{
+// 		int status;
+// 		writeFloatData_inBytes(error, num_elements, "/Users/LiangXin/Documents/research/anl/lossy_comp/data/ARAMCO/err.dat", &status);
+// 	}
+// 	size_t typeArray_size = 0;
+// 	unsigned char * typeArray;
+// 	encode_withTree(type_array, num_elements, &typeArray, &typeArray_size);
+// 	*comp_size = typeArray_size + unpredictable_count * sizeof(float);
+// 	unsigned char * result = (unsigned char *) malloc(*comp_size);
+// 	printf("Comp_size: %zu\n", *comp_size);
+// 	memcpy(result, typeArray, typeArray_size);
+// 	memcpy(result + typeArray_size, unpredictable_data, unpredictable_count * sizeof(float));
+// 	return result;
+// }
 // modified for higher performance
 unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
 
