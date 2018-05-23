@@ -415,6 +415,7 @@ unsigned int optimize_intervals_float_2D_with_freq_and_dense_pos(float *oriData,
 	while(data_pos - oriData < len){
 		pred_value = data_pos[-1] + data_pos[-r2] - data_pos[-r2-1];
 		pred_err = fabs(pred_value - *data_pos);
+		if(pred_err < realPrecision) freq_count ++;
 		radiusIndex = (unsigned long)((pred_err/realPrecision+1)/2);
 		if(radiusIndex>=maxRangeRadius)
 			radiusIndex = maxRangeRadius - 1;
@@ -444,8 +445,8 @@ unsigned int optimize_intervals_float_2D_with_freq_and_dense_pos(float *oriData,
 		sample_count ++;
 	}
 	*max_freq = freq_count * 1.0/ totalSampleSize;
-	printf("sample_count: %ld\n", sample_count);
-	fflush(stdout);
+	// printf("sample_count: %ld\n", sample_count);
+	// fflush(stdout);
 	//compute the appropriate number
 	size_t targetCount = totalSampleSize*predThreshold;
 	size_t sum = 0;
@@ -478,7 +479,7 @@ unsigned int optimize_intervals_float_2D_with_freq_and_dense_pos(float *oriData,
 	}
 	*dense_pos = mean + realPrecision * (ptrdiff_t)(max_index + 1 - radius);
 	*mean_freq = max_sum * 1.0 / totalSampleSize;
-	printf("Max frequency: %.6f index: %ld dense_pos: %.6f\n", *mean_freq, max_index, *dense_pos);
+	// printf("Max frequency: %.6f index: %ld dense_pos: %.6f\n", *mean_freq, max_index, *dense_pos);
 
 	free(freq_intervals);
 	free(intervals);
@@ -4506,7 +4507,7 @@ size_t SZ_compress_float_1D_MDQ_RA_block(float * block_ori_data, float * mean, s
 
 size_t SZ_compress_float_1D_MDQ_RA_block_1D_pred(float * block_ori_data, float * mean, float dense_pos, size_t dim_0, size_t block_dim_0, double realPrecision, int * type, DynamicFloatArray * unpredictable_data){
 
-	float sum = 0.0;
+	double sum = 0.0;
 	float * data_pos;
 	size_t mean_count = 0;
 	data_pos = block_ori_data;
@@ -4715,7 +4716,7 @@ size_t SZ_compress_float_2D_MDQ_RA_block(float * block_ori_data, float * mean, s
 
 size_t SZ_compress_float_2D_MDQ_RA_block_2D_pred(float * block_ori_data, float * mean, float dense_pos, size_t dim_0, size_t dim_1, size_t block_dim_0, size_t block_dim_1, double realPrecision, float * P0, float * P1, int * type, float * unpredictable_data){
 
-	float sum = 0.0;
+	double sum = 0.0;
 	float * data_pos;
 	size_t dim0_offset = dim_1;
 
@@ -5222,7 +5223,7 @@ unsigned char * SZ_compress_float_2D_MDQ_RA(float *oriData, size_t r1, size_t r2
 
 size_t SZ_compress_float_3D_MDQ_RA_block_2_layers(float * block_ori_data, float * mean, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, float * P0, float * P1, float * P_, int * type, float * unpredictable_data){
 
-	float sum = 0.0;
+	double sum = 0.0;
 	float * data_pos;
 	size_t dim0_offset = dim_1 * dim_2;
 	size_t dim1_offset = dim_2;
@@ -5891,7 +5892,7 @@ float SZ_compress_float_3D_MDQ_RA_block_no_mean(float * block_ori_data, size_t d
 
 size_t SZ_compress_float_3D_MDQ_RA_block(float * block_ori_data, float * mean, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, float * P0, float * P1, int * type, float * unpredictable_data){
 
-	float sum = 0.0;
+	double sum = 0.0;
 	float * data_pos;
 	size_t dim0_offset = dim_1 * dim_2;
 	size_t dim1_offset = dim_2;
@@ -6202,7 +6203,7 @@ size_t SZ_compress_float_3D_MDQ_RA_block(float * block_ori_data, float * mean, s
 
 size_t SZ_compress_float_3D_MDQ_RA_block_adaptive(float * block_ori_data, float * mean, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, float * P0, float * P1, int * type, float * unpredictable_data){
 
-	float sum = 0.0;
+	double sum = 0.0;
 	float * data_pos;
 	size_t dim0_offset = dim_1 * dim_2;
 	size_t dim1_offset = dim_2;
@@ -6522,7 +6523,7 @@ size_t SZ_compress_float_3D_MDQ_RA_block_adaptive(float * block_ori_data, float 
 
 size_t SZ_compress_float_3D_MDQ_RA_block_3D_pred(float * block_ori_data, float * mean, float dense_pos, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, float * P0, float * P1, int * type, float * unpredictable_data){
 
-	float sum = 0.0;
+	double sum = 0.0;
 	float * data_pos;
 	size_t dim0_offset = dim_1 * dim_2;
 	size_t dim1_offset = dim_2;
@@ -6887,7 +6888,7 @@ size_t SZ_compress_float_3D_MDQ_RA_block_3D_pred(float * block_ori_data, float *
 
 size_t SZ_compress_float_3D_MDQ_RA_block_3D_pred_multi_means(float * block_ori_data, unsigned int mean_count, float * mean, float dense_pos, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, float * P0, float * P1, int * type, float * unpredictable_data){
 
-	float sum = 0.0;
+	double sum = 0.0;
 	size_t dim0_offset = dim_1 * dim_2;
 	size_t dim1_offset = dim_2;
 
@@ -7299,7 +7300,7 @@ size_t SZ_compress_float_3D_MDQ_RA_block_3D_pred_multi_means(float * block_ori_d
 
 size_t SZ_compress_float_3D_MDQ_RA_block_3D_pred_flush_after_compare(float * block_ori_data, float * mean, float dense_pos, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, float * P0, float * P1, int * type, float * unpredictable_data){
 
-	float sum = 0.0;
+	double sum = 0.0;
 	float * data_pos;
 	size_t dim0_offset = dim_1 * dim_2;
 	size_t dim1_offset = dim_2;
@@ -8910,7 +8911,7 @@ float SZ_compress_float_3D_MDQ_strip_pred_by_regression_with_freq(float * block_
 // 	float mean = 0;
 // 	if(use_mean){
 // 		// compute mean
-// 		float sum = 0.0;
+// 		double sum = 0.0;
 // 		size_t mean_count = 0;
 // 		for(size_t i=0; i<num_elements; i++){
 // 			if(fabs(oriData[i] - dense_pos) < realPrecision){
@@ -9981,7 +9982,7 @@ unsigned char * SZ_compress_float_2D_MDQ_nonblocked_with_blocked_regression(floa
 				float fx = 0.0;
 				float fy = 0.0;
 				float f = 0;
-				float sum_x; 
+				double sum_x; 
 				float curData;
 				for(size_t i=0; i<current_blockcount_x; i++){
 					sum_x = 0;
@@ -10028,9 +10029,10 @@ unsigned char * SZ_compress_float_2D_MDQ_nonblocked_with_blocked_regression(floa
 	float* selectCoeffs_c = (float*) malloc(num_blocks*sizeof(float));
 	
 	float mean = 0;
+	use_mean = 0;
 	if(use_mean){
 		// compute mean
-		float sum = 0.0;
+		double sum = 0.0;
 		size_t mean_count = 0;
 		for(size_t i=0; i<num_elements; i++){
 			if(fabs(oriData[i] - dense_pos) < realPrecision){
@@ -10039,7 +10041,7 @@ unsigned char * SZ_compress_float_2D_MDQ_nonblocked_with_blocked_regression(floa
 			}
 		}
 		if(mean_count > 0) mean = sum / mean_count;
-		// printf("%.4f value will be flushed to %.4f\n", mean_count * 1.0/num_elements, mean);
+		printf("%.4f value will be flushed to %.4f\n", mean_count * 1.0/num_elements, mean);
 	}
 
 	reg_params_pos = reg_pred_params;
@@ -11042,7 +11044,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	float mean = 0;
 	if(use_mean){
 		// compute mean
-		float sum = 0.0;
+		double sum = 0.0;
 		size_t mean_count = 0;
 		for(size_t i=0; i<num_elements; i++){
 			if(fabs(oriData[i] - dense_pos) < realPrecision){
@@ -11750,6 +11752,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 
 	free(prediction_buffer_1);
 	free(prediction_buffer_2);
+
 	// free(buffer1);
 	// free(buffer2);
 	// printf("Block wise compression end, unpredictable num %d, num_elements %ld, max unpred count %d\n", total_unpred, num_elements, max_unpred_count);
