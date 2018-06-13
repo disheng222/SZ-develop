@@ -2981,6 +2981,7 @@ int errBoundMode, double absErr_Bound, double relBoundRatio, double pwRelBoundRa
 					//tmpByteData = SZ_compress_float_3D_MDQ_nonblocked(oriData, r3, r2, r1, realPrecision, &tmpOutSize);
 					tmpByteData = SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(oriData, r3, r2, r1, realPrecision, &tmpOutSize);
 					// tmpByteData = SZ_compress_float_3D_MDQ_RA_all_by_regression(oriData, r3, r2, r1, realPrecision, &tmpOutSize);
+					// tmpByteData = SZ_compress_float_3D_MDQ_all_by_interpolation(oriData, r3, r2, r1, realPrecision, &tmpOutSize);
 			}
 		}
 		else
@@ -12962,5 +12963,218 @@ unsigned char * SZ_compress_float_3D_MDQ_RA_multi_means(float *oriData, size_t r
 	return result;
 }
 
+unsigned char * SZ_compress_float_3D_MDQ_all_by_interpolation(float *oriData, size_t r1, size_t r2, size_t r3, double realPrecision, size_t * comp_size){
 
+	unsigned int quantization_intervals;
+	if(optQuantMode==1)
+	{
+		quantization_intervals = optimize_intervals_float_3D(oriData, r1, r2, r3, realPrecision);
+		quantization_intervals = 1024;
+		printf("number of bins: %d\n", quantization_intervals);
+		updateQuantizationInfo(quantization_intervals);
+	}	
+	else{
+		quantization_intervals = intvCapacity;
+	}
+
+	// calculate block dims
+	size_t num_x, num_y, num_z;
+	size_t block_size = 5;
+	printf("block_size: %ld\n", block_size);
+	num_x = r1 / block_size;
+	num_y = r2 / block_size;
+	num_z = r3 / block_size;
+
+	if(r1 != num_x * block_size + 1){
+		printf("dim x not aligned\n");
+		exit(0);
+	}
+	if(r2 != num_y * block_size + 1){
+		printf("dim y not aligned\n");
+		exit(0);
+	}
+	if(r3 != num_z * block_size + 1){
+		printf("dim z not aligned\n");
+		exit(0);
+	}
+	// size_t residue_x, residue_y, residue_z;
+	// residue_x = r1 % block_size;
+	// residue_y = r2 % block_size;
+	// residue_z = r3 % block_size;
+	// if(residue_x) num_x ++;
+	// if(residue_y) num_y ++;
+	// if(residue_z) num_z ++;
+
+	size_t num_elements = r1 * r2 * r3;
+	size_t dim0_offset = r2 * r3;
+	size_t dim1_offset = r3;
+	size_t downsample_size = (num_x+1) * (num_y+1) * (num_z+1);
+	float * downsamples = (float *) malloc(downsample_size * sizeof(float));
+	// get sample points
+	size_t count = 0;
+	float * block_data_pos_x;
+	float * block_data_pos_y;
+	float * data_pos;
+	block_data_pos_x = oriData;
+	for(size_t i=0; i<num_x+1; i++){
+		block_data_pos_y = block_data_pos_x;
+		for(size_t j=0; j<num_y+1; j++){
+			data_pos = block_data_pos_y;
+			for(size_t k=0; k<num_z+1; k++){
+				downsamples[count ++] = *data_pos;
+				data_pos += block_size;
+			}
+			block_data_pos_y += block_size*dim1_offset;
+		}
+		block_data_pos_x += dim0_offset;
+	}
+	float * coeff = (float *) malloc((block_size+1) * sizeof(float));
+	for(size_t i=0; i<=block_size; i++){
+		coeff[i] = i * 1.0 / block_size;
+	}
+	size_t sample_strip0 = (num_y + 1) * (num_z + 1);
+	size_t sample_strip1 = num_z + 1;
+	float c00, c01, c10, c11, c0, c1;
+	float pred, curData, dec_data;
+	double itvNum, diff;
+	// interpolation and quantization
+	float * block_data_pos;
+	float * cur_data_pos;
+	size_t unpredictable_count = 0;
+	float * unpredictable_data = (float *) malloc(((size_t)(0.01 * num_elements)) * sizeof(float));
+	size_t index = 0;
+	int * result_type = (int *) malloc(num_elements * sizeof(int));
+	int * type = result_type;
+	printf("start interpolate\n");
+	int block_size_x, block_size_y, block_size_z;
+	for(size_t i=0; i<num_x; i++){
+		for(size_t j=0; j<num_y; j++){
+			for(size_t k=0; k<num_z; k++){
+				// printf("i, j, k: %d %d %d, index %zu\n", i, j, k, index);
+				// fflush(stdout);
+				block_data_pos = oriData + i*block_size*dim0_offset + j*block_size*dim1_offset + k*block_size;
+				cur_data_pos = block_data_pos;
+				// trilinear interpolate block
+				if(i == num_x - 1) block_size_x = block_size+1;
+				else block_size_x = block_size;
+				if(j == num_y - 1) block_size_y = block_size+1;
+				else block_size_y = block_size;
+				if(k == num_z - 1) block_size_z = block_size+1;
+				else block_size_z = block_size;				
+				for(size_t ii=0; ii<block_size_x; ii++){
+					for(size_t jj=0; jj<block_size_y; jj++){
+						for(size_t kk=0; kk<block_size_z; kk++){
+							c00 = downsamples[i*sample_strip0 + j*sample_strip1 + k] * (1 - coeff[ii]) + downsamples[i*sample_strip0 + j*sample_strip1 + k+1] * coeff[ii];
+							c01 = downsamples[i*sample_strip0 + (j+1)*sample_strip1 + k] * (1 - coeff[ii]) + downsamples[i*sample_strip0 + (j+1)*sample_strip1 + k+1] * coeff[ii];
+							c10 = downsamples[(i+1)*sample_strip0 + j*sample_strip1 + k] * (1 - coeff[ii]) + downsamples[(i+1)*sample_strip0 + j*sample_strip1 + k+1] * coeff[ii];
+							c11 = downsamples[(i+1)*sample_strip0 + (j+1)*sample_strip1 + k] * (1 - coeff[ii]) + downsamples[(i+1)*sample_strip0 + (j+1)*sample_strip1 + k+1] * coeff[ii];
+							c0 = c00 * (1 - coeff[jj]) + c10 * coeff[jj];
+							c1 = c01 * (1 - coeff[jj]) + c11 * coeff[jj];
+							pred = c0 * (1 - coeff[ii]) + c1 * coeff[ii];
+							// quantization
+							curData = *cur_data_pos;
+							diff = curData - pred;
+							itvNum = fabs(diff)/realPrecision + 1;
+							if (itvNum < intvCapacity){
+								if (diff < 0) itvNum = -itvNum;
+								type[index] = (int) (itvNum/2) + intvRadius;
+								dec_data = pred + 2 * (type[index] - intvRadius) * realPrecision;
+								//ganrantee comporession error against the case of machine-epsilon
+								if(fabs(curData - dec_data)>realPrecision){	
+									type[index] = 0;
+									unpredictable_data[unpredictable_count ++] = curData;
+								}					
+							}
+							else{
+								type[index] = 0;
+								unpredictable_data[unpredictable_count ++] = curData;
+							}
+							index ++;
+							cur_data_pos ++;
+						}
+						cur_data_pos += dim1_offset - block_size_z;
+					}
+					cur_data_pos += dim0_offset - dim1_offset * block_size_y;
+				}
+			}
+			// for residue in z
+			// cur_data_pos = block_data_pos + num_z*block_size;
+			// for(size_t k=num_z*block_size; k<r3; k++){
+
+			// }
+		}
+		// for residue in y
+	}
+	// for residue in x
+	
+	printf("Block wise compression end, unpredictable num %d, num_elements %ld\n", unpredictable_count, num_elements);
+	// huffman encode
+	SZ_Reset(allNodes, stateNum);
+	size_t nodeCount = 0;
+	init(result_type, num_elements);
+	for (size_t i = 0; i < stateNum; i++)
+		if (code[i]) nodeCount++;
+	nodeCount = nodeCount*2-1;
+	unsigned char *treeBytes;
+	unsigned int treeByteSize = convert_HuffTree_to_bytes_anyStates(nodeCount, &treeBytes);
+
+	unsigned int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	// total size 										metadata		real precision		intervals	nodeCount		huffman 	 	block index 						unpredicatable count						mean 					 	unpred size 				elements
+	unsigned char * result = (unsigned char *) malloc(meta_data_offset + SZ_SIZE_TYPE + sizeof(double) + sizeof(int) + sizeof(int) + treeByteSize + (unpredictable_count * sizeof(float)) + downsample_size * sizeof(float) + num_elements * sizeof(int));
+	unsigned char * result_pos = result;
+	initRandomAccessBytes(result_pos);
+	result_pos += meta_data_offset;
+
+	sizeToBytes(result_pos, num_elements);
+	result_pos += SZ_SIZE_TYPE;
+
+	size_t enCodeSize = 0;
+
+	intToBytes_bigEndian(result_pos, block_size);
+	result_pos += 4;
+	doubleToBytes(result_pos, realPrecision);
+	result_pos += 8;
+	intToBytes_bigEndian(result_pos, quantization_intervals);
+	result_pos += 4;
+	intToBytes_bigEndian(result_pos, treeByteSize);
+	result_pos += 4;
+	intToBytes_bigEndian(result_pos, nodeCount);
+	result_pos += 4;
+	memcpy(result_pos, treeBytes, treeByteSize);
+	result_pos += treeByteSize;
+	free(treeBytes);
+
+	size_t unpredictableEncodeSize;
+	size_t totalEncodeSize = 0;
+	memcpy(result_pos, &unpredictable_count, sizeof(size_t));
+	result_pos += sizeof(size_t);
+	memcpy(result_pos, unpredictable_data, unpredictable_count * sizeof(float));
+	result_pos += unpredictable_count * sizeof(float);
+	// record downsamples data
+	memcpy(result_pos, downsamples, downsample_size*sizeof(float));
+	result_pos += downsample_size*sizeof(float);
+	printf("index: %ld\nsize: %ld\n", index, result_pos - result);
+	for(int i=0; i<10; i++){
+		printf("%d ", result_type[1000+i]);
+	}
+	printf("\n");	
+	// {
+	// 	int status;
+	// 	writeFloatData_inBytes(downsamples, downsample_size, "/Users/LiangXin/Documents/research/anl/lossy_comp/data/NYX/comp_sample.dat", &status);
+	// 	writeIntData_inBytes(result_type, num_elements, "/Users/LiangXin/Documents/research/anl/lossy_comp/data/NYX/comp_type.dat", &status);
+	// }
+	size_t typeArray_size = 0;
+	encode(result_type, num_elements, result_pos, &typeArray_size);
+	result_pos += typeArray_size;
+	printf("type array size: %ld\n", typeArray_size);
+	printf("--------- True bitrate %.4f ------------\n", typeArray_size * 32.0 / (num_elements * sizeof(float)));
+	totalEncodeSize = result_pos - result;
+	// printf("Total size %ld\n", totalEncodeSize);
+	free(unpredictable_data);
+	free(result_type);
+	free(downsamples);
+	SZ_ReleaseHuffman();
+	*comp_size = totalEncodeSize;
+	return result;
+}
 

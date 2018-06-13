@@ -104,6 +104,7 @@ int SZ_decompress_args_float(float** newData, size_t r5, size_t r4, size_t r3, s
 			else if(dim == 3)
 				//decompressDataSeries_float_3D_nonblocked(newData, r3, r2, r1, tdps->raBytes);
 				decompressDataSeries_float_3D_nonblocked_with_blocked_regression(newData, r3, r2, r1, tdps->raBytes+SZ_SIZE_TYPE);
+				// decompressDataSeries_float_3D_all_by_interpolation(newData, r3, r2, r1, tdps->raBytes+SZ_SIZE_TYPE);
 			else if(dim == 4)
 				;
 			else
@@ -7166,4 +7167,149 @@ void decompressDataSeries_float_3D_RA_multi_means(float** data, size_t r1, size_
 	free(type);
 	free(unpredictable_data);
 
+}
+
+void decompressDataSeries_float_3D_all_by_interpolation(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data){
+	// printf("num_block_elements %d num_blocks %d\n", max_num_block_elements, num_blocks);
+	// fflush(stdout);
+
+	size_t dim0_offset = r2 * r3;
+	size_t dim1_offset = r3;
+	size_t num_elements = r1 * r2 * r3;
+
+	*data = (float*)malloc(sizeof(float)*num_elements);
+	
+	unsigned char * comp_data_pos = comp_data;
+	//int meta_data_offset = 3 + 1 + MetaDataByteLength;
+	//comp_data_pos += meta_data_offset;
+
+	size_t block_size = bytesToInt_bigEndian(comp_data_pos);
+	comp_data_pos += 4;
+	// calculate block dims
+	size_t num_x, num_y, num_z;
+	num_x = r1 / block_size;
+	num_y = r2 / block_size;
+	num_z = r3 / block_size;
+
+	if(r1 != num_x * block_size + 1){
+		printf("dim x not aligned\n");
+		exit(0);
+	}
+	if(r2 != num_y * block_size + 1){
+		printf("dim y not aligned\n");
+		exit(0);
+	}
+	if(r3 != num_z * block_size + 1){
+		printf("dim z not aligned\n");
+		exit(0);
+	}
+	size_t sample_strip0 = (num_y + 1) * (num_z + 1);
+	size_t sample_strip1 = num_z + 1;
+	size_t downsample_size = (num_x+1) * (num_y+1) * (num_z+1);
+
+	double realPrecision = bytesToDouble(comp_data_pos);
+	comp_data_pos += 8;
+	unsigned int intervals = bytesToInt_bigEndian(comp_data_pos);
+	comp_data_pos += 4;
+
+	updateQuantizationInfo(intervals);
+	unsigned int tree_size = bytesToInt_bigEndian(comp_data_pos);
+	comp_data_pos += 4;
+	allNodes = bytesToInt_bigEndian(comp_data_pos);
+	stateNum = allNodes/2;
+	SZ_Reset(allNodes, stateNum);
+	// printf("Reconstruct huffman tree with node count %ld\n", nodeCount);
+	// fflush(stdout);
+	node root = reconstruct_HuffTree_from_bytes_anyStates(comp_data_pos+4, allNodes);
+	comp_data_pos += 4 + tree_size;
+
+	size_t unpredictable_count = *((size_t *) comp_data_pos);
+	comp_data_pos += sizeof(size_t);
+	float * unpredictable_data = (float *) comp_data_pos;
+	comp_data_pos += unpredictable_count * sizeof(float);
+	float * downsamples = (float *) comp_data_pos;
+	comp_data_pos += downsample_size * sizeof(float);
+	int * result_type = (int *) malloc(num_elements * sizeof(int));
+	decode(comp_data_pos, num_elements, root, result_type);
+	printf("SZ_TYPE_SIZE: %d\nsize: %ld\n\n", SZ_SIZE_TYPE, comp_data_pos - comp_data + MetaDataByteLength + 4 + SZ_SIZE_TYPE);
+	for(int i=0; i<10; i++){
+		printf("%d ", result_type[1000+i]);
+	}
+	printf("\n");
+	printf("decompress start, unpredictable_count %zu, intervals %d, block_size %d\n", unpredictable_count, intervals, block_size);
+	// {
+	// 	int status;
+	// 	writeFloatData_inBytes(downsamples, downsample_size, "/Users/LiangXin/Documents/research/anl/lossy_comp/data/NYX/decomp_sample.dat", &status);
+	// 	writeIntData_inBytes(result_type, num_elements, "/Users/LiangXin/Documents/research/anl/lossy_comp/data/NYX/decomp_type.dat", &status);
+	// }
+	// exit(0);
+
+	int * type = result_type;
+	// printf("decompress offset to start: %ld\n", comp_data_pos - tdps->data);
+	// fflush(stdout);
+	size_t index = 0;
+	float * block_data_pos;
+	float * cur_data_pos;
+	int type_;
+	float c00, c01, c10, c11, c0, c1;
+	float pred;
+	float * coeff = (float *) malloc((block_size+1) * sizeof(float));
+	for(size_t i=0; i<=block_size; i++){
+		coeff[i] = i * 1.0 / block_size;
+	}
+	int block_size_x, block_size_y, block_size_z;
+	size_t unpred_count = 0;
+	for(size_t i=0; i<num_x; i++){
+		for(size_t j=0; j<num_y; j++){
+			for(size_t k=0; k<num_z; k++){
+				// printf("i, j, k: %d %d %d, index %zu\n", i, j, k, index);
+				// fflush(stdout);
+
+				block_data_pos = *data + i*block_size*dim0_offset + j*block_size*dim1_offset + k*block_size;
+				cur_data_pos = block_data_pos;
+				// trilinear interpolate block
+				if(i == num_x - 1) block_size_x = block_size+1;
+				else block_size_x = block_size;
+				if(j == num_y - 1) block_size_y = block_size+1;
+				else block_size_y = block_size;
+				if(k == num_z - 1) block_size_z = block_size+1;
+				else block_size_z = block_size;
+				for(size_t ii=0; ii<block_size_x; ii++){
+					for(size_t jj=0; jj<block_size_y; jj++){
+						for(size_t kk=0; kk<block_size_z; kk++){
+							// decompress
+							type_ = type[index];
+							// if(i==0 && j==0 && k==8){
+							// 	printf("ii, jj, kk: %d %d %d, type_ %d\n", ii, jj, kk, type_);
+							// 	fflush(stdout);
+							// }
+							if (type_ != 0){
+								c00 = downsamples[i*sample_strip0 + j*sample_strip1 + k] * (1 - coeff[ii]) + downsamples[i*sample_strip0 + j*sample_strip1 + k+1] * coeff[ii];
+								c01 = downsamples[i*sample_strip0 + (j+1)*sample_strip1 + k] * (1 - coeff[ii]) + downsamples[i*sample_strip0 + (j+1)*sample_strip1 + k+1] * coeff[ii];
+								c10 = downsamples[(i+1)*sample_strip0 + j*sample_strip1 + k] * (1 - coeff[ii]) + downsamples[(i+1)*sample_strip0 + j*sample_strip1 + k+1] * coeff[ii];
+								c11 = downsamples[(i+1)*sample_strip0 + (j+1)*sample_strip1 + k] * (1 - coeff[ii]) + downsamples[(i+1)*sample_strip0 + (j+1)*sample_strip1 + k+1] * coeff[ii];
+								c0 = c00 * (1 - coeff[jj]) + c10 * coeff[jj];
+								c1 = c01 * (1 - coeff[jj]) + c11 * coeff[jj];
+								pred = c0 * (1 - coeff[ii]) + c1 * coeff[ii];
+								*cur_data_pos = pred + 2 * (type_ - intvRadius) * realPrecision;
+							}
+							else{
+								*cur_data_pos = unpredictable_data[unpred_count ++];
+							}
+							if(block_size*i+ii == 0 && block_size*j+jj == 1 && block_size*k+kk == 505){
+								printf("type_ %d, index %d, data %f\n", type_, index, *cur_data_pos);
+							}
+							index ++;
+							cur_data_pos ++;
+						}
+						cur_data_pos += dim1_offset - block_size_z;
+					}
+					cur_data_pos += dim0_offset - dim1_offset * block_size_y;
+				}
+
+			}
+		}
+	}
+	printf("Actual unpredictable_count %d\n", unpred_count);
+	free(result_type);
 }

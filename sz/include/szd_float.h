@@ -41,6 +41,7 @@ size_t decompressDataSeries_float_3D_RA_block_2_layers(float * data, float mean,
 size_t decompressDataSeries_float_3D_RA_block_no_mean(float * data, size_t dim_0, size_t dim_1, size_t dim_2, size_t block_dim_0, size_t block_dim_1, size_t block_dim_2, double realPrecision, int * type, float * unpredictable_data);
 void decompressDataSeries_float_3D_RA_blocked_with_regression(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data);
 void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data);
+void decompressDataSeries_float_3D_all_by_interpolation(float** data, size_t r1, size_t r2, size_t r3, unsigned char* comp_data);
 void decompressDataSeries_float_2D_nonblocked_with_blocked_regression(float** data, size_t r1, size_t r2, unsigned char* comp_data);
 size_t decompressDataSeries_float_1D_RA_block(float * data, float mean, size_t dim_0, size_t block_dim_0, double realPrecision, int * type, float * unpredictable_data);
 size_t decompressDataSeries_float_2D_RA_block(float * data, float mean, size_t dim_0, size_t dim_1, size_t block_dim_0, size_t block_dim_1, double realPrecision, int * type, float * unpredictable_data);
