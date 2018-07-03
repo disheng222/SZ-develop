@@ -4184,9 +4184,9 @@ void decompressDataSeries_float_2D_nonblocked_with_blocked_regression(float** da
 		comp_data_pos += *resiMidBites_c_size;
 				
 		//perform the decompression using the reconstructed leadNum, exactMidBytes and residualMidBits....
-		decompressExactDataArray(leadNum_a, exactMidBytes_a, residualMidBits_a, reg_count, reqLength_a, medianValue_a, &dec_a);
-		decompressExactDataArray(leadNum_b, exactMidBytes_b, residualMidBits_b, reg_count, reqLength_b, medianValue_b, &dec_b);
-		decompressExactDataArray(leadNum_c, exactMidBytes_c, residualMidBits_c, reg_count, reqLength_c, medianValue_c, &dec_c);
+		decompressExactDataArray_float(leadNum_a, exactMidBytes_a, residualMidBits_a, reg_count, reqLength_a, medianValue_a, &dec_a);
+		decompressExactDataArray_float(leadNum_b, exactMidBytes_b, residualMidBits_b, reg_count, reqLength_b, medianValue_b, &dec_b);
+		decompressExactDataArray_float(leadNum_c, exactMidBytes_c, residualMidBits_c, reg_count, reqLength_c, medianValue_c, &dec_c);
 		free(leadNum_a);
 		free(leadNum_b);
 		free(leadNum_c);
@@ -4477,7 +4477,7 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 	memcpy(&use_mean, comp_data_pos, sizeof(unsigned char));
 	comp_data_pos += 1;
 	memcpy(&mean, comp_data_pos, sizeof(float));
-	comp_data_pos += 4;
+	comp_data_pos += sizeof(float);
 	size_t reg_count = 0;
 	// unsigned char * indicator = (unsigned char *) comp_data_pos;
 	// comp_data_pos += num_blocks * sizeof(unsigned char);
@@ -4570,10 +4570,10 @@ void decompressDataSeries_float_3D_nonblocked_with_blocked_regression(float** da
 		comp_data_pos += *resiMidBites_d_size;				
 		
 		//perform the decompression using the reconstructed leadNum, exactMidBytes and residualMidBits....
-		decompressExactDataArray(leadNum_a, exactMidBytes_a, residualMidBits_a, reg_count, reqLength_a, medianValue_a, &dec_a);
-		decompressExactDataArray(leadNum_b, exactMidBytes_b, residualMidBits_b, reg_count, reqLength_b, medianValue_b, &dec_b);
-		decompressExactDataArray(leadNum_c, exactMidBytes_c, residualMidBits_c, reg_count, reqLength_c, medianValue_c, &dec_c);
-		decompressExactDataArray(leadNum_d, exactMidBytes_d, residualMidBits_d, reg_count, reqLength_d, medianValue_d, &dec_d);
+		decompressExactDataArray_float(leadNum_a, exactMidBytes_a, residualMidBits_a, reg_count, reqLength_a, medianValue_a, &dec_a);
+		decompressExactDataArray_float(leadNum_b, exactMidBytes_b, residualMidBits_b, reg_count, reqLength_b, medianValue_b, &dec_b);
+		decompressExactDataArray_float(leadNum_c, exactMidBytes_c, residualMidBits_c, reg_count, reqLength_c, medianValue_c, &dec_c);
+		decompressExactDataArray_float(leadNum_d, exactMidBytes_d, residualMidBits_d, reg_count, reqLength_d, medianValue_d, &dec_d);
 		// for(size_t i=0; i<reg_count; i++){
 		// 	reg_params_buf[4*i] = dec_a[i];
 		// 	reg_params_buf[4*i + 1] = dec_b[i];

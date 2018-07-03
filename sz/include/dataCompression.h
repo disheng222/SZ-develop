@@ -79,10 +79,10 @@ int computeBlockEdgeSize_2D(int segmentSize);
 int initRandomAccessBytes(unsigned char* raBytes);
 void isSameOrRandomAccessMode(unsigned char* cmprBytes, int* constantData, int* randomAccess);
 int generateLossyCoefficients(float* oriData, double precision, size_t nbEle, int* reqBytesLength, int* resiBitsLength, float* medianValue, float* decData);
-int compressExactDataArray(float* oriData, double precision, size_t nbEle, unsigned char** leadArray, unsigned char** midArray, unsigned char** resiArray, 
+int compressExactDataArray_float(float* oriData, double precision, size_t nbEle, unsigned char** leadArray, unsigned char** midArray, unsigned char** resiArray, 
 int reqLength, int reqBytesLength, int resiBitsLength, float medianValue);
 
-void decompressExactDataArray(unsigned char* leadNum, unsigned char* exactMidBytes, unsigned char* residualMidBits, size_t nbEle, int reqLength, float medianValue, float** decData);
+void decompressExactDataArray_float(unsigned char* leadNum, unsigned char* exactMidBytes, unsigned char* residualMidBits, size_t nbEle, int reqLength, float medianValue, float** decData);
 
 #ifdef __cplusplus
 }

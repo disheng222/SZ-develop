@@ -642,7 +642,7 @@ int generateLossyCoefficients(float* oriData, double precision, size_t nbEle, in
  * @param float* oriData: inplace argument (input / output)
  * 
  * */		
-int compressExactDataArray(float* oriData, double precision, size_t nbEle, unsigned char** leadArray, unsigned char** midArray, unsigned char** resiArray, 
+int compressExactDataArray_float(float* oriData, double precision, size_t nbEle, unsigned char** leadArray, unsigned char** midArray, unsigned char** resiArray, 
 int reqLength, int reqBytesLength, int resiBitsLength, float medianValue)
 {
 	//allocate memory for coefficient compression arrays
@@ -683,7 +683,7 @@ int reqLength, int reqBytesLength, int resiBitsLength, float medianValue)
 	return midArraySize;
 }
 
-void decompressExactDataArray(unsigned char* leadNum, unsigned char* exactMidBytes, unsigned char* residualMidBits, size_t nbEle, int reqLength, float medianValue, float** decData)
+void decompressExactDataArray_float(unsigned char* leadNum, unsigned char* exactMidBytes, unsigned char* residualMidBits, size_t nbEle, int reqLength, float medianValue, float** decData)
 {
 	*decData = (float*)malloc(nbEle*sizeof(float));
 	size_t i = 0, j = 0, k = 0, l = 0, p = 0, curByteIndex = 0;

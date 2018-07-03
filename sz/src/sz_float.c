@@ -9766,10 +9766,10 @@ float SZ_compress_float_3D_MDQ_strip_pred_by_regression_with_freq(float * block_
 // 		unsigned char* leadArray_c = NULL, *midArray_c = NULL, *resiArray_c = NULL;
 // 		unsigned char* leadArray_d = NULL, *midArray_d = NULL, *resiArray_d = NULL;
 		
-// 		size_t mid_byte_size_a = compressExactDataArray(selectCoeffs_a, precision_a, reg_count, &leadArray_a, &midArray_a, &resiArray_a, reqLength_a, reqBytesLength_a, resiBitsLength_a, medianValue_a);		
-// 		size_t mid_byte_size_b = compressExactDataArray(selectCoeffs_b, precision_b, reg_count, &leadArray_b, &midArray_b, &resiArray_b, reqLength_b, reqBytesLength_b, resiBitsLength_b, medianValue_b);		
-// 		size_t mid_byte_size_c = compressExactDataArray(selectCoeffs_c, precision_c, reg_count, &leadArray_c, &midArray_c, &resiArray_c, reqLength_c, reqBytesLength_c, resiBitsLength_c, medianValue_c);		
-// 		size_t mid_byte_size_d = compressExactDataArray(selectCoeffs_d, precision_d, reg_count, &leadArray_d, &midArray_d, &resiArray_d, reqLength_d, reqBytesLength_d, resiBitsLength_d, medianValue_d);		
+// 		size_t mid_byte_size_a = compressExactDataArray_float(selectCoeffs_a, precision_a, reg_count, &leadArray_a, &midArray_a, &resiArray_a, reqLength_a, reqBytesLength_a, resiBitsLength_a, medianValue_a);		
+// 		size_t mid_byte_size_b = compressExactDataArray_float(selectCoeffs_b, precision_b, reg_count, &leadArray_b, &midArray_b, &resiArray_b, reqLength_b, reqBytesLength_b, resiBitsLength_b, medianValue_b);		
+// 		size_t mid_byte_size_c = compressExactDataArray_float(selectCoeffs_c, precision_c, reg_count, &leadArray_c, &midArray_c, &resiArray_c, reqLength_c, reqBytesLength_c, resiBitsLength_c, medianValue_c);		
+// 		size_t mid_byte_size_d = compressExactDataArray_float(selectCoeffs_d, precision_d, reg_count, &leadArray_d, &midArray_d, &resiArray_d, reqLength_d, reqBytesLength_d, resiBitsLength_d, medianValue_d);		
 		
 // 		// write coefficient info
 // 		memcpy(result_pos, &medianValue_a, sizeof(float));
@@ -10702,9 +10702,9 @@ unsigned char * SZ_compress_float_2D_MDQ_nonblocked_with_blocked_regression(floa
 		unsigned char* leadArray_b = NULL, *midArray_b = NULL, *resiArray_b = NULL;
 		unsigned char* leadArray_c = NULL, *midArray_c = NULL, *resiArray_c = NULL;
 		
-		size_t mid_byte_size_a = compressExactDataArray(selectCoeffs_a, precision_a, reg_count, &leadArray_a, &midArray_a, &resiArray_a, reqLength_a, reqBytesLength_a, resiBitsLength_a, medianValue_a);		
-		size_t mid_byte_size_b = compressExactDataArray(selectCoeffs_b, precision_b, reg_count, &leadArray_b, &midArray_b, &resiArray_b, reqLength_b, reqBytesLength_b, resiBitsLength_b, medianValue_b);		
-		size_t mid_byte_size_c = compressExactDataArray(selectCoeffs_c, precision_c, reg_count, &leadArray_c, &midArray_c, &resiArray_c, reqLength_c, reqBytesLength_c, resiBitsLength_c, medianValue_c);		
+		size_t mid_byte_size_a = compressExactDataArray_float(selectCoeffs_a, precision_a, reg_count, &leadArray_a, &midArray_a, &resiArray_a, reqLength_a, reqBytesLength_a, resiBitsLength_a, medianValue_a);		
+		size_t mid_byte_size_b = compressExactDataArray_float(selectCoeffs_b, precision_b, reg_count, &leadArray_b, &midArray_b, &resiArray_b, reqLength_b, reqBytesLength_b, resiBitsLength_b, medianValue_b);		
+		size_t mid_byte_size_c = compressExactDataArray_float(selectCoeffs_c, precision_c, reg_count, &leadArray_c, &midArray_c, &resiArray_c, reqLength_c, reqBytesLength_c, resiBitsLength_c, medianValue_c);		
 		
 		// write coefficient info
 		memcpy(result_pos, &medianValue_a, sizeof(float));
@@ -11812,7 +11812,7 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 	memcpy(result_pos, &use_mean, sizeof(unsigned char));
 	result_pos += 1;
 	memcpy(result_pos, &mean, sizeof(float));
-	result_pos += 4;
+	result_pos += sizeof(float);
 	// memcpy(result_pos, indicator, num_blocks * sizeof(unsigned char));
 	// result_pos += num_blocks * sizeof(unsigned char);
 	size_t indicator_size = convertIntArray2ByteArray_fast_1b_to_result(indicator, num_blocks, result_pos);
@@ -11829,10 +11829,10 @@ unsigned char * SZ_compress_float_3D_MDQ_nonblocked_with_blocked_regression(floa
 		unsigned char* leadArray_c = NULL, *midArray_c = NULL, *resiArray_c = NULL;
 		unsigned char* leadArray_d = NULL, *midArray_d = NULL, *resiArray_d = NULL;
 		
-		size_t mid_byte_size_a = compressExactDataArray(selectCoeffs_a, precision_a, reg_count, &leadArray_a, &midArray_a, &resiArray_a, reqLength_a, reqBytesLength_a, resiBitsLength_a, medianValue_a);		
-		size_t mid_byte_size_b = compressExactDataArray(selectCoeffs_b, precision_b, reg_count, &leadArray_b, &midArray_b, &resiArray_b, reqLength_b, reqBytesLength_b, resiBitsLength_b, medianValue_b);		
-		size_t mid_byte_size_c = compressExactDataArray(selectCoeffs_c, precision_c, reg_count, &leadArray_c, &midArray_c, &resiArray_c, reqLength_c, reqBytesLength_c, resiBitsLength_c, medianValue_c);		
-		size_t mid_byte_size_d = compressExactDataArray(selectCoeffs_d, precision_d, reg_count, &leadArray_d, &midArray_d, &resiArray_d, reqLength_d, reqBytesLength_d, resiBitsLength_d, medianValue_d);		
+		size_t mid_byte_size_a = compressExactDataArray_float(selectCoeffs_a, precision_a, reg_count, &leadArray_a, &midArray_a, &resiArray_a, reqLength_a, reqBytesLength_a, resiBitsLength_a, medianValue_a);		
+		size_t mid_byte_size_b = compressExactDataArray_float(selectCoeffs_b, precision_b, reg_count, &leadArray_b, &midArray_b, &resiArray_b, reqLength_b, reqBytesLength_b, resiBitsLength_b, medianValue_b);		
+		size_t mid_byte_size_c = compressExactDataArray_float(selectCoeffs_c, precision_c, reg_count, &leadArray_c, &midArray_c, &resiArray_c, reqLength_c, reqBytesLength_c, resiBitsLength_c, medianValue_c);		
+		size_t mid_byte_size_d = compressExactDataArray_float(selectCoeffs_d, precision_d, reg_count, &leadArray_d, &midArray_d, &resiArray_d, reqLength_d, reqBytesLength_d, resiBitsLength_d, medianValue_d);		
 		
 		// write coefficient info
 		memcpy(result_pos, &medianValue_a, sizeof(float));
