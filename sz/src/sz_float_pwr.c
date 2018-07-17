@@ -1735,8 +1735,11 @@ void SZ_compress_args_float_NoCkRngeNoGzip_1D_pwr_pre_log(unsigned char** newByt
 	unsigned char * signs = (unsigned char *) malloc(dataLength);
 	memset(signs, 0, dataLength);
 	// preprocess
-	float max_abs_log_data = fabs(log2(threshold));
-	float min_log_data = log2(fabs(oriData[0]));
+	float max_abs_log_data;
+    if(min == 0) max_abs_log_data = fabs(log2(fabs(max)));
+    else if(max == 0) max_abs_log_data = fabs(log2(fabs(min)));
+    else max_abs_log_data = fabs(log2(fabs(min))) > fabs(log2(fabs(max))) ? fabs(log2(fabs(min))) : fabs(log2(fabs(max)));
+    float min_log_data = max_abs_log_data;
 	bool positive = true;
 	for(size_t i=0; i<dataLength; i++){
 		if(oriData[i] < 0){
@@ -1806,8 +1809,11 @@ void SZ_compress_args_float_NoCkRngeNoGzip_2D_pwr_pre_log(unsigned char** newByt
 	unsigned char * signs = (unsigned char *) malloc(dataLength);
 	memset(signs, 0, dataLength);
 	// preprocess
-	float max_abs_log_data = fabs(log2(threshold));
-	float min_log_data = log2(fabs(oriData[0]));
+	float max_abs_log_data;
+    if(min == 0) max_abs_log_data = fabs(log2(fabs(max)));
+    else if(max == 0) max_abs_log_data = fabs(log2(fabs(min)));
+    else max_abs_log_data = fabs(log2(fabs(min))) > fabs(log2(fabs(max))) ? fabs(log2(fabs(min))) : fabs(log2(fabs(max)));
+    float min_log_data = max_abs_log_data;
 	bool positive = true;
 	for(size_t i=0; i<dataLength; i++){
 		if(oriData[i] < 0){
@@ -1877,8 +1883,11 @@ void SZ_compress_args_float_NoCkRngeNoGzip_3D_pwr_pre_log(unsigned char** newByt
 	unsigned char * signs = (unsigned char *) malloc(dataLength);
 	memset(signs, 0, dataLength);
 	// preprocess
-	float max_abs_log_data = fabs(log2(threshold));
-	float min_log_data = log2(fabs(oriData[0]));
+	float max_abs_log_data;
+    if(min == 0) max_abs_log_data = fabs(log2(fabs(max)));
+    else if(max == 0) max_abs_log_data = fabs(log2(fabs(min)));
+    else max_abs_log_data = fabs(log2(fabs(min))) > fabs(log2(fabs(max))) ? fabs(log2(fabs(min))) : fabs(log2(fabs(max)));
+    float min_log_data = max_abs_log_data;
 	bool positive = true;
 	for(size_t i=0; i<dataLength; i++){
 		if(oriData[i] < 0){
